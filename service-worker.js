@@ -1,4 +1,4 @@
-const CACHE='specter-v0.8';
+const CACHE='specter-v0.9-power';
 const FILES=['./','./index.html','./manifest.webmanifest',
 './assets/wall_concrete.png','./assets/wall_steel.png','./assets/wall_red.png','./assets/floor.png','./assets/ceiling.png',
 './assets/enemy_rifle_0.png','./assets/enemy_rifle_1.png','./assets/enemy_rifle_2.png','./assets/enemy_rifle_dead.png',

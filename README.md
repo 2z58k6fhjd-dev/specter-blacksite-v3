@@ -1,13 +1,16 @@
-# SPECTER: Blacksite v0.8 — Graphics Overhaul
+# SPECTER: Blacksite v0.9 — Power Restoration
 
 Upload the entire folder contents to the root of the GitHub Pages repository. Keep the `assets` folder intact.
 
-## Improvements
-- 512×512 concrete, steel, hazard-wall, floor, and ceiling materials
-- 1024×1024 forward-facing rifle and pistol sprites
-- Higher-detail tactical rifle and heavy enemy sprites with animation frames
-- Existing ADS, optic reticle, flashlight, vertical aiming, accurate impacts, reloads, audio, and mobile controls retained
-- PWA manifest and offline cache included
+## New in v0.9
+- Facility starts on emergency power
+- Interactive industrial breaker beside spawn
+- Press **E** to restore lighting
+- Staged light startup with electrical flicker and power-on audio
+- Main dark room becomes illuminated after power restoration
+- HUD reports POWER OFFLINE / ONLINE
+- Flashlight remains independently toggleable with **F**
+- Corrected all asset paths to use the `assets/` folder
 
-## Important
-Do not flatten the `assets` directory. `index.html` expects files at `assets/<filename>`.
+## Controls
+WASD move, mouse look, left click fire, right click/Q aim, R reload, F flashlight, E interact, 1/2 switch weapon.
