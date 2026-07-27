@@ -1,7 +1,7 @@
 <!doctype html><html><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#08110b"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-192.png">
-<meta name="apple-mobile-web-app-capable" content="yes"><title>SPECTER v0.6</title>
+<meta name="apple-mobile-web-app-capable" content="yes"><title>SPECTER v0.6.1</title>
 <style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#020302;color:#caffd6;font-family:monospace;touch-action:none}
 canvas{display:block;width:100%;height:100%;image-rendering:auto;cursor:crosshair}.screen{position:fixed;inset:0;z-index:9;background:radial-gradient(circle,#0b1710,#020302 75%);padding:22px;overflow:auto}
@@ -18,7 +18,7 @@ button{font:inherit;color:#effff3;background:#14271b;border:1px solid #6c9878;pa
 @media(pointer:coarse),(max-width:900px){#touch{display:block}}@media(orientation:portrait) and (max-width:900px){#rotate{display:grid}}@media(max-width:700px){.menu{grid-template-columns:1fr}.portrait{max-height:38vh}}
 </style></head><body>
 <canvas id="g" width="960" height="540"></canvas>
-<section id="menu" class="screen"><div class="menu"><img class="portrait" src="specter_portrait.jpg"><div><div class="sub">U.S. SPECIAL OPERATIONS</div><h1>SPECTER</h1><p class="brief">Tactical Darkness Upgrade v0.6: aim-down-sights, staged reload animations, a detailed forward-facing firearm, upgraded enemy rendering, a pitch-black combat room, and a weapon-mounted flashlight. Right-click or hold Q to aim; F toggles the flashlight.</p><div class="obj"><b>OPERATION BLACK VEIL</b><br>Eliminate all hostiles, recover the encrypted key, and reach extraction.</div><button id="start">BEGIN MISSION</button><button id="dos">DOSSIER</button><p class="small">Desktop: click to capture mouse, move to look, left-click fires, right-click or Q aims, WASD moves, R reloads, F toggles the flashlight, 1/2 swaps weapons, and E uses. Mobile controls remain available.</p></div></div></section>
+<section id="menu" class="screen"><div class="menu"><img class="portrait" src="specter_portrait.jpg"><div><div class="sub">U.S. SPECIAL OPERATIONS</div><h1>SPECTER</h1><p class="brief">Tactical Darkness Upgrade v0.6.1: aim-down-sights, staged reload animations, a detailed forward-facing firearm, upgraded enemy rendering, a pitch-black combat room, and a weapon-mounted flashlight. Right-click or hold Q to aim; F toggles the flashlight.</p><div class="obj"><b>OPERATION BLACK VEIL</b><br>Eliminate all hostiles, recover the encrypted key, and reach extraction.</div><button id="start">BEGIN MISSION</button><button id="dos">DOSSIER</button><p class="small">Desktop: click to capture mouse, move to look, left-click fires, right-click or Q aims, WASD moves, R reloads, F toggles the flashlight, 1/2 swaps weapons, and E uses. Mobile controls remain available.</p></div></div></section>
 <section id="dossier" class="screen hidden"><button id="back">RETURN</button><img src="specter_turnaround.jpg"><img src="specter_equipment.jpg"></section>
 <div id="rotate"><div><h2>ROTATE DEVICE</h2><p>Landscape orientation required.</p></div></div>
 <div id="touch"><div id="move" class="pad"><div class="ring"></div><div class="stick"></div></div><div id="look" class="pad"><div class="ring"></div><div class="stick"></div></div><div id="fire" class="btn">FIRE</div><div id="use" class="btn">USE</div><div id="reload" class="btn">R</div><div id="swap" class="btn">1/2</div><div id="aim" class="btn">AIM</div><div id="pause" class="btn">Ⅱ</div></div>
@@ -55,9 +55,15 @@ for(const e of E){if(!e.alive)continue;e.cool-=dt;let dx=P.x-e.x,dy=P.y-e.y,d=Ma
 for(const p of parts){p.l-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;p.vz-=2.4*dt}parts=parts.filter(p=>p.l>0);for(const i of impacts)i.l-=dt;impacts=impacts.filter(i=>i.l>0);for(const e of cases){e.l-=dt;e.x+=e.vx*dt;e.y+=e.vy*dt;e.vy+=260*dt}cases=cases.filter(e=>e.l>0);flash=Math.max(0,flash-dt);muzzle=Math.max(0,muzzle-dt);msgT=Math.max(0,msgT-dt);shake=Math.max(0,shake-dt)}
 function tex(v){return v===1?I.wall_concrete:v===2?I.wall_steel:I.wall_red}
 function inDarkRoom(x,y){return y>12.15&&x>0.8&&x<17.2}function lightAt(x,y){let b=inDarkRoom(x,y)?.012:.12;for(const l of LIGHTS){if(inDarkRoom(l.x,l.y))continue;let dx=x-l.x,dy=y-l.y,d=Math.hypot(dx,dy);if(d<6&&los(x,y,l.x,l.y))b+=Math.max(0,1-d/6)*l.p}if(P.flashlight){let dx=x-P.x,dy=y-P.y,d=Math.hypot(dx,dy),da=Math.abs(norm(Math.atan2(dy,dx)-P.a));if(d<9&&da<.22&&los(P.x,P.y,x,y))b+=Math.max(0,1-d/9)*(1-da/.22)*1.25}if(muzzle){let d=Math.hypot(x-P.x,y-P.y);b+=Math.max(0,1-d/4)*muzzle*8}return Math.min(1.15,b)}
-function drawGun(w,bob){let pistol=P.w===1,cx=W/2,ads=P.ads,recoil=muzzle*(ads?55:95),rel=w.rel>0?1-w.rel/w.relMax:0;
- let rx=0,ry=0,rot=0;if(w.rel>0){if(rel<.22){ry=rel/.22*78;rot=rel/.22*.28}else if(rel<.56){ry=78;rot=.28;rx=-18*Math.sin((rel-.22)/.34*Math.PI)}else if(rel<.82){ry=78*(1-(rel-.56)/.26);rot=.28*(1-(rel-.56)/.26)}else{ry=-12*Math.sin((rel-.82)/.18*Math.PI)}}
- let hipY=H-8+bob,aimY=pistol?H*.77:H*.79,base=hipY*(1-ads)+aimY*ads+recoil+ry;let scale=(1-ads)+ads*(pistol?1.22:1.3);q.save();q.translate(cx+rx,base);q.rotate(rot);q.scale(scale,scale);
+function drawGun(w,bob){let pistol=P.w===1,cx=W/2,ads=P.ads,recoil=muzzle*(ads?24:78),rel=w.rel>0?1-w.rel/w.relMax:0;
+ let reloadX=0,ry=0,reloadRot=0;if(w.rel>0){if(rel<.22){ry=rel/.22*78;reloadRot=rel/.22*.28}else if(rel<.56){ry=78;reloadRot=.28;reloadX=-18*Math.sin((rel-.22)/.34*Math.PI)}else if(rel<.82){ry=78*(1-(rel-.56)/.26);reloadRot=.28*(1-(rel-.56)/.26)}else{ry=-12*Math.sin((rel-.82)/.18*Math.PI)}}
+ // Hip fire sits naturally low and to the right. ADS slides the actual sights—not the stock—to screen center.
+ let hipX=pistol?72:92,aimX=0,x=hipX*(1-ads)+aimX*ads+reloadX;
+ let hipScale=pistol?.96:.90,adsScale=pistol?.98:.86,scale=hipScale*(1-ads)+adsScale*ads;
+ let sightY=pistol?-151:-277,hipY=H-4+bob,aimY=H/2-sightY*adsScale;
+ let base=hipY*(1-ads)+aimY*ads+recoil+ry;
+ let hipRot=pistol?-.035:-.045,rot=hipRot*(1-ads)+reloadRot;
+ q.save();q.translate(cx+x,base);q.rotate(rot);q.scale(scale,scale);
  q.fillStyle='rgba(0,0,0,.36)';q.beginPath();q.ellipse(0,-45,pistol?82:132,28,0,0,Math.PI*2);q.fill();
  if(pistol){
   q.fillStyle='#171b19';q.beginPath();q.moveTo(-38,-20);q.lineTo(-28,-119);q.lineTo(28,-119);q.lineTo(38,-20);q.closePath();q.fill();
