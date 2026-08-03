@@ -104,9 +104,9 @@ function installSoldierModel(enemy){
 }
 async function loadLicensedModels(){
   const results=await Promise.allSettled([
-    loadGLTF('./assets/models/ar15/scene.gltf'),
-    loadGLTF('./assets/models/m9/scene.gltf'),
-    loadGLTF('./assets/models/soldier/scene.gltf')
+    loadGLTF('./assets/ar15/scene.gltf'),
+    loadGLTF('./assets/m9/scene.gltf'),
+    loadGLTF('./assets/soldier/scene.gltf')
   ]);
   if(results[0].status==='fulfilled'){
     const r=prepareModel(results[0].value.scene,{maxDimension:1.85,exclude:['ground','stand','plane','glass','bullet','mag001','mag002','scope001','stock001']});

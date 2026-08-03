@@ -1,4 +1,4 @@
-# SPECTER v2.4.1 — Model Loader Hotfix
+# SPECTER v2.4.2 — Correct Model Paths
 
 This hotfix corrects a JavaScript initialization error in `prepareModel()` that prevented every licensed glTF model from being installed and left the procedural fallback models visible.
 
@@ -22,3 +22,7 @@ Replace the old repository contents with everything inside this folder. Keep the
 
 ## Controls
 WASD move, Shift sprint, mouse look, hold left click fire, right click aim, E interact, F flashlight, R reload, 1 rifle, 2 pistol.
+
+
+## v2.4.2 fix
+The model URLs now match the repository layout exactly: `assets/ar15/`, `assets/m9/`, and `assets/soldier/`. Upload the contents of this folder directly to the repository root.
