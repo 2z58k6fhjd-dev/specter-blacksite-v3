@@ -1,4 +1,4 @@
-// SPECTER 2.4 licensed glTF model integration and browser optimization update.
+// SPECTER 2.4.1 licensed glTF model-loader hotfix and browser optimization update.
 // Adds procedural spatial audio, synthesized original VOLK radio voices, shell casings,
 // muzzle smoke, automatic rifle fire, sprint/weapon inertia, and tactical vs empty reloads.
 import * as THREE from 'three';
@@ -58,7 +58,8 @@ function prepareModel(root,{maxDimension=1,exclude=[]}={}){
   const largest=Math.max(size.x,size.y,size.z)||1;
   root.scale.multiplyScalar(maxDimension/largest);
   root.updateMatrixWorld(true);
-  const scaledBox=new THREE.Box3().setFromObject(root),center=scaledBox.getCenter(new THREE.Vector3());
+  const scaledBox=new THREE.Box3().setFromObject(root);
+  const center=scaledBox.getCenter(new THREE.Vector3());
   root.position.sub(center);
   return container;
 }

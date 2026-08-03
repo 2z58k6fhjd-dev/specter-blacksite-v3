@@ -1,3 +1,7 @@
+# SPECTER v2.4.1 — Model Loader Hotfix
+
+This hotfix corrects a JavaScript initialization error in `prepareModel()` that prevented every licensed glTF model from being installed and left the procedural fallback models visible.
+
 # SPECTER: Blacksite v2.4 — Licensed 3D Model Integration
 
 This update integrates real glTF models for the first-person AR-15, Beretta M9, and VOLK/Russian soldier enemies.
