@@ -1,43 +1,58 @@
-SPECTER v2.4.3 — OPTIC + FIRE MODE MANUAL HOTFIX
+SPECTER v2.4.4 — MODEL ALIGNMENT HOTFIX
 ================================================
 
 WHAT THIS FIXES
-- Corrects the two procedural optic rings so they no longer turn sideways across the sight picture.
-- Adds B to switch the HK416 between SEMI and AUTO.
-- SEMI fires one shot for each mouse click.
-- AUTO fires continuously while the mouse button is held.
-- The pistol remains SEMI only.
-- The HUD displays HK416 · SEMI, HK416 · AUTO, or M9A4 · SEMI.
-- Updates the build label and service-worker cache to v2.4.3.
+---------------
+- Rotates the imported AR-15 so the barrel points forward instead of across the screen.
+- Rotates and resizes the imported M9 correctly.
+- Repositions rifle and pistol hip-fire poses.
+- Repositions rifle and pistol ADS poses.
+- Raises the imported soldier so his legs are no longer buried under the floor.
+- Corrects the procedural fallback optic rings.
+- Adds B-key SEMI/AUTO switching for the rifle if it is not already installed.
+- Adds console status messages for AR15, M9, and SOLDIER loading.
+- Updates the build label and service-worker cache.
 
-EASIEST INSTALLATION
-1. Download and extract this ZIP.
-2. From your GitHub repository, download these current files:
-   - game.js
-   - index.html
-   - service-worker.js
-3. Put those three files in the SAME folder as Apply-SPECTER-v2.4.3-Hotfix.ps1.
-4. Right-click Apply-SPECTER-v2.4.3-Hotfix.ps1 and choose “Run with PowerShell.”
+HOW TO APPLY
+------------
+1. Download these three files from the ROOT of your GitHub repository:
+     game.js
+     index.html
+     service-worker.js
 
-If Windows blocks the script:
-1. Open PowerShell in that folder.
-2. Run:
-   powershell -ExecutionPolicy Bypass -File .\Apply-SPECTER-v2.4.3-Hotfix.ps1
+2. Put those three files in the same folder as:
+     Apply-SPECTER-v2.4.4-Fix.ps1
 
-The script creates a dated backup folder before changing anything.
+3. Right-click Apply-SPECTER-v2.4.4-Fix.ps1 and choose:
+     Run with PowerShell
 
-UPLOAD TO GITHUB
-1. Open your specter-blacksite-v3 repository.
-2. Upload/replace ONLY:
-   - game.js
-   - index.html
-   - service-worker.js
-3. Commit the changes.
-4. Wait for GitHub Pages to finish deploying.
-5. Reload the game. The top should say:
-   BUILD 2.4.3-OPTIC-FIRE-MODE
+   If Windows blocks it, open PowerShell in the folder and run:
 
-If the old build remains, open the site in a private browser tab once or clear the site’s service worker/cache.
+     powershell -ExecutionPolicy Bypass -File .\Apply-SPECTER-v2.4.4-Fix.ps1
 
-CONTROL
-B = toggle HK416 SEMI/AUTO
+4. The script creates a timestamped backup folder automatically.
+
+5. Upload the modified files back to the ROOT of the GitHub repository:
+     game.js
+     index.html
+     service-worker.js
+
+6. Commit the changes and wait for GitHub Pages deployment.
+
+7. Open the game with a cache-busting URL:
+     https://2z58k6fhjd-dev.github.io/specter-blacksite-v3/?v=244
+
+8. The top-left build label should read:
+     BUILD 2.4.4-MODEL-ALIGNMENT
+
+CONTROLS
+--------
+B = switch HK416 between SEMI and AUTO.
+The M9 remains SEMI.
+
+IMPORTANT
+---------
+This patch is tuned from the screenshots you provided. Because the model's exact
+pivot/orientation can differ slightly between browsers and export versions, one
+small final position adjustment may still be needed after testing. The major
+sideways/buried-model problems should be corrected.
