@@ -1,28 +1,41 @@
-# SPECTER v2.4.2 — Correct Model Paths
+# SPECTER: Blacksite v3.0 Foundation
 
-This hotfix corrects a JavaScript initialization error in `prepareModel()` that prevented every licensed glTF model from being installed and left the procedural fallback models visible.
+This package is a clean modular rebuild of the browser prototype.
 
-# SPECTER: Blacksite v2.4 — Licensed 3D Model Integration
+## Important
 
-This update integrates real glTF models for the first-person AR-15, Beretta M9, and VOLK/Russian soldier enemies.
+The large licensed Sketchfab models are **not duplicated inside this ZIP**. Copy your existing folders into this package:
 
-## Highlights
-- Real PBR weapon and enemy models
-- Weapon textures reduced to 1K for browser and GTX 1050/phone friendliness
-- Procedural fallback models remain available if a model fails to load
-- Imported-enemy hit detection supports body and headshot damage
-- Runtime caching for large model files avoids service-worker installation failures
-- Required attribution is included in `CREDITS.md` and each model folder
+```text
+assets/ar15/
+assets/m9/
+assets/soldier/
+```
 
-## Important license limitation
-The AR-15 model is **CC BY-NC 4.0**. This build must remain non-commercial unless that asset is replaced or separate permission is obtained.
+Each folder must keep its `scene.gltf`, `scene.bin`, textures, and license file together.
 
-## Installation
-Replace the old repository contents with everything inside this folder. Keep the entire `assets` directory intact. After GitHub Pages deploys, hard-refresh once. The menu should show `BUILD 2.4-LICENSED-MODELS`.
+## Upload
 
-## Controls
-WASD move, Shift sprint, mouse look, hold left click fire, right click aim, E interact, F flashlight, R reload, 1 rifle, 2 pistol.
+For the safest test, create a new GitHub repository named:
 
+```text
+specter-blacksite-v3-clean
+```
 
-## v2.4.2 fix
-The model URLs now match the repository layout exactly: `assets/ar15/`, `assets/m9/`, and `assets/soldier/`. Upload the contents of this folder directly to the repository root.
+Upload everything from this package to the repository root, then copy the three existing model folders into `assets/`.
+
+Enable GitHub Pages from `main` and `/(root)`.
+
+## Features in this foundation
+
+- Modular ES modules
+- Imported AR-15, M9, and soldier loading
+- On-screen asset diagnostics
+- Correct world-relative WASD movement
+- Rifle SEMI/AUTO selector on **B**
+- Separate hip, ADS, and sprint poses
+- Soldier foot alignment from model bounding box
+- Working power switch, flashlight, enemies, shooting, and weapon switching
+- GTX 1050-friendly render scale
+
+This is a clean foundation, not yet the final content-complete game. The next iterations can add animation mixers, refined weapon transforms, audio, improved AI, reload animations, muzzle effects, and expanded levels without returning to one enormous `game.js`.
