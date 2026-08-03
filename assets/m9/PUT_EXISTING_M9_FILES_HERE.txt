@@ -1,1 +1,0 @@
-Copy the existing M9 scene.gltf, scene.bin, textures, and license into this folder.

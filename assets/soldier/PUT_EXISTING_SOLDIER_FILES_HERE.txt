@@ -1,1 +1,0 @@
-Copy the existing soldier scene.gltf, scene.bin, textures, and license into this folder.
