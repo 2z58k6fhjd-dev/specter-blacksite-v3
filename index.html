@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+  <meta name="theme-color" content="#07100c" />
+  <title>SPECTER: Blacksite 3D Prototype</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="game"></div>
+  <div id="vignette"></div>
+  <div id="damage"></div>
+
+  <header id="topHud">
+    <div>SPECTER // BLACK VEIL <span class="build">BUILD 2.4-LICENSED-MODELS</span></div>
+    <div id="objective">OBJECTIVE: RESTORE FACILITY POWER</div>
+  </header>
+
+  <div id="crosshair"><span></span><span></span></div>
+  <div id="prompt"></div>
+  <div id="message"></div>
+
+  <footer id="bottomHud">
+    <div>HP <b id="hp">100</b></div>
+    <div>ARM <b id="armor">50</b></div>
+    <div><span id="weaponName">HK416</span> <b id="ammo">30/120</b></div>
+    <div>LIGHT <b id="lightState">ON</b></div>
+    <div>POWER <b id="powerState">OFFLINE</b></div>
+    <div>SECURE <b id="secure">0/3</b></div>
+  </footer>
+
+  <div id="startPanel">
+    <div class="panel">
+      <div class="eyebrow">LICENSED 3D MODEL UPDATE</div>
+      <h1>SPECTER: BLACKSITE</h1>
+      <p>Real Sketchfab glTF models now replace the procedural AR-15, M9, and VOLK soldier visuals, with optimized browser textures and automatic fallbacks if an asset cannot load.</p>
+      <button id="startButton">ENTER BLACKSITE</button>
+      <div class="controls">WASD move · Shift sprint · Mouse look · Hold click fire · Right click aim · E interact · F flashlight · R reload · 1 rifle · 2 pistol</div>
+    </div>
+  </div>
+
+  <div id="mobileControls">
+    <div id="movePad" class="pad"><div class="stick"></div></div>
+    <div id="lookPad" class="pad"><div class="stick"></div></div>
+    <button data-action="aim">AIM</button>
+    <button data-action="fire" class="fire">FIRE</button>
+    <button data-action="use">USE</button>
+    <button data-action="reload">R</button>
+    <button data-action="flashlight">F</button>
+    <button data-action="swap">1/2</button>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module" src="./game.js?v=2.4"></script>
+  <script>
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>

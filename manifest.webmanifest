@@ -1,0 +1,9 @@
+{
+  "name": "SPECTER: Blacksite v2.4 Licensed Models",
+  "short_name": "SPECTER v2.4",
+  "start_url": "./",
+  "display": "fullscreen",
+  "background_color": "#020504",
+  "theme_color": "#07100c",
+  "orientation": "landscape"
+}

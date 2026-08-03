@@ -1,0 +1,11 @@
+Model Information:
+* title:	Beretta M9 GameReady
+* source:	https://sketchfab.com/3d-models/beretta-m9-gameready-a094ee27db654bc48950f8172d4059d6
+* author:	Plaxa (https://sketchfab.com/plaxa3)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Beretta M9 GameReady" (https://sketchfab.com/3d-models/beretta-m9-gameready-a094ee27db654bc48950f8172d4059d6) by Plaxa (https://sketchfab.com/plaxa3) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
