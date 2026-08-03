@@ -1,0 +1,8 @@
+{
+  "name": "SPECTER: Blacksite",
+  "short_name": "SPECTER",
+  "start_url": "./",
+  "display": "fullscreen",
+  "background_color": "#020504",
+  "theme_color": "#06100c"
+}

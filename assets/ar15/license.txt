@@ -1,0 +1,11 @@
+Model Information:
+* title:	AR15 Rifle
+* source:	https://sketchfab.com/3d-models/ar15-rifle-8a1a6552bd4b4466ad6f0bb488b0bcb3
+* author:	Lokeig (https://sketchfab.com/lokeig)
+
+Model License:
+* license type:	CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
+* requirements:	Author must be credited. No commercial use.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "AR15 Rifle" (https://sketchfab.com/3d-models/ar15-rifle-8a1a6552bd4b4466ad6f0bb488b0bcb3) by Lokeig (https://sketchfab.com/lokeig) licensed under CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
