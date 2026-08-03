@@ -30,14 +30,14 @@ export class AssetManager {
         obj.frustumCulled = false;
         const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
         materials.filter(Boolean).forEach(mat => {
-          if ('envMapIntensity' in mat) mat.envMapIntensity = 0.65;
+          if ('envMapIntensity' in mat) mat.envMapIntensity = 0.55;
           mat.needsUpdate = true;
         });
       });
       this.models.set(name, { scene, animations: gltf.animations || [] });
-      const meshes = [];
-      scene.traverse(o => { if (o.isMesh) meshes.push(o); });
-      this.status(name, 'LOADED', `${meshes.length} meshes`);
+      let meshCount = 0;
+      scene.traverse(o => { if (o.isMesh) meshCount++; });
+      this.status(name, 'LOADED', `${meshCount} meshes`);
       return this.models.get(name);
     } catch (error) {
       this.status(name, 'FAILED', error?.message || String(error));
@@ -58,9 +58,11 @@ export class AssetManager {
     const largest = Math.max(size.x, size.y, size.z) || 1;
     object.scale.multiplyScalar(maxDimension / largest);
     object.updateMatrixWorld(true);
+
     const scaled = new THREE.Box3().setFromObject(object);
     const center = scaled.getCenter(new THREE.Vector3());
     object.position.sub(center);
+
     if (floorAlign) {
       object.updateMatrixWorld(true);
       const aligned = new THREE.Box3().setFromObject(object);

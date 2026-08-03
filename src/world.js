@@ -29,13 +29,19 @@ export function buildWorld(scene) {
   for (let z=5; z>-31; z-=6) {
     box('beam',0,3.8,z,18,.18,.28,metal,false);
     const light = new THREE.PointLight(0xc8ffe6,0,12,2);
-    light.position.set(0,3.5,z); scene.add(light); lights.push(light);
+    light.position.set(0,3.5,z);
+    light.castShadow = false;
+    scene.add(light);
+    lights.push(light);
   }
 
   const switchGroup = new THREE.Group();
-  switchGroup.position.set(-7.9,1.45,5.4);switchGroup.rotation.y=Math.PI/2;
-  const plate = new THREE.Mesh(new THREE.BoxGeometry(.12,.9,.55),metal);switchGroup.add(plate);
-  const lever = new THREE.Mesh(new THREE.BoxGeometry(.12,.44,.12),metal);lever.position.set(-.1,.08,0);switchGroup.add(lever);
+  switchGroup.position.set(-7.9,1.45,5.4);
+  switchGroup.rotation.y=Math.PI/2;
+  const plate = new THREE.Mesh(new THREE.BoxGeometry(.12,.9,.55),metal);
+  const lever = new THREE.Mesh(new THREE.BoxGeometry(.12,.44,.12),metal);
+  lever.position.set(-.1,.08,0);
+  switchGroup.add(plate,lever);
   scene.add(switchGroup);
 
   return { collision, lights, switchGroup, lever };

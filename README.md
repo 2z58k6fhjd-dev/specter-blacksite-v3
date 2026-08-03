@@ -1,10 +1,10 @@
-# SPECTER: Blacksite v3.0 Foundation
+# SPECTER: Blacksite v3.0.1 — Full Refresh
 
-This package is a clean modular rebuild of the browser prototype.
+This is a complete replacement for the browser game's code and support files.
 
-## Important
+## Model assets
 
-The large licensed Sketchfab models are **not duplicated inside this ZIP**. Copy your existing folders into this package:
+The Sketchfab models are not duplicated in this ZIP because they are large and have their own licenses. Keep or copy your existing model folders into:
 
 ```text
 assets/ar15/
@@ -12,30 +12,42 @@ assets/m9/
 assets/soldier/
 ```
 
-Each folder must keep its `scene.gltf`, `scene.bin`, textures, and license file together.
+Each folder must include its original `scene.gltf`, `scene.bin`, `textures/`, and license file.
 
-## Upload
+## Recommended installation
 
-For the safest test, create a new GitHub repository named:
+1. Back up the current repository.
+2. Delete or overwrite all old code files in the repository root.
+3. Upload everything from this ZIP.
+4. Restore the three model folders listed above.
+5. In GitHub Pages, publish from `main` and `/(root)`.
+6. Open the game using a cache-busting URL such as:
 
 ```text
-specter-blacksite-v3-clean
+https://2z58k6fhjd-dev.github.io/specter-blacksite-v3/?v=301
 ```
 
-Upload everything from this package to the repository root, then copy the three existing model folders into `assets/`.
+The build label must show:
 
-Enable GitHub Pages from `main` and `/(root)`.
+```text
+BUILD 3.0.1-FULL-REFRESH
+```
 
-## Features in this foundation
+## Included systems
 
-- Modular ES modules
-- Imported AR-15, M9, and soldier loading
-- On-screen asset diagnostics
+- Clean modular source structure
 - Correct world-relative WASD movement
-- Rifle SEMI/AUTO selector on **B**
-- Separate hip, ADS, and sprint poses
-- Soldier foot alignment from model bounding box
-- Working power switch, flashlight, enemies, shooting, and weapon switching
-- GTX 1050-friendly render scale
+- Imported AR-15, M9, and soldier models
+- Visible asset-loading diagnostics
+- Hip, ADS, and sprint weapon poses
+- Rifle SEMI/AUTO selection on B
+- Weapon switching on 1 and 2
+- Reloading
+- Muzzle flash and bullet impacts
+- Basic enemy movement and damage
+- Power switch and facility lighting
+- Flashlight
+- Service-worker cache refresh
+- GTX 1050-friendly render settings
 
-This is a clean foundation, not yet the final content-complete game. The next iterations can add animation mixers, refined weapon transforms, audio, improved AI, reload animations, muzzle effects, and expanded levels without returning to one enormous `game.js`.
+This is the new clean baseline for continued development.

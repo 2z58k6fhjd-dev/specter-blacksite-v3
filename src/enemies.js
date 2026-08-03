@@ -16,6 +16,7 @@ export class EnemySystem {
     const root = new THREE.Group();
     root.position.set(x,0,z);
     root.userData = { health: heavy ? 170 : 100, dead:false, phase:Math.random()*6 };
+
     const model = this.assets.clone('soldier', true);
     if (model) {
       this.assets.normalize(model, heavy ? 2.12 : 1.98, true);
@@ -28,20 +29,28 @@ export class EnemySystem {
         new THREE.CapsuleGeometry(.34,1.2,6,10),
         new THREE.MeshStandardMaterial({color:0x161b19})
       );
-      fallback.position.y=1.05;fallback.userData.enemy=root;root.add(fallback);
+      fallback.position.y=1.05;
+      fallback.userData.enemy=root;
+      root.add(fallback);
     }
-    this.scene.add(root);this.enemies.push(root);return root;
+
+    this.scene.add(root);
+    this.enemies.push(root);
+    return root;
   }
 
   update(dt,t,player) {
     for (const e of this.enemies) {
       if (e.userData.dead) continue;
-      const toPlayer = player.position.clone().sub(e.position);toPlayer.y=0;
-      if (toPlayer.length() < 13) {
+      const toPlayer = player.position.clone().sub(e.position);
+      toPlayer.y=0;
+      const distance = toPlayer.length();
+
+      if (distance < 14) {
         e.rotation.y = Math.atan2(toPlayer.x,toPlayer.z)+Math.PI;
-        if (toPlayer.length()>4) e.position.addScaledVector(toPlayer.normalize(),dt*.45);
+        if (distance > 4.2) e.position.addScaledVector(toPlayer.normalize(),dt*.43);
       }
-      e.position.y = Math.sin(t*2+e.userData.phase)*.012;
+      e.position.y = Math.sin(t*2+e.userData.phase)*.010;
     }
   }
 }
