@@ -1,47 +1,53 @@
-# SPECTER: Blacksite v4 — Clean Slate
+# SPECTER: Blacksite — Enemy & Environment Pass
 
-This ZIP is complete and contains:
+Build: `4.2.0-ENEMY-ENVIRONMENT`
 
-- All game code
-- AR-15 model and textures
-- Tan M9 model and textures
-- Russian soldier model and textures
-- Licenses from the model packages
-- Working movement and mouse look
-- Flashlight and facility power switch
-- True scoped ADS overlay and zoom
-- Rifle SEMI/AUTO toggle on B
-- Muzzle flash
-- Synthesized gunshot audio
-- Bullet impacts
-- Ground-aligned soldiers
-- Fresh service-worker cache
+This complete GitHub Pages package includes:
 
-## Upload
+- Damped first-person movement, sprinting, ADS, bob, and weapon sway
+- Geometry-aligned muzzle flashes for the HK416 and tan M9
+- Procedural HK416 and M9 recoil with smooth recovery
+- Tan M9 slide cycling, empty-magazine lock, and reload release
+- Distinct rifle and pistol casing ejection with bounce, spin, cleanup, and a 40-casing performance cap
+- Procedurally animated enemy aiming, walking, hit reactions, recoil, and falling
+- Lightweight enemy rifles with visible muzzle flashes, casing ejection, line-of-sight checks, and return fire
+- Heavy-enemy armor plates and higher durability
+- Original seamless concrete, diamond-plate floor, and utility-panel textures optimized for the browser
+- More realistic facility doors, signs, vents, pipes, structural supports, trim, fixtures, and balanced lighting
+- Loading percentage and diagnostics for every model package plus the environment textures
+- Flashlight, facility power switch, firing, reload, and fire modes
+- Original AR-15, M9, and soldier model packages, textures, and license files
 
-1. Keep a backup of the old repository until this build is confirmed.
-2. Delete the existing repository contents except `.git`.
-3. Upload every file and folder from this ZIP to the repository root.
-4. Commit the changes.
-5. Confirm GitHub Pages uses `main` and `/(root)`.
-6. Open the game with `?v=400`, for example:
+## GitHub Pages replacement
 
-https://2z58k6fhjd-dev.github.io/specter-blacksite-v3/?v=400
-
-The build label should say:
-
-BUILD 4.0.0-CLEAN-SLATE
+1. Keep a backup of the current repository.
+2. Extract every release part into the same empty folder, allowing folders to merge.
+3. Upload the reconstructed folder contents to the repository root.
+4. Confirm GitHub Pages publishes from `main` and `/(root)`.
+5. Open the game with `?v=420` and confirm the upper-left label reads
+   `BUILD 4.2.0-ENEMY-ENVIRONMENT`.
 
 ## Controls
 
 - WASD: Move
 - Mouse: Look
 - Left click: Fire
-- Right click: Scope/ADS
+- Hold right click: ADS/scope
 - Shift: Sprint
 - E: Use power switch
 - F: Flashlight
 - R: Reload
 - B: Toggle rifle SEMI/AUTO
-- 1: Rifle
+- 1: HK416
 - 2: Tan M9
+
+## Asset licensing
+
+The original source license files remain alongside each unmodified model:
+
+- `assets/ar15/license.txt`
+- `assets/m9/license.txt`
+- `assets/soldier/license.txt`
+
+The three environment textures were created specifically for this project with
+OpenAI image generation and are documented in `assets/environment/README.txt`.
