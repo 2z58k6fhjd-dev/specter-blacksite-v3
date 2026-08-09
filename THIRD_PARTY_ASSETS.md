@@ -1,0 +1,217 @@
+# SPECTER: Blacksite - Asset Provenance and License Manifest
+
+This manifest distinguishes assets that ship with build 5.0 from links retained
+only for research. A source appearing in a research table does not mean its
+files were downloaded, integrated, or redistributed.
+
+## Bundled third-party 3D assets
+
+| Asset | Author and source | License | Runtime use | Local record |
+| --- | --- | --- | --- | --- |
+| Russian Soldier | mamont nikita, [Sketchfab source](https://sketchfab.com/3d-models/russian-soldier-5b80f94ef8ab422590185950f5ea029a) | [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/) | Shared rigged source for enemies and the derived SPECTER operator | `assets/soldier/license.txt` |
+| AR15 Rifle | Lokeig, [Sketchfab source](https://sketchfab.com/3d-models/ar15-rifle-8a1a6552bd4b4466ad6f0bb488b0bcb3) | [CC BY-NC 4.0](http://creativecommons.org/licenses/by-nc/4.0/) | HK416 viewmodel; full source clones used by the C5-K, R7.62, and MCR-300 player variants; and full textured enemy weapon clones | `assets/ar15/license.txt` |
+| Beretta M9 GameReady | Plaxa, [Sketchfab source](https://sketchfab.com/3d-models/beretta-m9-gameready-a094ee27db654bc48950f8172d4059d6) | [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/) | Tan M9A4 viewmodel with animated slide behavior | `assets/m9/license.txt` |
+
+### Required AR-15 notice
+
+This work is based on [AR15 Rifle](https://sketchfab.com/3d-models/ar15-rifle-8a1a6552bd4b4466ad6f0bb488b0bcb3)
+by [Lokeig](https://sketchfab.com/lokeig), licensed under
+[CC BY-NC 4.0](http://creativecommons.org/licenses/by-nc/4.0/).
+
+The license requires attribution and does not permit commercial use. The build
+uses this art directly for the HK416 and as a full cloned textured source for
+the C5-K, R7.62, and MCR-300 player variants and every enemy weapon. All player
+and enemy implementations using that source therefore inherit the non-commercial
+restriction. Do not market or sublicense this package as commercially cleared
+weapon art without replacing that source or obtaining separate permission from
+its author.
+
+### Other required model notices
+
+The M9 viewmodel is based on
+[Beretta M9 GameReady](https://sketchfab.com/3d-models/beretta-m9-gameready-a094ee27db654bc48950f8172d4059d6)
+by [Plaxa](https://sketchfab.com/plaxa3), licensed under
+[CC BY 4.0](http://creativecommons.org/licenses/by/4.0/).
+
+The character rig is based on
+[Russian Soldier](https://sketchfab.com/3d-models/russian-soldier-5b80f94ef8ab422590185950f5ea029a)
+by [mamont nikita](https://sketchfab.com/mamontnikita62), licensed under
+[CC BY 4.0](http://creativecommons.org/licenses/by/4.0/).
+
+Keep the three local license files with every redistribution.
+
+## Project-authored and derived runtime assets
+
+| Asset | Creation and dependency record | Runtime status |
+| --- | --- | --- |
+| SPECTER operator | Runtime adaptation of the bundled Russian Soldier rig, with project-authored black-multicam treatment and equipment geometry; same CC BY 4.0 attribution obligation | Bundled through `src/specter-operator.js`; notes in `assets/player/README.txt` |
+| Enemy role variants | Eight runtime enemies in five roles, all derived from the same bundled Russian Soldier rig with project-authored material, equipment, health, and AI variation; each carries a full textured clone of the bundled AR-15 with role-specific scale, tint, and suppressor treatment | Bundled; not represented as five separate source character models; soldier CC BY 4.0 and AR-15 CC BY-NC 4.0 obligations both apply |
+| C5-K Compact Carbine | Full high-resolution clone of the bundled AR-15 source with project-authored compact proportions, material tint, handling data, and anchors | Bundled and player-selectable; CC BY-NC 4.0 applies through the source clone |
+| R7.62 Designated Rifle | Full high-resolution clone of the bundled AR-15 source with project-authored marksman proportions, material tint, handling data, and anchors | Bundled and player-selectable; CC BY-NC 4.0 applies through the source clone |
+| MCR-300 Suppressed | Full high-resolution clone of the bundled AR-15 source with a project-authored suppressor, material tint, handling data, and anchors | Bundled and player-selectable; CC BY-NC 4.0 applies through the source clone |
+| Facility, exterior compound, vehicles, props, extraction zone, and distant city | Project-authored procedural Three.js geometry | Bundled |
+| Procedural audio director | Project-authored Web Audio synthesis and mixing; no downloaded sound files | Bundled through `src/audio-overhaul.js` |
+
+The C5-K, R7.62, and MCR-300 runtime weapons are complete high-resolution AR-15
+source clones with project-authored variant treatments. They are not claimed to
+be separately licensed AAA scans, photogrammetry, or manufacturer-supplied CAD.
+Enemy rifles likewise preserve the full bundled AR-15 mesh and textures instead
+of using procedural weapon silhouettes. Role-specific proportions, tints, and
+suppressors do not remove the source license obligation; CC BY-NC 4.0 applies to
+every enemy weapon clone.
+
+### Bundled optional prototype - not runtime-integrated
+
+`src/modern-arsenal.js` is preserved as an optional project-authored prototype
+module. It contains compact-carbine, marksman-rifle, and procedural T12 tactical
+autoloader factories plus metadata and animation anchors. Build 5.0 does not
+import, execute, or precache this module, and no runtime weapon slot selects it.
+In particular, the procedural T12 failed the final close-up art-quality gate and
+has no selectable slot; slot 5 is the full-source MCR-300 suppressed rifle
+instead. The T12 code has no third-party model dependency, but its presence in
+the repository must not be described as a shipped player weapon.
+
+## Project-generated environment materials
+
+### PBR v2 runtime set
+
+`assets/environment/pbr-v2/` contains eight material families and 23 runtime
+2048 x 2048 WebP maps:
+
+- concrete: albedo, OpenGL normal, packed ORM
+- painted metal: albedo, OpenGL normal, packed ORM
+- diamond plate: albedo, OpenGL normal, packed ORM
+- asphalt: albedo, OpenGL normal, packed ORM
+- utility panel: albedo, OpenGL normal, packed ORM
+- vehicle paint: albedo and packed ORM
+- vehicle rubber: albedo, OpenGL normal, packed ORM
+- grass and soil: albedo, OpenGL normal, packed ORM
+
+Concrete, painted-metal, asphalt, and grass/soil source PNGs were generated for
+SPECTER on 2026-08-08 with OpenAI's built-in image-generation mode. Exact prompts,
+source hashes, retained inputs, and QA notes are in
+`assets/environment/pbr-v2/README.md` and `manifest.json`. Diamond plate, utility
+panels, vehicle paint, vehicle rubber, all derived normal/ORM maps, and QA
+previews were produced by the project-authored deterministic builder in that
+folder.
+
+No downloaded stock texture or third-party photograph is used in PBR v2. These
+materials are project-generated; they are not asserted to be CC0 or public
+domain. Their distribution and use remain subject to the project owner's rights
+and applicable OpenAI terms. Keep the folder README and manifest with source
+redistributions.
+
+### Preserved legacy generated materials
+
+The original `concrete-wall.webp`, `metal-floor.webp`, `utility-panels.webp`, and
+`grass-field-v1.webp` files were generated specifically for this project with
+OpenAI image generation on 2026-08-08. They are preserved with their records in
+`assets/environment/README.txt`, but build 5.0 uses the PBR v2 set for its main
+runtime materials.
+
+## Research-only 3D candidates - not bundled
+
+The following links are retained for future evaluation. None of these candidate
+archives or models should be described as included in build 5.0 unless a future
+commit adds the source files, local license receipt, author, conversion notes,
+optimization record, and runtime integration.
+
+### Characters and animations
+
+| Candidate | License shown at research time | Possible future use |
+| --- | --- | --- |
+| [FREE Military Soldier Rigged](https://sketchfab.com/3d-models/free-military-soldier-rigged-e9c56308a67d4a3db62e914fafa4d198) by BAMEN | CC BY 4.0 | Modern common-enemy source after full quality, rig, license, and LOD review |
+| [Universal Animation Library](https://quaternius.com/packs/universalanimationlibrary.html) | CC0 | Locomotion and armed-combat animation reference |
+| [Modern Soldier](https://sketchfab.com/3d-models/modern-soldier-358b4fb07f0146cb9b9063342db5897a) by Blue Spirit | CC BY 4.0 | Elite/commander candidate after texture and LOD review |
+| [Ultimate Modular Men Pack](https://quaternius.com/packs/ultimatemodularcharacters.html) | CC0 | Civilian/security variety only if visual quality meets the final art bar |
+
+### Weapons
+
+All weapon research must remain grounded in currently fielded military or
+law-enforcement equipment. Real-manufacturer lookalikes also remain subject to a
+separate trademark and design review even when a mesh uses a permissive license.
+
+| Candidate | License shown at research time | Possible future use |
+| --- | --- | --- |
+| [Modern Semi-Automatic Pistol](https://sketchfab.com/3d-models/modern-semi-automatic-pistol-game-ready-pbr-254d63584b73484092bfac7fe9cedca6) by Hafeez Ahmed | CC BY 4.0 | Generic sidearm with separate slide, trigger, and magazine |
+| [M150 Sniper Rifle](https://sketchfab.com/3d-models/m150-sniper-rifle-game-ready-0f71498f1f694b30be77c9779361c6cc) by Bl4ckGh0st | CC BY 4.0 | Precision-rifle candidate with separately rigged action parts |
+| [Ultimate Guns Pack](https://quaternius.com/packs/ultimategun.html) | CC0 | Background/pickup reference only if its final visual quality is acceptable |
+
+### Environment, furniture, vehicles, and cover
+
+The following candidates were identified under the
+[Poly Haven license](https://polyhaven.com/license), which states CC0. They are
+links only and are not bundled:
+
+- [Utility Box 01](https://polyhaven.com/a/utility_box_01) - breaker-box candidate.
+- [Steel Frame Shelves 01](https://polyhaven.com/a/steel_frame_shelves_01) - armory and maintenance storage.
+- [Wooden Table 03](https://polyhaven.com/a/WoodenTable_03) - workbench and office dressing.
+- [Plastic Crate 02](https://polyhaven.com/a/plastic_crate_02) and
+  [Barrel 02](https://polyhaven.com/a/Barrel_02) - repeated clutter.
+- [Modular Chainlink Fence](https://polyhaven.com/a/modular_chainlink_fence) - exterior boundary candidate after LOD and texture optimization.
+- [Concrete Road Barrier 02](https://polyhaven.com/a/concrete_road_barrier_02) and
+  [Wooden Crate 01](https://polyhaven.com/a/wooden_crate_01) - checkpoint cover.
+- [Fern 02](https://polyhaven.com/a/fern_02),
+  [Shrub 03](https://polyhaven.com/a/shrub_03),
+  [Rock 07](https://polyhaven.com/a/rock_07), and
+  [Tree Stump 01](https://polyhaven.com/a/tree_stump_01) - exterior set dressing candidates.
+- [Kloofendal 48d Partly Cloudy](https://polyhaven.com/a/kloofendal_48d_partly_cloudy) - environment-lighting candidate, to be reduced to a browser-safe runtime map.
+
+The [Ural 4320](https://sketchfab.com/3d-models/ural-4320-f953c51a5dbc4a15949f4dcc0905c4e8)
+by Brout was identified as a CC BY 4.0 present-day military truck candidate. It
+is not bundled; build 5.0 uses project-authored procedural vehicle geometry.
+
+## Research-only audio candidates - not bundled
+
+Build 5.0 currently uses project-authored procedural Web Audio. The following
+CC0 pages remain research links only; no source master or runtime derivative
+from them ships in this repository:
+
+- [AR15 rifle shot](https://freesound.org/people/michorvath/sounds/427596/) and
+  [9 mm pistol shot](https://freesound.org/people/michorvath/sounds/427592/) - close transients.
+- [M4 rifle reload](https://freesound.org/people/Freeman213SG/sounds/326042/) and
+  [handgun reload](https://opengameart.org/content/handgun-reload-sound-effect) - possible animation-synced mechanisms.
+- [Equipment clicks III](https://opengameart.org/content/equipment-clicks-iii) - selector, magazine, and action sweeteners.
+- [Bouncing shell casings](https://freesound.org/people/GryffDavid/sounds/318964/) - rifle/pistol casing variations.
+- [Kenney Impact Sounds](https://www.kenney.nl/assets/impact-sounds) - concrete, metal, wood, and prop impacts.
+- [Circuit Breaker 1 SP](https://freesound.org/s/130152/) - breaker sync layer.
+- [Concrete footsteps](https://freesound.org/people/SecureSubset/sounds/813622/) and
+  [grass footsteps](https://freesound.org/people/Fission9/sounds/521587/) - surface-aware movement.
+- [Outdoor forest ambience](https://freesound.org/people/Nox_Sound/sounds/570492/) and
+  [low-frequency HVAC room tone](https://freesound.org/s/215293/) - zone ambience.
+- [Kenney Voiceover Pack](https://www.kenney.nl/assets/voiceover-pack) - tactical callout candidate.
+
+Before any researched audio enters a public build, archive the original source,
+author, exact license receipt, source URL, editing notes, and runtime derivative.
+
+## Explicitly rejected and excluded content
+
+Build 5.0 does not integrate sci-fi, futuristic, fantasy, anachronistic,
+cartoon, stylized, or visibly low-detail research assets. Small or stylized
+soldier and vehicle downloads used during research were rejected as final art
+and are not part of the runtime repository. Rejected experimental vegetation
+billboards also remain outside the runtime because they did not meet transparency
+and quality requirements.
+
+The project-authored procedural T12 prototype is likewise excluded from the live
+loadout after failing the close-up weapon-art gate. Its optional source module is
+preserved for future iteration, but it is not imported, executed, precached,
+runtime-selected, or presented as runtime content.
+
+Only grounded present-day military, law-enforcement, industrial, and civilian
+design language is eligible for future integration. A candidate's permissive
+license does not override the visual-quality, technical, or provenance review.
+
+## Browser performance and integration rules
+
+- Convert accepted runtime models to GLB and evaluate Meshopt/Draco only after
+  measuring decode cost.
+- Prefer KTX2/Basis textures; reserve 4K maps for first-person hero weapons or a
+  single elite character.
+- Target 1K-2K textures and at least three LODs for repeated props and common
+  enemies.
+- Use instancing for vegetation, fences, barriers, and skyline buildings.
+- Never ship million-triangle grass or multi-million-triangle trees directly;
+  bake cards and LODs first, then visually verify them.
+- Keep source and license archives outside the runtime preload list while still
+  preserving them in the distributable project record.

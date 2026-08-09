@@ -1,18 +1,21 @@
 html,body,#game{margin:0;width:100%;height:100%;overflow:hidden;background:#020504;color:#b9ffda;font-family:Consolas,monospace}
 canvas{display:block}button{font:inherit}
 #startPanel{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(circle,#123329aa,#020504 65%);z-index:20}
+#victoryPanel{position:fixed;inset:0;display:none;place-items:center;background:radial-gradient(circle at center,#0f392cb8,#010302f2 70%);z-index:30}
+#victoryPanel.active{display:grid}.victoryCard{text-align:center;border-width:2px;box-shadow:0 0 90px #45ff9c55}.victoryCard h1{color:#e4fff3;letter-spacing:.08em}.victoryCard p{margin:18px 0 26px;color:#9dd8bd}
 .panel{width:min(620px,82vw);border:1px solid #72ffc0;padding:28px;background:#03100ddd;box-shadow:0 0 50px #2bff9940}.panel h1{font-size:clamp(30px,6vw,58px);margin:.2em 0}.panel button{width:100%;padding:16px;background:#80ffd0;border:0;font-weight:800;cursor:pointer}.panel small{display:block;margin-top:15px;line-height:1.5}
 .panel button:disabled{cursor:wait;opacity:.48}.loadTrack{height:8px;border:1px solid #3ca778;background:#010403;margin:18px 0 8px;overflow:hidden}#loadBar{height:100%;width:0;background:#72ffc0;box-shadow:0 0 15px #44ffad;transition:width .18s ease}#loadPercent{text-align:right;margin-bottom:12px;font-size:12px}
+#modelPreviewLink{display:block;margin-top:10px;padding:10px;border:1px solid #3ca778;color:#9dffd3;text-align:center;text-decoration:none;font-size:12px;letter-spacing:.08em}#modelPreviewLink:hover{background:#10251c;border-color:#72ffc0}
 .eyebrow,#build,#objective,#hud,#prompt,#message,#diagnostics{position:fixed;z-index:5;text-shadow:0 0 8px #44ffad}
-#build{top:14px;left:18px;font-size:12px}#objective{top:14px;left:50%;transform:translateX(-50%);text-align:center}
+#build{top:10px;left:14px;font-size:12px;padding:5px 8px;background:#010604a6;border-left:2px solid #72ffc0}#objective{top:10px;left:50%;transform:translateX(-50%);text-align:center;padding:6px 12px;background:#010604bd;border-bottom:1px solid #3ca778;white-space:nowrap}
 #crosshair{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-size:40px;color:#88ffd1;z-index:4;pointer-events:none}
 #prompt{bottom:72px;left:50%;transform:translateX(-50%)}#message{top:18%;left:50%;transform:translateX(-50%);font-size:20px;opacity:0;transition:opacity .15s}
 #hud{left:0;right:0;bottom:0;display:flex;justify-content:space-around;padding:14px 8px;background:#010403cc;font-size:13px}
 #diagnostics{right:12px;top:12px;padding:10px;border:1px solid #3ca778;background:#020906d9;font-size:11px;line-height:1.6;max-width:330px}
 .ok{color:#63ff9b}.bad{color:#ff6b6b}.loading{color:#ffd76b}
-#scopeOverlay{position:fixed;inset:0;z-index:3;display:none;place-items:center;pointer-events:none;background:radial-gradient(circle at center,transparent 0 22%,rgba(0,0,0,.96) 34%)}
+#scopeOverlay{position:fixed;inset:0;z-index:3;display:none;place-items:center;pointer-events:none;background:radial-gradient(circle min(29vw,29vh) at center,transparent 0 89%,rgba(25,31,28,.98) 90% 96%,rgba(0,0,0,.985) 100%)}
 #scopeOverlay.active{display:grid}
-.scopeGlass{width:min(58vw,58vh);height:min(58vw,58vh);border:11px solid #080b0a;border-radius:50%;box-shadow:0 0 0 3px #242a27,inset 0 0 40px #000;position:relative;background:radial-gradient(circle,#8ec9b20d 45%,#020504aa)}
+.scopeGlass{width:min(58vw,58vh);height:min(58vw,58vh);border-radius:50%;position:relative}
 .scopeHorizontal,.scopeVertical{position:absolute;background:#b8ffdcaa;left:50%;top:50%;transform:translate(-50%,-50%)}
-.scopeHorizontal{width:70%;height:1px}.scopeVertical{height:70%;width:1px}.scopeDot{position:absolute;width:5px;height:5px;border-radius:50%;background:#ff2b2b;left:50%;top:50%;transform:translate(-50%,-50%);box-shadow:0 0 8px #f00}
+.scopeHorizontal{width:64%;height:1px}.scopeVertical{height:64%;width:1px}.scopeDot{position:absolute;width:4px;height:4px;border-radius:50%;background:#ff3a32;left:50%;top:50%;transform:translate(-50%,-50%);box-shadow:0 0 7px #f00}
 @media(max-width:700px){#diagnostics{display:none}#hud{font-size:10px;gap:5px;flex-wrap:wrap}.panel{padding:20px}}
