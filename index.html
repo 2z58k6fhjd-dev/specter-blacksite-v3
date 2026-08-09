@@ -4,29 +4,28 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#06100c">
-  <title>SPECTER: Blacksite v4</title>
+  <title>SPECTER: Blacksite — Enemy &amp; Environment Pass</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
   <div id="game"></div>
-
   <section id="startPanel">
     <div class="panel">
-      <div class="eyebrow">CLEAN SLATE BUILD</div>
+      <div class="eyebrow">FOUNDATION · COMBAT + ENVIRONMENT</div>
       <h1>SPECTER: BLACKSITE</h1>
-      <p>Complete browser FPS package with all models included.</p>
-      <button id="startButton">ENTER BLACKSITE</button>
-      <small>WASD move · Mouse look · Left click fire · Right click scope · Shift sprint · E use · F flashlight · R reload · B fire mode · 1/2 weapons</small>
+      <p id="loadMessage">Preparing blacksite assets…</p>
+      <div class="loadTrack"><div id="loadBar"></div></div>
+      <div id="loadPercent">0%</div>
+      <button id="startButton" disabled>LOADING ASSETS</button>
+      <small>WASD move · Mouse look · Left click fire · Hold right click ADS · Shift sprint · E use · F flashlight · R reload · B fire mode · 1/2 weapons</small>
     </div>
   </section>
-
-  <div id="build">BUILD 4.0.0-CLEAN-SLATE</div>
+  <div id="build">BUILD 4.2.0-ENEMY-ENVIRONMENT</div>
   <div id="objective">OBJECTIVE: RESTORE FACILITY POWER</div>
   <div id="prompt"></div>
   <div id="message"></div>
   <div id="crosshair">+</div>
-
   <div id="scopeOverlay">
     <div class="scopeGlass">
       <div class="scopeHorizontal"></div>
@@ -34,7 +33,6 @@
       <div class="scopeDot"></div>
     </div>
   </div>
-
   <footer id="hud">
     <span>HP <b id="hp">100</b></span>
     <span>ARM <b id="armor">50</b></span>
@@ -43,14 +41,13 @@
     <span>POWER <b id="powerState">OFFLINE</b></span>
     <span>SECURE <b id="secure">0/3</b></span>
   </footer>
-
   <aside id="diagnostics">
     <strong>ASSET STATUS</strong>
     <div id="diag-ar15">AR15: WAITING</div>
     <div id="diag-m9">M9: WAITING</div>
     <div id="diag-soldier">SOLDIER: WAITING</div>
+    <div id="diag-environment">ENVIRONMENT: WAITING</div>
   </aside>
-
   <script type="importmap">
   {
     "imports": {
@@ -59,6 +56,6 @@
     }
   }
   </script>
-  <script type="module" src="./src/main.js?v=4.0.0"></script>
+  <script type="module" src="./src/main.js?v=4.2.0-release"></script>
 </body>
 </html>
