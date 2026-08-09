@@ -1,10 +1,219 @@
-const CACHE='specter-blacksite-enemy-environment-v420';
-const CORE=[
-  './','./index.html','./styles.css','./src/main.js','./manifest.webmanifest',
-  './assets/environment/concrete-wall.webp',
-  './assets/environment/metal-floor.webp',
-  './assets/environment/utility-panels.webp'
+const CACHE_PREFIX = 'specter-blacksite-overhaul-foundation-';
+const CACHE_VERSION = 'v501-release';
+const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
+
+// The application shell is deliberately small and atomic: if any of these files
+// are unavailable, installing a worker that cannot boot the game would be worse
+// than leaving the current worker active.
+const REQUIRED_SHELL_URLS = [
+  './',
+  './index.html',
+  './player-model.html',
+  './styles.css',
+  './manifest.webmanifest',
+  './service-worker.js',
+
+  './src/main.js',
+  './src/specter-operator.js',
+  './src/player-preview.js',
+  './src/world-overhaul.js',
+  './src/enemy-ai.js',
+  './src/audio-overhaul.js',
+  './src/graphics-pipeline.js',
+  './src/tactical-animation.js'
 ];
-self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())));
-self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
-self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(fetch(e.request).then(r=>{const copy=r.clone();caches.open(CACHE).then(c=>c.put(e.request,copy));return r}).catch(()=>caches.match(e.request)))});
+
+// Large local assets and release documentation are filled in independently after
+// the shell. A transient response or storage-quota failure is reported but does
+// not reject installation. Third-party Three.js modules remain runtime-cached
+// after a successful network response.
+const OPTIONAL_PRECACHE_URLS = [
+  './assets/ar15/scene.gltf',
+  './assets/ar15/scene.bin',
+  './assets/ar15/license.txt',
+  './assets/ar15/textures/Base_and_Stock_0_baseColor.png',
+  './assets/ar15/textures/Base_and_Stock_0_metallicRoughness.png',
+  './assets/ar15/textures/Base_and_Stock_0_normal.png',
+  './assets/ar15/textures/Base_and_Stock_baseColor.png',
+  './assets/ar15/textures/Base_and_Stock_metallicRoughness.png',
+  './assets/ar15/textures/Base_and_Stock_normal.png',
+  './assets/ar15/textures/ground_baseColor.png',
+  './assets/ar15/textures/Handguard_baseColor.png',
+  './assets/ar15/textures/Handguard_metallicRoughness.png',
+  './assets/ar15/textures/Handguard_normal.png',
+  './assets/ar15/textures/Scope_Handle_Mag_baseColor.png',
+  './assets/ar15/textures/Scope_Handle_Mag_metallicRoughness.png',
+  './assets/ar15/textures/Scope_Handle_Mag_normal.png',
+
+  './assets/m9/scene.gltf',
+  './assets/m9/scene.bin',
+  './assets/m9/license.txt',
+  './assets/m9/textures/Mat_Black_baseColor.png',
+  './assets/m9/textures/Mat_Black_metallicRoughness.png',
+  './assets/m9/textures/Mat_Gold_baseColor.png',
+  './assets/m9/textures/Mat_Gold_metallicRoughness.png',
+  './assets/m9/textures/Mat_Gold_normal.png',
+
+  './assets/soldier/scene.gltf',
+  './assets/soldier/scene.bin',
+  './assets/soldier/license.txt',
+  './assets/soldier/textures/5_Russian_Soldier.Material73_0_0_0_baseColor.png',
+  './assets/soldier/textures/5_Russian_Soldier.Material74_0_0_0_baseColor.png',
+  './assets/soldier/textures/5_Russian_Soldier.Material75_0_0_0_baseColor.png',
+  './assets/soldier/textures/5_Russian_Soldier.Material76_0_0_0_baseColor.png',
+  './assets/soldier/textures/5_Russian_Soldier.Material77_0_0_0_baseColor.png',
+  './assets/soldier/textures/5_Russian_Soldier.Material78_0_0_0_baseColor.png',
+  './assets/soldier/textures/5_Russian_Soldier.Material79_0_0_0_baseColor.png',
+  './assets/soldier/textures/5_Russian_Soldier.Material81_0_0_0_baseColor.png',
+  './assets/soldier/textures/5_Russian_Soldier.Material82_0_0_0_baseColor.png',
+  './assets/soldier/textures/5_Russian_Soldier.Material83_0_0_0_baseColor.png',
+  './assets/soldier/textures/5_Russian_Soldier.Russian_Head.eye.eye_0_0_0_baseColor.png',
+  './assets/soldier/textures/5_Russian_Soldier.Russian_Head.gogglel.gogglel_0_0_0_baseColor.png',
+  './assets/soldier/textures/5_Russian_Soldier.Russian_Head.Goggles_5.Material36_1_0_0_baseColor.png',
+  './assets/soldier/textures/5_Russian_Soldier.Russian_Head.mask.mask_0_0_0_baseColor.png',
+  './assets/soldier/textures/5_Russian_Soldier.Russian_Head.RSA05h.RSA05h_0_0_0_baseColor.png',
+
+  './assets/environment/pbr-v2/concrete-albedo.webp',
+  './assets/environment/pbr-v2/concrete-normal.webp',
+  './assets/environment/pbr-v2/concrete-orm.webp',
+  './assets/environment/pbr-v2/painted-metal-albedo.webp',
+  './assets/environment/pbr-v2/painted-metal-normal.webp',
+  './assets/environment/pbr-v2/painted-metal-orm.webp',
+  './assets/environment/pbr-v2/diamond-plate-albedo.webp',
+  './assets/environment/pbr-v2/diamond-plate-normal.webp',
+  './assets/environment/pbr-v2/diamond-plate-orm.webp',
+  './assets/environment/pbr-v2/asphalt-albedo.webp',
+  './assets/environment/pbr-v2/asphalt-normal.webp',
+  './assets/environment/pbr-v2/asphalt-orm.webp',
+  './assets/environment/pbr-v2/utility-panel-albedo.webp',
+  './assets/environment/pbr-v2/utility-panel-normal.webp',
+  './assets/environment/pbr-v2/utility-panel-orm.webp',
+  './assets/environment/pbr-v2/vehicle-paint-albedo.webp',
+  './assets/environment/pbr-v2/vehicle-paint-orm.webp',
+  './assets/environment/pbr-v2/vehicle-rubber-albedo.webp',
+  './assets/environment/pbr-v2/vehicle-rubber-normal.webp',
+  './assets/environment/pbr-v2/vehicle-rubber-orm.webp',
+  './assets/environment/pbr-v2/grass-soil-albedo.webp',
+  './assets/environment/pbr-v2/grass-soil-normal.webp',
+  './assets/environment/pbr-v2/grass-soil-orm.webp',
+
+  './README.md',
+  './THIRD_PARTY_ASSETS.md',
+  './assets/player/README.txt',
+  './assets/environment/README.txt',
+  './assets/environment/pbr-v2/README.md',
+  './assets/environment/pbr-v2/manifest.json'
+];
+
+const OPTIONAL_PRECACHE_CONCURRENCY = 3;
+
+function isHttpGet(request) {
+  if (request.method !== 'GET') return false;
+  const protocol = new URL(request.url).protocol;
+  return protocol === 'http:' || protocol === 'https:';
+}
+
+function isSameOrigin(request) {
+  return new URL(request.url).origin === self.location.origin;
+}
+
+function canonicalLocalKey(request) {
+  const url = new URL(request.url);
+  url.search = '';
+  url.hash = '';
+  return url.href;
+}
+
+function canStore(request, response) {
+  if (request.headers.has('range')) return false;
+  return response && (response.ok || response.type === 'opaque');
+}
+
+async function storeFreshResponse(request, response) {
+  if (!canStore(request, response)) return;
+  const cache = await caches.open(CACHE_NAME);
+  const key = isSameOrigin(request) ? canonicalLocalKey(request) : request;
+  await cache.put(key, response);
+}
+
+async function offlineMatch(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const local = isSameOrigin(request);
+  const cached = await cache.match(request, local ? { ignoreSearch: true } : undefined);
+  if (cached) return cached;
+
+  // Unknown same-origin navigations still receive the application shell. Known
+  // pages, including query-suffixed player-model.html, match above first.
+  if (local && request.mode === 'navigate') {
+    return cache.match('./index.html', { ignoreSearch: true });
+  }
+  return undefined;
+}
+
+async function networkFirst(request, event) {
+  try {
+    const response = await fetch(request);
+    if (canStore(request, response)) {
+      event.waitUntil(storeFreshResponse(request, response.clone()).catch(() => undefined));
+    }
+    return response;
+  } catch (networkError) {
+    const cached = await offlineMatch(request);
+    if (cached) return cached;
+    throw networkError;
+  }
+}
+
+async function precacheOptionalPayload(cache) {
+  let nextIndex = 0;
+  const failures = [];
+  const workerCount = Math.min(OPTIONAL_PRECACHE_CONCURRENCY, OPTIONAL_PRECACHE_URLS.length);
+
+  async function cacheNext() {
+    while (nextIndex < OPTIONAL_PRECACHE_URLS.length) {
+      const url = OPTIONAL_PRECACHE_URLS[nextIndex++];
+      try {
+        await cache.add(url);
+      } catch (error) {
+        failures.push({ url, error });
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: workerCount }, () => cacheNext()));
+  if (failures.length) {
+    console.warn(
+      `[service-worker] Optional precache completed with ${failures.length} failure(s).`,
+      failures.map(({ url, error }) => ({ url, detail: error?.message || String(error) }))
+    );
+  }
+  return failures;
+}
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(async (cache) => {
+        await cache.addAll(REQUIRED_SHELL_URLS);
+        await precacheOptionalPayload(cache);
+      })
+      .then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(
+        keys
+          .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
+      ))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  if (!isHttpGet(event.request)) return;
+  event.respondWith(networkFirst(event.request, event));
+});

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SPECTER Operator — 3D Player Model</title>
+  <style>
+    :root{color-scheme:dark;font-family:Consolas,monospace;background:#050806;color:#c8f3df}
+    *{box-sizing:border-box}html,body,#viewport{width:100%;height:100%;margin:0;overflow:hidden}
+    canvas{display:block}
+    .panel{position:fixed;z-index:2;background:rgba(5,12,9,.9);border:1px solid #5ee3aa;box-shadow:0 0 24px rgba(66,255,173,.13);backdrop-filter:blur(8px)}
+    #title{left:18px;top:18px;padding:15px 18px;max-width:420px}
+    h1{font-size:22px;letter-spacing:.12em;margin:0 0 5px}p{font-size:12px;color:#91ad9f;margin:0;line-height:1.45}
+    #status{margin-top:9px;color:#72ffbd}
+    #controls{right:18px;top:18px;padding:12px;display:grid;grid-template-columns:repeat(2,minmax(100px,1fr));gap:8px}
+    button{font:inherit;color:#bdf6dc;background:#101a15;border:1px solid #476958;padding:9px 11px;cursor:pointer}
+    button:hover{background:#193025;border-color:#73e7b2}
+    #details{left:18px;bottom:18px;padding:13px 16px;font-size:12px;line-height:1.6;color:#93b5a5}
+    strong{color:#d8ffed}.accent{color:#71ffba}
+  </style>
+</head>
+<body>
+  <div id="viewport"></div>
+  <section id="title" class="panel">
+    <h1>SPECTER OPERATOR</h1>
+    <p>Animation-ready U.S. special operations player character · 185 cm · black multicam · assault/recon kit</p>
+    <div id="status">LOADING RIG…</div>
+  </section>
+  <nav id="controls" class="panel" aria-label="Model controls">
+    <button data-view="front">FRONT</button><button data-view="back">BACK</button>
+    <button data-view="left">LEFT SIDE</button><button data-view="right">RIGHT SIDE</button>
+    <button id="turntable">PAUSE ROTATION</button><button id="wireframe">WIREFRAME</button>
+    <button id="export" style="grid-column:1/-1">DOWNLOAD GLB MODEL</button>
+  </nav>
+  <aside id="details" class="panel">
+    <strong>LOADOUT</strong><br>
+    Helmet + headset · plate carrier · backpack + radio<br>
+    Belt kit + holster · gloves · knee pads · boots<br>
+    <span class="accent">127-joint skeleton with articulated fingers</span>
+  </aside>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.166.1/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="./src/player-preview.js?v=5.0.0-release"></script>
+</body>
+</html>
