@@ -1,0 +1,202 @@
+{
+  "schemaVersion": 1,
+  "assetSet": "SPECTER Environment PBR v2",
+  "assetVersion": "2.0.0",
+  "createdOn": "2026-08-08",
+  "runtimeBytes": 23331214,
+  "runtimeMiB": 22.25,
+  "runtimeFormat": {
+    "dimensions": [2048, 2048],
+    "container": "WebP",
+    "channels": "RGB",
+    "albedoColorSpace": "sRGB",
+    "dataColorSpace": "linear",
+    "normalConvention": "tangent-space OpenGL +Y (green-up)",
+    "ormPacking": {
+      "r": "ambientOcclusion",
+      "g": "perceptualRoughness",
+      "b": "metalness"
+    }
+  },
+  "licenseAndProvenance": {
+    "status": "Project-generated; no third-party source imagery or stock texture license obligation.",
+    "publicDomainAssertion": false,
+    "terms": "Distribution and use are subject to the project owner's rights and applicable OpenAI terms. Retain README.md and this manifest with redistributed source assets.",
+    "imageGenerationMode": "OpenAI built-in image generation",
+    "proceduralBuilder": "build_pbr.py",
+    "proceduralSeed": "0x53504543"
+  },
+  "materials": [
+    {
+      "id": "concrete",
+      "category": "facility concrete",
+      "derivation": "Image-generated neutral albedo; conservative luminance-inferred normal, roughness, and AO.",
+      "recommendedTargets": ["worldMat", "facility walls", "slabs", "concrete", "darkConcrete"],
+      "nominalTileSpanMeters": [2.5, 3.5],
+      "normalScaleStart": [0.55, 0.55],
+      "source": "sources/concrete-source-imagegen.png",
+      "maps": [
+        {"role": "albedo", "file": "concrete-albedo.webp", "bytes": 580448, "sha256": "6bd22995c79d853f9376c979ea751e47bbe326b270f4b43d1479acfbe609414e"},
+        {"role": "normal", "file": "concrete-normal.webp", "bytes": 3307402, "sha256": "70bbdd9c3eb38590b8d2b3016e0c0a0d17465aa8cf7f67ac77ba517612480ef3"},
+        {"role": "orm", "file": "concrete-orm.webp", "bytes": 1161112, "sha256": "007c6d665911e1427b9b391dc76ded318a3986d3eb3e09ca7f04f321b4bf9c3e"}
+      ]
+    },
+    {
+      "id": "painted-metal",
+      "category": "powder-coated facility metal",
+      "derivation": "Image-generated neutral albedo; conservative luminance-inferred micro-normal, roughness, and AO. Packed metalness remains dielectric.",
+      "recommendedTargets": ["doors", "lockers", "crates", "barriers", "painted structural steel"],
+      "nominalTileSpanMeters": [1.5, 2.0],
+      "normalScaleStart": [0.25, 0.25],
+      "source": "sources/painted-metal-source-imagegen.png",
+      "maps": [
+        {"role": "albedo", "file": "painted-metal-albedo.webp", "bytes": 425752, "sha256": "f770440d22cb12c5aa222885993be0617bfbd204a9dbb7a594e024a709f1c85f"},
+        {"role": "normal", "file": "painted-metal-normal.webp", "bytes": 1713846, "sha256": "fe4f7b1cd44c6c61c37805c3280cb380c2b13b7f5f638fd38b9c840b8ace1c38"},
+        {"role": "orm", "file": "painted-metal-orm.webp", "bytes": 873912, "sha256": "a77bff193ffa3d2f651a0ee7e63999a4f16a1af86725703b384c524a357700c8"}
+      ]
+    },
+    {
+      "id": "diamond-plate",
+      "category": "industrial steel floor",
+      "derivation": "Deterministic analytic tread height, micro-grain, height-derived normal, and coherent exposed-steel ORM.",
+      "recommendedTargets": ["floorMat", "industrial walkways", "landings", "service-room floors"],
+      "nominalTileSpanMeters": [1.5, 2.0],
+      "normalScaleStart": [0.8, 0.8],
+      "source": "procedural",
+      "maps": [
+        {"role": "albedo", "file": "diamond-plate-albedo.webp", "bytes": 72770, "sha256": "3925d09b89f5e9668a4ee46543b352d98a41c4cdf1f2f8bac221143378605734"},
+        {"role": "normal", "file": "diamond-plate-normal.webp", "bytes": 615578, "sha256": "82c15243fcf00eba0ef0761019b9f60b2089898cba1971d1bf96553332025d63"},
+        {"role": "orm", "file": "diamond-plate-orm.webp", "bytes": 168072, "sha256": "4616094eeb1a1128401a420606672e01f5d64a870d791e796f7b0189d6f484d9"}
+      ]
+    },
+    {
+      "id": "asphalt",
+      "category": "weathered compound paving",
+      "derivation": "Image-generated neutral albedo; conservative aggregate-scale luminance-inferred normal, roughness, and AO.",
+      "recommendedTargets": ["asphalt", "service-road", "exit-apron", "checkpoint-pad", "motor-pool-pad", "storage-yard-pad", "extraction-pad"],
+      "nominalTileSpanMeters": [3.0, 4.0],
+      "normalScaleStart": [0.65, 0.65],
+      "source": "sources/asphalt-source-imagegen.png",
+      "maps": [
+        {"role": "albedo", "file": "asphalt-albedo.webp", "bytes": 1093412, "sha256": "c94a42cba2bdfa1f6380a0cad7740c5de9ed6bdf0a29c638c86b772b3146f067"},
+        {"role": "normal", "file": "asphalt-normal.webp", "bytes": 3789210, "sha256": "c1d6630c7348c7fed95ead86557bc3786ea3ec8c372cc1866a26d01a9a5fdb2e"},
+        {"role": "orm", "file": "asphalt-orm.webp", "bytes": 1549158, "sha256": "8283652818d11f0810f97e99beb7b053c956131afc0ff435a56b394ae2a985d3"}
+      ]
+    },
+    {
+      "id": "utility-panel",
+      "category": "weathered utility enclosure",
+      "derivation": "Deterministic analytic panel seams and rivets with coherent height-derived normal; painted dielectric panel faces and metallic exposed fasteners.",
+      "recommendedTargets": ["metalMat", "breaker cabinets", "equipment housings", "wall service panels"],
+      "nominalTileSpanMeters": [2.0, 2.0],
+      "normalScaleStart": [0.8, 0.8],
+      "source": "procedural",
+      "maps": [
+        {"role": "albedo", "file": "utility-panel-albedo.webp", "bytes": 44816, "sha256": "b6fea0705e90ff519a765a4d06342fd3fed760c55fa6ccc411653ad41beb3405"},
+        {"role": "normal", "file": "utility-panel-normal.webp", "bytes": 194568, "sha256": "69924d4f718001e9d109dfef73a18ebba1caa6b937eca1c79297fb47e5568bd4"},
+        {"role": "orm", "file": "utility-panel-orm.webp", "bytes": 71704, "sha256": "9032119a2faf3749420bd6a97991ca37e0f61276eb000373d2af037ec8642141"}
+      ]
+    },
+    {
+      "id": "vehicle-paint",
+      "category": "tactical vehicle paint",
+      "derivation": "Deterministic dielectric albedo and subtle roughness variation. Normal intentionally omitted; clearcoat belongs in material parameters.",
+      "recommendedTargets": ["paint", "armored-response-vehicle body"],
+      "nominalTileSpanMeters": [1.0, 1.5],
+      "normalScaleStart": null,
+      "source": "procedural",
+      "maps": [
+        {"role": "albedo", "file": "vehicle-paint-albedo.webp", "bytes": 15806, "sha256": "550fdb81f66565d365263262678fcce22c61631d6c0d0d5023f46d538e1f66df"},
+        {"role": "orm", "file": "vehicle-paint-orm.webp", "bytes": 106186, "sha256": "73771891d8cb9a4a1ddbcbf3a20b8ec8fa1195c1955522f37b7649eac5490a90"}
+      ]
+    },
+    {
+      "id": "vehicle-rubber",
+      "category": "fine-grain tire and trim rubber",
+      "derivation": "Deterministic periodic macro/micro grain with height-derived normal and dielectric ORM.",
+      "recommendedTargets": ["rubber", "vehicle wheels", "rubber trim"],
+      "nominalTileSpanMeters": [0.5, 0.8],
+      "normalScaleStart": [0.35, 0.35],
+      "source": "procedural",
+      "maps": [
+        {"role": "albedo", "file": "vehicle-rubber-albedo.webp", "bytes": 35870, "sha256": "de32eb0aa8c135fee2b3b5066857b6ab0e2d79c91ef3a8ab4117c6ba2f920a07"},
+        {"role": "normal", "file": "vehicle-rubber-normal.webp", "bytes": 939198, "sha256": "070d8d11a360c081a23198a5f57b7d6b83d8df82e5e26d2ac32c5a8f539ec599"},
+        {"role": "orm", "file": "vehicle-rubber-orm.webp", "bytes": 261698, "sha256": "8f85757f00008c8379bd0ce99a6b78dc8046031c5885a6b5da5eb1db313a61d9"}
+      ]
+    },
+    {
+      "id": "grass-soil",
+      "category": "patchy exterior vegetation and compact soil",
+      "derivation": "Image-generated top-down albedo; conservative luminance-inferred normal, roughness, and AO.",
+      "recommendedTargets": ["grassMaterial", "exterior-grass-terrain", "perimeter ground"],
+      "nominalTileSpanMeters": [3.0, 4.0],
+      "normalScaleStart": [0.55, 0.55],
+      "source": "sources/grass-soil-source-imagegen.png",
+      "maps": [
+        {"role": "albedo", "file": "grass-soil-albedo.webp", "bytes": 1212558, "sha256": "d73f6db8923c877d388db95f6226bdb2907968a2f491d0b046c91762fa7a9c05"},
+        {"role": "normal", "file": "grass-soil-normal.webp", "bytes": 3694960, "sha256": "9078f4eda965e679833f069ffd742ec592bf31798af69b4d92f20f0b08c741e2"},
+        {"role": "orm", "file": "grass-soil-orm.webp", "bytes": 1403178, "sha256": "1204679d32c9b3531d712b83fa63387641753c2a187e030375c9a4ab7b6f8cb9"}
+      ]
+    }
+  ],
+  "generatedSources": [
+    {
+      "material": "concrete",
+      "file": "sources/concrete-source-imagegen.png",
+      "dimensions": [1254, 1254],
+      "bytes": 3007276,
+      "sha256": "6a7743faeab2addf557725d0010c9edc15e4109ee05de10de3a26bbe31541820",
+      "generator": "OpenAI built-in image generation",
+      "outputId": "exec-4b253a6f-6bad-4e41-960b-f624671b1ecd",
+      "generatedOn": "2026-08-08",
+      "prompt": "Use case: stylized-concept\nAsset type: seamless tileable game texture source for a modern military facility\nPrimary request: high-detail poured architectural concrete wall surface, cool medium gray, subtle aggregate, pinholes, faint formwork variation, restrained age and a few hairline cracks\nStyle/medium: photorealistic orthographic material scan, production texture source\nComposition/framing: perfectly straight-on flat surface filling the entire square frame, uniform texel density\nLighting/mood: neutral diffuse overcast illumination, no directional light, no shadows, no highlights, no vignette\nMaterials/textures: realistic fine aggregate and pores, restrained tonal range, no large unique stains\nConstraints: genuinely seamless on all four edges; no perspective; no seams or panel borders; no text; no logos; no objects; no watermark; no baked cast shadows or specular glare; no obvious focal feature"
+    },
+    {
+      "material": "painted-metal",
+      "file": "sources/painted-metal-source-imagegen.png",
+      "dimensions": [1254, 1254],
+      "bytes": 2647252,
+      "sha256": "6fcad7f863fd601d01ce8ae02bf99e4c1db3264dd6228eb60588730e070087d9",
+      "generator": "OpenAI built-in image generation",
+      "outputId": "exec-38d8eb69-41bb-478c-af5b-69d715ef01fd",
+      "generatedOn": "2026-08-08",
+      "prompt": "Use case: stylized-concept\nAsset type: seamless tileable game texture source for a grounded modern blacksite\nPrimary request: charcoal olive-gray powder-coated steel surface with subtle orange-peel coating, fine scuffs, tiny edge-free chips exposing dark steel, faint handling wear\nStyle/medium: photorealistic orthographic material scan, production texture source\nComposition/framing: perfectly straight-on flat continuous coated metal surface filling the square frame\nLighting/mood: flat neutral diffuse studio illumination, no directional highlights, no shadows, no vignette\nMaterials/textures: realistic matte powder coat, restrained wear, very subtle grime speckling, no dramatic rust\nConstraints: genuinely seamless all edges; no panel lines, bolts, text, logos or objects; no perspective; no watermark; no baked reflection or glare; no large unique scratch or focal mark"
+    },
+    {
+      "material": "asphalt",
+      "file": "sources/asphalt-source-imagegen.png",
+      "dimensions": [1254, 1254],
+      "bytes": 3854400,
+      "sha256": "ca861e2165e1da9a83e2bc4019aa648137d32d916e6063fadb4af529bd59729d",
+      "generator": "OpenAI built-in image generation",
+      "outputId": "exec-de801770-09fc-4c2c-bd66-ca973b756e2b",
+      "generatedOn": "2026-08-08",
+      "prompt": "Use case: stylized-concept\nAsset type: seamless tileable game texture source for an exterior military compound\nPrimary request: realistic weathered black asphalt paving, dense fine aggregate, subtle repaired granules and pale dust in pores, lightly worn but maintained\nStyle/medium: photorealistic orthographic material scan, production texture source\nComposition/framing: top-down perfectly flat surface filling the square frame, uniform scale\nLighting/mood: neutral diffuse overcast illumination with no cast shadows, no sun direction, no vignette\nMaterials/textures: varied small aggregate, micro cracks only, restrained charcoal color, no road markings\nConstraints: genuinely seamless on every edge; no leaves, trash, tire tracks, paint, puddles, curbs, text or logos; no perspective; no watermark; no baked highlights; no large unique crack or focal feature"
+    },
+    {
+      "material": "grass-soil",
+      "file": "sources/grass-soil-source-imagegen.png",
+      "dimensions": [1254, 1254],
+      "bytes": 3819923,
+      "sha256": "cf4c5edc54491af3065af82b4adacc59557524c33e9609413cc926e26ee9332d",
+      "generator": "OpenAI built-in image generation",
+      "outputId": "exec-a9173adb-8079-4dd4-86b5-002282a2aa7f",
+      "generatedOn": "2026-08-08",
+      "prompt": "Use case: stylized-concept\nAsset type: seamless tileable game texture source for exterior ground in a modern tactical shooter\nPrimary request: patchy temperate field ground blending short realistic grass, compact dark brown soil, sparse clover-like weeds and a little dry straw, maintained perimeter terrain rather than lush lawn\nStyle/medium: photorealistic orthographic material scan, production texture source\nComposition/framing: true top-down nadir view, flat ground filling the square frame, consistent small-scale vegetation\nLighting/mood: neutral diffuse overcast illumination, no directional shadows, no vignette\nMaterials/textures: believable grass blades and exposed compact soil with natural fine variation\nConstraints: genuinely seamless all edges; no flowers, rocks, branches, footprints, tire tracks, litter, text, logos, watermark or large focal clump; no perspective; no baked cast shadows or bright sun highlights"
+    }
+  ],
+  "qa": {
+    "visualInspectionDate": "2026-08-08",
+    "result": "pass",
+    "checks": [
+      "All runtime maps decode as RGB WebP at 2048 x 2048.",
+      "The contact sheet shows coherent albedo, normal, and packed ORM families.",
+      "The 3 x 3 albedo tiling preview shows no hard edge-boundary seam.",
+      "No source includes text, logos, watermark, perspective, or baked directional lighting."
+    ],
+    "artifacts": [
+      {"file": "pbr-v2-contact-sheet.webp", "bytes": 303112, "sha256": "b5c4d90296ae8c4984de8861d7905a6b1d57f8a0d7563340e868516917dba65b"},
+      {"file": "pbr-v2-tiling-preview.webp", "bytes": 219236, "sha256": "37c663973ff67b3d0369bfbd874a1986372cf9b9e4091b75f4b65ffca404e59b"}
+    ]
+  }
+}
