@@ -1,6 +1,6 @@
 # SPECTER: Blacksite
 
-Build: `5.1.1-TACTICAL-VOICES`
+Build: `5.1.2-ROLE-KITS`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build 5.0
 overhauls the controller, viewmodels, combat presentation, enemy behavior,
@@ -29,6 +29,10 @@ keeping the project suitable for static hosting on GitHub Pages.
   clones of the bundled AR-15 with role-specific scaling, tints, and suppressors;
   the roles are not falsely represented as five separately downloaded character
   models.
+- Role kits add distinct modern silhouettes: ballistic helmets or field caps,
+  plate carriers, mag and utility pouches, battle belts, radios, assault packs,
+  headsets, marksman gear, command kit, and breacher armor/visor/knee pads.
+  These are project-authored additions to the bundled licensed soldier rig.
 - Tactical enemy AI with patrol, sight and hearing perception, investigation,
   search, chase, engagement, cover, flanking, suppression, retreat, squad alerts,
   and per-role difficulty tuning.

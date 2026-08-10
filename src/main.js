@@ -536,8 +536,28 @@ const enemyGunMat=new THREE.MeshStandardMaterial({color:0x303733,roughness:.42,m
 const enemyGunAccent=new THREE.MeshStandardMaterial({color:0x4c574f,roughness:.62,metalness:.38});
 const enemyGunLens=new THREE.MeshStandardMaterial({color:0x315148,emissive:0x15342b,emissiveIntensity:.55,roughness:.18,metalness:.5});
 const enemyArmorMat=new THREE.MeshStandardMaterial({color:0x28352d,roughness:.78,metalness:.22});
+const enemyKitGeometry=Object.freeze({
+  plate:new THREE.BoxGeometry(.5,.38,.16),
+  collar:new THREE.BoxGeometry(.56,.11,.19),
+  pouch:new THREE.BoxGeometry(.13,.19,.085),
+  smallPouch:new THREE.BoxGeometry(.09,.13,.07),
+  belt:new THREE.BoxGeometry(.58,.12,.2),
+  backpack:new THREE.BoxGeometry(.4,.5,.2),
+  radio:new THREE.BoxGeometry(.09,.25,.065),
+  antenna:new THREE.CylinderGeometry(.008,.008,.58,8),
+  shoulder:new THREE.SphereGeometry(.14,12,8),
+  knee:new THREE.SphereGeometry(.125,12,8),
+  helmet:new THREE.SphereGeometry(.19,16,10,0,Math.PI*2,0,Math.PI*.55),
+  helmetRail:new THREE.BoxGeometry(.025,.055,.15),
+  visor:new THREE.BoxGeometry(.24,.075,.035),
+  cap:new THREE.CylinderGeometry(.15,.18,.075,16),
+  capBrim:new THREE.BoxGeometry(.24,.025,.12),
+  headset:new THREE.CylinderGeometry(.052,.052,.028,10),
+  holster:new THREE.BoxGeometry(.13,.28,.075),
+  patch:new THREE.BoxGeometry(.13,.04,.11)
+});
 function enemyWeaponPart(group,geometry,material,position,rotation=null){
-  const mesh=new THREE.Mesh(geometry,material);mesh.position.copy(position);if(rotation)mesh.rotation.copy(rotation);mesh.castShadow=true;group.add(mesh);return mesh;
+  const mesh=new THREE.Mesh(geometry,material);mesh.position.copy(position);if(rotation)mesh.rotation.copy(rotation);mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);return mesh;
 }
 function createEnemyRifle(heavy=false,role='rifleman'){
   const marksman=role==='marksman',compact=role==='breacher',suppressed=marksman||role==='scout';
@@ -575,23 +595,59 @@ function createEnemyRifle(heavy=false,role='rifleman'){
 function addEnemyRoleEquipment(root,role){
   const palette={rifleman:0x2b3930,scout:0x24322d,breacher:0x30352f,marksman:0x374036,commander:0x3f4235};
   const armor=enemyArmorMat.clone();armor.color.setHex(palette[role]||palette.rifleman);
-  if(role==='breacher'||role==='commander'){
-    enemyWeaponPart(root,new THREE.BoxGeometry(.52,.46,.18),armor,new THREE.Vector3(0,1.33,-.08));
-    enemyWeaponPart(root,new THREE.BoxGeometry(.58,.12,.2),armor,new THREE.Vector3(0,1.58,-.04));
-    for(const x of [-.18,0,.18])enemyWeaponPart(root,new THREE.BoxGeometry(.14,.23,.09),armor,new THREE.Vector3(x,1.28,-.2));
+  const webbing=new THREE.MeshStandardMaterial({color:0x1c2620,roughness:.8,metalness:.08});
+  const cloth=new THREE.MeshStandardMaterial({color:0x566455,roughness:.92,metalness:0});
+  const polymer=new THREE.MeshStandardMaterial({color:0x171d1a,roughness:.55,metalness:.24});
+  const marker=new THREE.MeshBasicMaterial({color:role==='commander'?0xc7b76f:role==='breacher'?0x8e4f35:0x5d8e72,toneMapped:false});
+  const part=(name,geometry,material,x,y,z,rotation=null,scale=null)=>{
+    const mesh=enemyWeaponPart(root,geometry,material,new THREE.Vector3(x,y,z),rotation);mesh.name=`enemy-${role}-${name}`;if(scale)mesh.scale.copy(scale);return mesh;
+  };
+
+  // Every hostile gets a present-day plate carrier, belt, and an identifiable helmet or cap.
+  part('plate-carrier',enemyKitGeometry.plate,armor,0,1.34,-.105);
+  part('carrier-collar',enemyKitGeometry.collar,webbing,0,1.57,-.05);
+  part('battle-belt',enemyKitGeometry.belt,webbing,0,1.02,.01);
+  part('left-shoulder-patch',enemyKitGeometry.patch,marker,-.35,1.55,-.015,new THREE.Euler(0,0,.25));
+  part('right-shoulder-webbing',enemyKitGeometry.patch,webbing,.35,1.55,-.015,new THREE.Euler(0,0,-.25));
+  for(const x of [-.17,0,.17])part(`front-pouch-${x}`,enemyKitGeometry.pouch,role==='commander'?webbing:armor,x,1.29,-.21);
+
+  if(role==='scout'||role==='marksman'){
+    part('field-cap',enemyKitGeometry.cap,cloth,0,1.79,.01);
+    part('field-cap-brim',enemyKitGeometry.capBrim,cloth,0,1.79,-.145);
+  }else{
+    part('ballistic-helmet',enemyKitGeometry.helmet,polymer,0,1.82,.01);
+    part('left-helmet-rail',enemyKitGeometry.helmetRail,webbing,-.17,1.81,.01,new THREE.Euler(0,0,.06));
+    part('right-helmet-rail',enemyKitGeometry.helmetRail,webbing,.17,1.81,.01,new THREE.Euler(0,0,-.06));
+  }
+
+  if(role==='rifleman'){
+    part('utility-pouch-left',enemyKitGeometry.smallPouch,webbing,-.29,1.16,-.16);
+    part('utility-pouch-right',enemyKitGeometry.smallPouch,webbing,.29,1.16,-.16);
+    part('thigh-holster',enemyKitGeometry.holster,polymer,.31,.76,.02,new THREE.Euler(0,0,-.08));
   }
   if(role==='scout'||role==='commander'){
-    enemyWeaponPart(root,new THREE.BoxGeometry(.38,.5,.2),armor,new THREE.Vector3(0,1.31,.19));
-    enemyWeaponPart(root,new THREE.BoxGeometry(.1,.32,.08),enemyGunMat,new THREE.Vector3(.24,1.43,.2));
-    enemyWeaponPart(root,new THREE.CylinderGeometry(.008,.008,.68,8),enemyGunMat,new THREE.Vector3(.24,1.89,.2),new THREE.Euler(0,0,.08));
+    part('assault-pack',enemyKitGeometry.backpack,armor,0,1.31,.19);
+    part('radio',enemyKitGeometry.radio,polymer,.24,1.43,.2);
+    part('radio-antenna',enemyKitGeometry.antenna,polymer,.24,1.85,.2,new THREE.Euler(0,0,.08));
+    part('headset-left',enemyKitGeometry.headset,polymer,-.18,1.73,.01,new THREE.Euler(0,Math.PI/2,0));
+  }
+  if(role==='breacher'){
+    part('heavy-front-armor',enemyKitGeometry.plate,armor,0,1.35,-.215,new THREE.Euler(),new THREE.Vector3(1.1,1.22,1));
+    part('visor',enemyKitGeometry.visor,new THREE.MeshStandardMaterial({color:0x202d28,roughness:.22,metalness:.66}),0,1.8,-.17);
+    part('left-shoulder-pad',enemyKitGeometry.shoulder,armor,-.37,1.49,0,new THREE.Euler(0,0,.2),new THREE.Vector3(1.08,.64,1));
+    part('right-shoulder-pad',enemyKitGeometry.shoulder,armor,.37,1.49,0,new THREE.Euler(0,0,-.2),new THREE.Vector3(1.08,.64,1));
+    part('left-knee-pad',enemyKitGeometry.knee,polymer,-.18,.47,-.08,new THREE.Euler(Math.PI*.5,0,0),new THREE.Vector3(1,.58,.42));
+    part('right-knee-pad',enemyKitGeometry.knee,polymer,.18,.47,-.08,new THREE.Euler(Math.PI*.5,0,0),new THREE.Vector3(1,.58,.42));
   }
   if(role==='marksman'){
-    enemyWeaponPart(root,new THREE.BoxGeometry(.46,.25,.15),armor,new THREE.Vector3(0,1.42,.14));
+    part('marksman-pack',enemyKitGeometry.backpack,armor,0,1.31,.19,new THREE.Euler(),new THREE.Vector3(.9,.9,1));
+    part('rangefinder-pouch',enemyKitGeometry.smallPouch,polymer,.27,1.44,-.17);
     const shoulderCape=new THREE.Mesh(new THREE.PlaneGeometry(.82,.72,4,4),armor);shoulderCape.name='marksman-shoulder-cover';shoulderCape.position.set(0,1.45,.14);shoulderCape.rotation.x=-.18;shoulderCape.castShadow=true;root.add(shoulderCape);
   }
   if(role==='commander'){
-    const patch=new THREE.MeshBasicMaterial({color:0xc5b26f,toneMapped:false});
-    enemyWeaponPart(root,new THREE.BoxGeometry(.12,.035,.16),patch,new THREE.Vector3(.27,1.55,-.2));
+    part('command-patch',enemyKitGeometry.patch,marker,.27,1.55,-.2);
+    part('right-headset',enemyKitGeometry.headset,polymer,.18,1.73,.01,new THREE.Euler(0,Math.PI/2,0));
+    part('command-holster',enemyKitGeometry.holster,polymer,-.31,.76,.02,new THREE.Euler(0,0,.08));
   }
 }
 function updatePlayerArms(dt,t,reloadWave,equipDrop){
