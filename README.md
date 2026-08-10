@@ -1,6 +1,6 @@
 # SPECTER: Blacksite
 
-Build: `5.2.0-UTILITY-YARD`
+Build: `5.2.1-HOSTILE-DIAGNOSTICS`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build 5.0
 overhauls the controller, viewmodels, combat presentation, enemy behavior,
@@ -200,4 +200,4 @@ prompts, and build records.
 Research links in `THIRD_PARTY_ASSETS.md` are evaluation notes only. Their models,
 textures, and audio are not bundled merely because a source URL is listed. No
 sci-fi, futuristic, fantasy, cartoon, stylized, or visibly low-detail research
-asset was accepted into the build 5.2.0 runtime.
+asset was accepted into the build 5.2.1 runtime.
