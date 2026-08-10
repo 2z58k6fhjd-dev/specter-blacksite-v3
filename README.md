@@ -1,6 +1,6 @@
 # SPECTER: Blacksite
 
-Build: `5.1.4-SURFACE-FOLEY`
+Build: `5.1.5-CC0-POWER-BOX`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build 5.0
 overhauls the controller, viewmodels, combat presentation, enemy behavior,
@@ -37,8 +37,9 @@ keeping the project suitable for static hosting on GitHub Pages.
   search, chase, engagement, cover, flanking, suppression, retreat, squad alerts,
   and per-role difficulty tuning.
 - Expanded facility with furnished work areas, storage, server equipment,
-  three high-detail CC0 industrial shelf props with collision/shadowing,
-  animated breaker hardware, and a powered two-leaf exit.
+  three high-detail CC0 industrial shelf props with collision/shadowing, a
+  2K high-detail CC0 Power Box cabinet around the animated breaker hardware,
+  and a powered two-leaf exit.
 - Compact exterior compound with a checkpoint, motor pool, storage yard,
   communications area, service roads, barriers, grounded modern vehicles, and
   an extraction pad.
@@ -151,7 +152,7 @@ and that notice must stay with redistribution. Loading or decoding these layers
 is optional—if they are unavailable, the procedural weapon system remains the
 automatic fallback without blocking the mission.
 
-The high-resolution runtime payload is about 209 MiB, so the first launch
+The high-resolution runtime payload is about 216 MiB, so the first launch
 requires a stable connection and can take noticeably longer on mobile networks.
 The service worker installs the small application shell first, then caches the
 large model and texture payload on a best-effort basis; a failed optional cache

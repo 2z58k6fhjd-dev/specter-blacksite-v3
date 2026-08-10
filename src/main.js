@@ -32,7 +32,10 @@ const controls=new PointerLockControls(camera,renderer.domElement);
 // Embedded app browsers are commonly hosted in a frame where requesting pointer
 // lock produces a browser-level error before the fallback event can fire.
 const embeddedDocument=(()=>{try{return window.top!==window}catch{return true}})();
-const pointerLockSupported=!embeddedDocument&&typeof renderer.domElement.requestPointerLock==='function'&&'pointerLockElement' in document;
+const embeddedDesktopRuntime=/(?:chatgpt|codex|electron)/i.test(globalThis.navigator?.userAgent||'');
+const pointerLockPolicy=document.permissionsPolicy||document.featurePolicy;
+const pointerLockAllowedByPolicy=!pointerLockPolicy||typeof pointerLockPolicy.allowsFeature!=='function'||pointerLockPolicy.allowsFeature('pointer-lock');
+const pointerLockSupported=!embeddedDocument&&!embeddedDesktopRuntime&&pointerLockAllowedByPolicy&&typeof renderer.domElement.requestPointerLock==='function'&&'pointerLockElement' in document;
 let embeddedMouseLook=!pointerLockSupported;
 
 scene.add(new THREE.HemisphereLight(0x8ebda8,0x101512,.38));
@@ -138,14 +141,14 @@ async function loadAudioAssets(){
   if(reports||voices||footsteps)status('audio','LOADED',`${reports} reports + ${voices} CC0 voice lines + ${footsteps} footsteps${failures?` + ${failures} fallback`:''}`);
   else status('audio','LOADED','procedural fallback');
 }
-async function loadSetDressAsset(name,url){
+async function loadSetDressAsset(name,url,label='CC0 set-dressing prop'){
   status('props','LOADING');
   try{
     const gltf=await new Promise((resolve,reject)=>loader.load(url,resolve,undefined,reject));
     let meshes=0;
     gltf.scene.traverse(object=>{if(object.isMesh){meshes++;object.castShadow=true;object.receiveShadow=true;object.frustumCulled=true}});
     assetMap.set(name,gltf);assetProgress.props=1;updateLoading();
-    status('props','LOADED',`${meshes} mesh CC0 industrial shelf`);
+    status('props','LOADED',`${meshes} mesh ${label}`);
     return true;
   }catch(error){
     console.warn(`Optional set-dressing asset ${name} unavailable; procedural props remain active.`,error);
@@ -332,6 +335,22 @@ function installIndustrialShelving(){
     shelf.traverse(object=>{if(object.isMesh){object.castShadow=true;object.receiveShadow=true;object.frustumCulled=true}});
     shelfRoot.add(shelf);scene.add(shelfRoot);collision.push(shelfRoot);
     shelfRoot.updateWorldMatrix(true,true);staticColliderBounds.push(new THREE.Box3().setFromObject(shelfRoot).expandByScalar(.12));
+  }
+}
+function installPowerBox(){
+  const source=assetMap.get('powerBox')?.scene;if(!source)return;
+  const breaker=worldOverhaul.breaker;
+  const cabinetRoot=new THREE.Group();cabinetRoot.name='cc0-power-box-cabinet';
+  const cabinet=source.clone(true);normalize(cabinet,1.26,true);cabinet.name='power-box-01-2k';
+  // The source cabinet has a separate static door. Hide it so the existing
+  // mission-critical door, lamps, and lever keep their real-time animation.
+  cabinet.traverse(object=>{
+    if(object.isMesh){object.castShadow=true;object.receiveShadow=true;object.frustumCulled=true}
+    if(object.name==='power_box_01_door')object.visible=false;
+  });
+  cabinet.position.set(.015,-.64,0);cabinetRoot.add(cabinet);breaker.group.add(cabinetRoot);
+  for(const name of ['breaker-enclosure','breaker-inset','breaker-hinge']){
+    const authoredPart=breaker.group.getObjectByName(name);if(authoredPart)authoredPart.visible=false;
   }
 }
 const switchGroup=worldOverhaul.breaker.group;
@@ -1134,6 +1153,7 @@ document.addEventListener('pointerlockerror',()=>{
 const localQAMode=(location.hostname==='127.0.0.1'||location.hostname==='localhost')?new URLSearchParams(location.search).get('qa'):null;
 function applyLocalQA(){
   if(localQAMode==='exterior'){restorePower();camera.position.set(0,1.72,-52);previousAIPlayerPosition.copy(camera.position)}
+  if(localQAMode==='breaker'){camera.position.set(-5.98,1.72,5.4);camera.rotation.set(0,Math.PI/2,0);previousAIPlayerPosition.copy(camera.position)}
   if(localQAMode==='victory'){
     restorePower();for(const enemy of enemies){if(!enemy.userData.dead){enemy.userData.dead=true;enemy.userData.health=0;enemy.userData.ai?.setHealth(0);kills++}}
     camera.position.copy(extractionPoint);previousAIPlayerPosition.copy(camera.position);hud();
@@ -1145,7 +1165,8 @@ document.getElementById('restartButton').onclick=()=>location.reload();
 
 await Promise.all([
   loadAudioAssets(),
-  loadSetDressAsset('steelShelves','./assets/environment/polyhaven-steel-frame-shelves-01/steel_frame_shelves_01_2k.gltf'),
+  loadSetDressAsset('steelShelves','./assets/environment/polyhaven-steel-frame-shelves-01/steel_frame_shelves_01_2k.gltf','CC0 industrial shelf'),
+  loadSetDressAsset('powerBox','./assets/environment/polyhaven-power-box-01/power_box_01_2k.gltf','CC0 power box'),
   loadAsset('ar15','./assets/ar15/scene.gltf'),
   loadAsset('m9','./assets/m9/scene.gltf'),
   loadAsset('soldier','./assets/soldier/scene.gltf')
@@ -1153,7 +1174,7 @@ await Promise.all([
 if(requiredAssetFailure){
   startButton.disabled=true;startButton.textContent='ASSET CHECK FAILED';loadMessage.textContent='A required model or texture failed to load. Check the diagnostics above.';
 }else{
-  installRifle();installPistol();installRifleVariants();installPlayerModel();installPlayerArms();installIndustrialShelving();attachFlashlightToWeapon(currentWeapon);
+  installRifle();installPistol();installRifleVariants();installPlayerModel();installPlayerArms();installIndustrialShelving();installPowerBox();attachFlashlightToWeapon(currentWeapon);
   spawnEnemy(-2.5,-8,'rifleman');spawnEnemy(2.9,-18,'scout');spawnEnemy(-1.2,-27,'breacher');
   spawnEnemy(3.8,-54,'rifleman');spawnEnemy(-7.2,-68,'scout');spawnEnemy(8.5,-88,'breacher');spawnEnemy(-5.4,-108,'marksman');spawnEnemy(12,-122,'commander');
   status('soldier','LOADED','8 tactical hostiles · 5 role kits · full-detail rifles');hud();
