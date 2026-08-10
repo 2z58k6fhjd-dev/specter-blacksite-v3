@@ -617,7 +617,16 @@ const enemyCoverCandidates=[
   {position:{x:-2.4,y:0,z:-3.5},coverage:.82,priority:.25},{position:{x:3.2,y:0,z:-11},coverage:.82,priority:.2},{position:{x:-2.7,y:0,z:-22},coverage:.9,priority:.25},
   {position:{x:-7,y:0,z:-58},coverage:.92,priority:.45},{position:{x:6.2,y:0,z:-63},coverage:.92,priority:.4},{position:{x:-12,y:0,z:-79},coverage:.96,priority:.35},
   {position:{x:-4,y:0,z:-89},coverage:.92,priority:.4},{position:{x:5,y:0,z:-107},coverage:.92,priority:.4},{position:{x:-18,y:0,z:-99},coverage:.94,priority:.34},
-  {position:{x:13,y:0,z:-118},coverage:.88,priority:.3},{position:{x:21,y:0,z:-120},coverage:.92,priority:.3}
+  {position:{x:13,y:0,z:-118},coverage:.88,priority:.3},{position:{x:21,y:0,z:-120},coverage:.92,priority:.3},
+  // These stand-off points sit on the protected side of the physical CC0
+  // barriers, so a retreat or suppression response produces readable cover
+  // behavior instead of sending enemies through the new checkpoint dressing.
+  {position:{x:-3.9,y:0,z:-58.25},coverage:.98,priority:.62,tag:'checkpoint-barrier-west'},
+  {position:{x:3.9,y:0,z:-58.25},coverage:.98,priority:.62,tag:'checkpoint-barrier-east'},
+  {position:{x:-15.55,y:0,z:-81.6},coverage:.96,priority:.56,tag:'motor-pool-barrier'},
+  {position:{x:15.95,y:0,z:-94.3},coverage:.96,priority:.56,tag:'service-road-barrier'},
+  {position:{x:-12.6,y:0,z:-107.1},coverage:.95,priority:.52,tag:'storage-yard-barrier'},
+  {position:{x:11.8,y:0,z:-118.2},coverage:.95,priority:.52,tag:'extraction-barrier'}
 ];
 let enemySequence=0;
 const enemyGunMat=new THREE.MeshStandardMaterial({color:0x303733,roughness:.42,metalness:.76});
