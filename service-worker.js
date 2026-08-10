@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'specter-blacksite-overhaul-foundation-';
-const CACHE_VERSION = 'v510-recorded-audio';
+const CACHE_VERSION = 'v511-tactical-voices';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 
 // The application shell is deliberately small and atomic: if any of these files
@@ -101,6 +101,23 @@ const OPTIONAL_PRECACHE_URLS = [
   './assets/audio/cc-by-3.0-tabasco/LICENSE.txt',
   './assets/audio/cc-by-3.0-tabasco/rifle-sks-01.wav',
   './assets/audio/cc-by-3.0-tabasco/pistol-cz-01.wav',
+  './assets/audio/cc0-kenney-voiceover/README.md',
+  './assets/audio/cc0-kenney-voiceover/License.txt',
+  './assets/audio/cc0-kenney-voiceover/Credits.txt',
+  './assets/audio/cc0-kenney-voiceover/Male-war_target_engaged.ogg',
+  './assets/audio/cc0-kenney-voiceover/Female-war_target_engaged.ogg',
+  './assets/audio/cc0-kenney-voiceover/Male-war_look_out.ogg',
+  './assets/audio/cc0-kenney-voiceover/Female-war_look_out.ogg',
+  './assets/audio/cc0-kenney-voiceover/Male-war_call_for_backup.ogg',
+  './assets/audio/cc0-kenney-voiceover/Female-war_call_for_backup.ogg',
+  './assets/audio/cc0-kenney-voiceover/Male-war_cover_me.ogg',
+  './assets/audio/cc0-kenney-voiceover/Female-war_cover_me.ogg',
+  './assets/audio/cc0-kenney-voiceover/Male-war_get_down.ogg',
+  './assets/audio/cc0-kenney-voiceover/Female-war_get_down.ogg',
+  './assets/audio/cc0-kenney-voiceover/Male-war_suppressing_fire.ogg',
+  './assets/audio/cc0-kenney-voiceover/Female-war_supressing_fire.ogg',
+  './assets/audio/cc0-kenney-voiceover/Male-war_medic.ogg',
+  './assets/audio/cc0-kenney-voiceover/Female-war_medic.ogg',
 
   './README.md',
   './THIRD_PARTY_ASSETS.md',

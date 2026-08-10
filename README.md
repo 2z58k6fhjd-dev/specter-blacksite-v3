@@ -1,6 +1,6 @@
 # SPECTER: Blacksite
 
-Build: `5.1.0-RECORDED-AUDIO`
+Build: `5.1.1-TACTICAL-VOICES`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build 5.0
 overhauls the controller, viewmodels, combat presentation, enemy behavior,
@@ -47,6 +47,10 @@ keeping the project suitable for static hosting on GitHub Pages.
   spatial weapon and mechanism sounds, footsteps, impacts, and enemy call tones.
   CC BY 3.0 recorded SKS and CZ transient layers now reinforce rifle and pistol
   reports while the procedural system keeps spatial tails and suppression.
+- Fourteen CC0 Kenney human-performed tactical callouts now replace the
+  temporary synthetic enemy phrases for contact, investigation, backup,
+  flanking, retreat, suppression, and downed states. Male/female variations are radio-filtered,
+  spatialized, and retain a procedural fallback if a clip cannot decode.
 - Loading progress and diagnostics for models, the player rig, environment maps,
   and graphics pipeline.
 - Complete mission loop and victory state: restore power, clear all eight

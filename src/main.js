@@ -6,7 +6,7 @@ import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } f
 import { buildWorldOverhaul } from './world-overhaul.js?v=5.0.0-release';
 import { EnemyAISystem } from './enemy-ai.js?v=5.0.0-release';
 import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS } from './graphics-pipeline.js?v=5.0.1-graphics';
-import { createAudioDirector } from './audio-overhaul.js?v=5.1.0-audio';
+import { createAudioDirector } from './audio-overhaul.js?v=5.1.1-tactical-voices';
 import { createTacticalAnimator } from './tactical-animation.js?v=5.0.0-release';
 
 const renderer = new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
@@ -43,6 +43,7 @@ const assetProgress={ar15:0,m9:0,soldier:0,environment:0,audio:0};
 let requiredAssetFailure=false;
 const environmentTextures={};
 const weaponSamplePayloads={};
+const enemyVoiceSamplePayloads={};
 const startButton=document.getElementById('startButton'),startPanel=document.getElementById('startPanel'),promptEl=document.getElementById('prompt');
 const graphicsButton=document.getElementById('graphicsButton'),graphicsQuickButton=document.getElementById('graphicsQuickButton');
 const graphicsPanel=document.getElementById('graphicsPanel'),graphicsCloseButton=document.getElementById('graphicsCloseButton'),graphicsHint=document.getElementById('graphicsHint');
@@ -101,23 +102,35 @@ async function loadEnvironmentAssets(){
 async function loadAudioAssets(){
   status('audio','LOADING');
   const entries=[
-    ['rifle','./assets/audio/cc-by-3.0-tabasco/rifle-sks-01.wav'],
-    ['pistol','./assets/audio/cc-by-3.0-tabasco/pistol-cz-01.wav']
+    {kind:'weapon',id:'rifle',url:'./assets/audio/cc-by-3.0-tabasco/rifle-sks-01.wav'},
+    {kind:'weapon',id:'pistol',url:'./assets/audio/cc-by-3.0-tabasco/pistol-cz-01.wav'},
+    {kind:'voice',id:'contact:male',url:'./assets/audio/cc0-kenney-voiceover/Male-war_target_engaged.ogg'},
+    {kind:'voice',id:'contact:female',url:'./assets/audio/cc0-kenney-voiceover/Female-war_target_engaged.ogg'},
+    {kind:'voice',id:'investigate:male',url:'./assets/audio/cc0-kenney-voiceover/Male-war_look_out.ogg'},
+    {kind:'voice',id:'investigate:female',url:'./assets/audio/cc0-kenney-voiceover/Female-war_look_out.ogg'},
+    {kind:'voice',id:'backup:male',url:'./assets/audio/cc0-kenney-voiceover/Male-war_call_for_backup.ogg'},
+    {kind:'voice',id:'backup:female',url:'./assets/audio/cc0-kenney-voiceover/Female-war_call_for_backup.ogg'},
+    {kind:'voice',id:'flank:male',url:'./assets/audio/cc0-kenney-voiceover/Male-war_cover_me.ogg'},
+    {kind:'voice',id:'flank:female',url:'./assets/audio/cc0-kenney-voiceover/Female-war_cover_me.ogg'},
+    {kind:'voice',id:'retreat:male',url:'./assets/audio/cc0-kenney-voiceover/Male-war_get_down.ogg'},
+    {kind:'voice',id:'retreat:female',url:'./assets/audio/cc0-kenney-voiceover/Female-war_get_down.ogg'},
+    {kind:'voice',id:'suppress:male',url:'./assets/audio/cc0-kenney-voiceover/Male-war_suppressing_fire.ogg'},
+    {kind:'voice',id:'suppress:female',url:'./assets/audio/cc0-kenney-voiceover/Female-war_supressing_fire.ogg'},
+    {kind:'voice',id:'down:male',url:'./assets/audio/cc0-kenney-voiceover/Male-war_medic.ogg'},
+    {kind:'voice',id:'down:female',url:'./assets/audio/cc0-kenney-voiceover/Female-war_medic.ogg'}
   ];
   let completed=0;
-  try{
-    await Promise.all(entries.map(async([name,url])=>{
+  const results=await Promise.allSettled(entries.map(async({kind,id,url})=>{
       const response=await fetch(url);
-      if(!response.ok)throw new Error(`${name} report returned ${response.status}`);
-      weaponSamplePayloads[name]=await response.arrayBuffer();
+      if(!response.ok)throw new Error(`${id} returned ${response.status}`);
+      (kind==='weapon'?weaponSamplePayloads:enemyVoiceSamplePayloads)[id]=await response.arrayBuffer();
       completed++;assetProgress.audio=completed/entries.length;updateLoading();
-    }));
-    status('audio','LOADED','2 recorded reports · CC BY 3.0');
-  }catch(error){
-    console.warn('Recorded weapon reports unavailable; procedural weapon audio remains active.',error);
-    for(const name of Object.keys(weaponSamplePayloads))delete weaponSamplePayloads[name];
-    assetProgress.audio=1;updateLoading();status('audio','LOADED','procedural fallback');
-  }
+  }));
+  const failures=results.filter(result=>result.status==='rejected').length;
+  assetProgress.audio=1;updateLoading();
+  const reports=Object.keys(weaponSamplePayloads).length,voices=Object.keys(enemyVoiceSamplePayloads).length;
+  if(reports||voices)status('audio','LOADED',`${reports} reports + ${voices} CC0 voice lines${failures?` + ${failures} fallback`:''}`);
+  else status('audio','LOADED','procedural fallback');
 }
 function cloneAsset(name,skinned=false){
   const gltf=assetMap.get(name);
@@ -286,7 +299,7 @@ const staticColliderBounds=collision.filter(object=>!dynamicColliders.has(object
 const dynamicColliderBounds=[new THREE.Box3(),new THREE.Box3()];
 const switchGroup=worldOverhaul.breaker.group;
 const audio=createAudioDirector({seed:0x5ec7e2,powerOn:false,masterVolume:.78,musicVolume:.28,sfxVolume:.88,ambienceVolume:.5});
-let weaponSampleDecodePromise=null;
+let recordedAudioDecodePromise=null;
 
 const flashlight=new THREE.SpotLight(0xf0fff7,74,30,Math.PI/6,.48,1.2);
 flashlight.position.set(0,0,0);flashlight.target.position.set(0,-.03,-8);
@@ -697,7 +710,7 @@ function updateEnemies(dt,t){
     }
     const intent=intents.get(data.aiId);data.intent=intent;
     if(intent?.state!==data.lastAIState){
-      const voiceType={suspicious:'investigate',investigate:'investigate',search:'search',chase:'contact',engage:'contact',retreat:'retreat',suppressed:'suppress',dead:'down'}[intent?.state];
+      const voiceType=intent?.move?.mode==='flank'?'flank':{suspicious:'investigate',investigate:'investigate',search:'backup',chase:'contact',engage:'contact',retreat:'retreat',suppressed:'suppress',dead:'down'}[intent?.state];
       if(voiceType&&t-lastEnemyCallTime>4.2){lastEnemyCallTime=t;audio.playEnemyCall(enemy.position,{type:voiceType,radio:intent?.state!=='dead',intensity:data.heavy?1.05:.86})}
       data.lastAIState=intent?.state;
     }
@@ -712,17 +725,22 @@ function updateEnemies(dt,t){
   }
 }
 
-function prepareRecordedWeaponReports(){
-  if(weaponSampleDecodePromise||!Object.keys(weaponSamplePayloads).length)return;
-  weaponSampleDecodePromise=audio.loadWeaponSamples(weaponSamplePayloads).then(result=>{
-    if(result.loaded.length)status('audio','LOADED',`${result.loaded.length} recorded reports · CC BY 3.0`);
+function prepareRecordedAudio(){
+  if(recordedAudioDecodePromise)return;
+  const reportCount=Object.keys(weaponSamplePayloads).length,voiceCount=Object.keys(enemyVoiceSamplePayloads).length;
+  if(!reportCount&&!voiceCount)return;
+  recordedAudioDecodePromise=Promise.all([
+    reportCount?audio.loadWeaponSamples(weaponSamplePayloads):Promise.resolve({loaded:[]}),
+    voiceCount?audio.loadEnemyVoiceSamples(enemyVoiceSamplePayloads):Promise.resolve({loaded:[]})
+  ]).then(([reports,voices])=>{
+    if(reports.loaded.length||voices.loaded.length)status('audio','LOADED',`${reports.loaded.length} reports + ${voices.loaded.length} CC0 voice lines`);
     else status('audio','LOADED','procedural fallback');
-    return result;
-  }).catch(error=>{console.warn('Recorded weapon reports unavailable; procedural weapon audio remains active.',error);status('audio','LOADED','procedural fallback');return null});
+    return {reports,voices};
+  }).catch(error=>{console.warn('Recorded audio unavailable; procedural fallbacks remain active.',error);status('audio','LOADED','procedural fallback');return null});
 }
 function ensureAudio(){
-  if(!audio.active)audio.resume().then(prepareRecordedWeaponReports).catch(error=>console.warn('Audio unavailable.',error));
-  else prepareRecordedWeaponReports();
+  if(!audio.active)audio.resume().then(prepareRecordedAudio).catch(error=>console.warn('Audio unavailable.',error));
+  else prepareRecordedAudio();
 }
 function gunshot(kind){ensureAudio();const profile=weaponProfiles[kind];audio.playWeapon(profile?.family||kind,{outdoorBlend:worldOverhaul.outdoorBlend,suppressed:!!profile?.suppressed})}
 const flashMaterial=new THREE.MeshBasicMaterial({color:0xffd27a,transparent:true,opacity:.95,depthWrite:false,blending:THREE.AdditiveBlending});
