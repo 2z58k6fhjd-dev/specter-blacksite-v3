@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'specter-blacksite-overhaul-foundation-';
-const CACHE_VERSION = 'v512-role-kits';
+const CACHE_VERSION = 'v513-cc0-set-dressing';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 
 // The application shell is deliberately small and atomic: if any of these files
@@ -96,6 +96,14 @@ const OPTIONAL_PRECACHE_URLS = [
   './assets/environment/pbr-v2/grass-soil-albedo.webp',
   './assets/environment/pbr-v2/grass-soil-normal.webp',
   './assets/environment/pbr-v2/grass-soil-orm.webp',
+
+  './assets/environment/polyhaven-steel-frame-shelves-01/README.md',
+  './assets/environment/polyhaven-steel-frame-shelves-01/LICENSE.txt',
+  './assets/environment/polyhaven-steel-frame-shelves-01/steel_frame_shelves_01_2k.gltf',
+  './assets/environment/polyhaven-steel-frame-shelves-01/steel_frame_shelves_01.bin',
+  './assets/environment/polyhaven-steel-frame-shelves-01/textures/steel_frame_shelves_01_diff_2k.jpg',
+  './assets/environment/polyhaven-steel-frame-shelves-01/textures/steel_frame_shelves_01_nor_gl_2k.jpg',
+  './assets/environment/polyhaven-steel-frame-shelves-01/textures/steel_frame_shelves_01_arm_2k.jpg',
 
   './assets/audio/README.md',
   './assets/audio/cc-by-3.0-tabasco/LICENSE.txt',

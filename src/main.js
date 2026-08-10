@@ -39,7 +39,7 @@ scene.add(emergency);
 
 const loader=new GLTFLoader();
 const assetMap=new Map();
-const assetProgress={ar15:0,m9:0,soldier:0,environment:0,audio:0};
+const assetProgress={ar15:0,m9:0,soldier:0,environment:0,props:0,audio:0};
 let requiredAssetFailure=false;
 const environmentTextures={};
 const weaponSamplePayloads={};
@@ -131,6 +131,21 @@ async function loadAudioAssets(){
   const reports=Object.keys(weaponSamplePayloads).length,voices=Object.keys(enemyVoiceSamplePayloads).length;
   if(reports||voices)status('audio','LOADED',`${reports} reports + ${voices} CC0 voice lines${failures?` + ${failures} fallback`:''}`);
   else status('audio','LOADED','procedural fallback');
+}
+async function loadSetDressAsset(name,url){
+  status('props','LOADING');
+  try{
+    const gltf=await new Promise((resolve,reject)=>loader.load(url,resolve,undefined,reject));
+    let meshes=0;
+    gltf.scene.traverse(object=>{if(object.isMesh){meshes++;object.castShadow=true;object.receiveShadow=true;object.frustumCulled=true}});
+    assetMap.set(name,gltf);assetProgress.props=1;updateLoading();
+    status('props','LOADED',`${meshes} mesh CC0 industrial shelf`);
+    return true;
+  }catch(error){
+    console.warn(`Optional set-dressing asset ${name} unavailable; procedural props remain active.`,error);
+    assetProgress.props=1;updateLoading();status('props','LOADED','procedural prop fallback');
+    return false;
+  }
 }
 function cloneAsset(name,skinned=false){
   const gltf=assetMap.get(name);
@@ -297,6 +312,22 @@ const worldOverhaul=buildWorldOverhaul({scene,collision,environmentTextures,faci
 const dynamicColliders=new Set([worldOverhaul.exit.left,worldOverhaul.exit.right]);
 const staticColliderBounds=collision.filter(object=>!dynamicColliders.has(object)).map(object=>new THREE.Box3().setFromObject(object).expandByScalar(.3));
 const dynamicColliderBounds=[new THREE.Box3(),new THREE.Box3()];
+function installIndustrialShelving(){
+  const source=assetMap.get('steelShelves')?.scene;if(!source)return;
+  const placements=[
+    {x:-7.52,z:-5.7,rotation:Math.PI/2},
+    {x:7.52,z:-17.7,rotation:-Math.PI/2},
+    {x:-7.52,z:-29.7,rotation:Math.PI/2}
+  ];
+  for(const [index,placement] of placements.entries()){
+    const shelfRoot=new THREE.Group();shelfRoot.name=`cc0-industrial-shelf-${index+1}`;
+    shelfRoot.position.set(placement.x,0,placement.z);shelfRoot.rotation.y=placement.rotation;
+    const shelf=source.clone(true);normalize(shelf,2.1,true);shelf.name=`steel-frame-shelves-01-${index+1}`;
+    shelf.traverse(object=>{if(object.isMesh){object.castShadow=true;object.receiveShadow=true;object.frustumCulled=true}});
+    shelfRoot.add(shelf);scene.add(shelfRoot);collision.push(shelfRoot);
+    shelfRoot.updateWorldMatrix(true,true);staticColliderBounds.push(new THREE.Box3().setFromObject(shelfRoot).expandByScalar(.12));
+  }
+}
 const switchGroup=worldOverhaul.breaker.group;
 const audio=createAudioDirector({seed:0x5ec7e2,powerOn:false,masterVolume:.78,musicVolume:.28,sfxVolume:.88,ambienceVolume:.5});
 let recordedAudioDecodePromise=null;
@@ -1107,6 +1138,7 @@ document.getElementById('restartButton').onclick=()=>location.reload();
 
 await Promise.all([
   loadAudioAssets(),
+  loadSetDressAsset('steelShelves','./assets/environment/polyhaven-steel-frame-shelves-01/steel_frame_shelves_01_2k.gltf'),
   loadAsset('ar15','./assets/ar15/scene.gltf'),
   loadAsset('m9','./assets/m9/scene.gltf'),
   loadAsset('soldier','./assets/soldier/scene.gltf')
@@ -1114,7 +1146,7 @@ await Promise.all([
 if(requiredAssetFailure){
   startButton.disabled=true;startButton.textContent='ASSET CHECK FAILED';loadMessage.textContent='A required model or texture failed to load. Check the diagnostics above.';
 }else{
-  installRifle();installPistol();installRifleVariants();installPlayerModel();installPlayerArms();attachFlashlightToWeapon(currentWeapon);
+  installRifle();installPistol();installRifleVariants();installPlayerModel();installPlayerArms();installIndustrialShelving();attachFlashlightToWeapon(currentWeapon);
   spawnEnemy(-2.5,-8,'rifleman');spawnEnemy(2.9,-18,'scout');spawnEnemy(-1.2,-27,'breacher');
   spawnEnemy(3.8,-54,'rifleman');spawnEnemy(-7.2,-68,'scout');spawnEnemy(8.5,-88,'breacher');spawnEnemy(-5.4,-108,'marksman');spawnEnemy(12,-122,'commander');
   status('soldier','LOADED','8 tactical hostiles · 5 role kits · full-detail rifles');hud();

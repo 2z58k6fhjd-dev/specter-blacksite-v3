@@ -1,6 +1,6 @@
 # SPECTER: Blacksite
 
-Build: `5.1.2-ROLE-KITS`
+Build: `5.1.3-CC0-SET-DRESSING`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build 5.0
 overhauls the controller, viewmodels, combat presentation, enemy behavior,
@@ -37,6 +37,7 @@ keeping the project suitable for static hosting on GitHub Pages.
   search, chase, engagement, cover, flanking, suppression, retreat, squad alerts,
   and per-role difficulty tuning.
 - Expanded facility with furnished work areas, storage, server equipment,
+  three high-detail CC0 industrial shelf props with collision/shadowing,
   animated breaker hardware, and a powered two-leaf exit.
 - Compact exterior compound with a checkpoint, motor pool, storage yard,
   communications area, service roads, barriers, grounded modern vehicles, and

@@ -40,6 +40,16 @@ by [mamont nikita](https://sketchfab.com/mamontnikita62), licensed under
 
 Keep the three local license files with every redistribution.
 
+### Bundled CC0 environment prop
+
+[Steel Frame Shelves 01](https://polyhaven.com/a/steel_frame_shelves_01) by
+James Ray Cock is bundled at a 2K browser-quality tier as facility set dressing.
+Poly Haven publishes the asset under **CC0 1.0**. The official glTF, buffer, and
+three texture maps are retained in
+`assets/environment/polyhaven-steel-frame-shelves-01/`, together with source
+links, official MD5 checksums, and a local license record. The project only adds
+placement, scale, collision, and rendering behavior.
+
 ## Project-authored and derived runtime assets
 
 | Asset | Creation and dependency record | Runtime status |
@@ -197,7 +207,7 @@ are not AI-generated voices; they are licensed human-performed recordings.
 
 ## Research-only audio candidates - not bundled
 
-Build 5.1.2 uses project-authored procedural Web Audio, the separately
+Build 5.1.3 uses project-authored procedural Web Audio, the separately
 documented CC BY 3.0 recorded report derivatives above, and the documented
 Kenney CC0 tactical callouts. The following pages remain research links only;
 no additional source master or runtime derivative from them ships in this
