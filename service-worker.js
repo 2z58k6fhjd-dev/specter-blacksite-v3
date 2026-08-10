@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'specter-blacksite-overhaul-foundation-';
-const CACHE_VERSION = 'v513-cc0-set-dressing';
+const CACHE_VERSION = 'v514-surface-foley';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 
 // The application shell is deliberately small and atomic: if any of these files
@@ -126,6 +126,18 @@ const OPTIONAL_PRECACHE_URLS = [
   './assets/audio/cc0-kenney-voiceover/Female-war_supressing_fire.ogg',
   './assets/audio/cc0-kenney-voiceover/Male-war_medic.ogg',
   './assets/audio/cc0-kenney-voiceover/Female-war_medic.ogg',
+  './assets/audio/cc0-kenney-rpg-footsteps/README.md',
+  './assets/audio/cc0-kenney-rpg-footsteps/License.txt',
+  './assets/audio/cc0-kenney-rpg-footsteps/footstep00.ogg',
+  './assets/audio/cc0-kenney-rpg-footsteps/footstep01.ogg',
+  './assets/audio/cc0-kenney-rpg-footsteps/footstep02.ogg',
+  './assets/audio/cc0-kenney-rpg-footsteps/footstep03.ogg',
+  './assets/audio/cc0-kenney-rpg-footsteps/footstep04.ogg',
+  './assets/audio/cc0-kenney-rpg-footsteps/footstep05.ogg',
+  './assets/audio/cc0-kenney-rpg-footsteps/footstep06.ogg',
+  './assets/audio/cc0-kenney-rpg-footsteps/footstep07.ogg',
+  './assets/audio/cc0-kenney-rpg-footsteps/footstep08.ogg',
+  './assets/audio/cc0-kenney-rpg-footsteps/footstep09.ogg',
 
   './README.md',
   './THIRD_PARTY_ASSETS.md',

@@ -111,6 +111,7 @@ export class AudioDirector {
     this._noiseBuffer = null;
     this._weaponSamples = Object.create(null);
     this._enemyVoiceSamples = Object.create(null);
+    this._footstepSamples = [];
     this._zoneBlend = zoneValue(this.options.outdoorBlend);
     this._combatIntensity = clamp(this.options.combatIntensity);
     this._powerOn = Boolean(this.options.powerOn);
@@ -135,6 +136,7 @@ export class AudioDirector {
     return Object.freeze(Object.fromEntries(Object.entries(this._enemyVoiceSamples)
       .map(([type, samples]) => [type, samples.length])));
   }
+  get footstepSamples() { return this._footstepSamples.length; }
 
   /**
    * Create and resume the Web Audio graph. Call from a trusted user gesture.
@@ -207,6 +209,29 @@ export class AudioDirector {
         const buffer = await this._context.decodeAudioData(payload.slice(0));
         const variants = this._enemyVoiceSamples[type] || (this._enemyVoiceSamples[type] = []);
         variants.push({ variant, buffer });
+        loaded.push(id);
+      } catch (error) {
+        this._lastError = error;
+        failed.push(id);
+      }
+    }
+    return Object.freeze({ loaded: Object.freeze(loaded), failed: Object.freeze(failed) });
+  }
+
+  /**
+   * Decode optional CC0 player-footstep recordings. The compact footstep
+   * library is intentionally surface-neutral; playFootstep() applies the
+   * hard-floor or grass spectral treatment at runtime.
+   */
+  async loadFootstepSamples(payloads = {}) {
+    if (!this.ready) return Object.freeze({ loaded: [], failed: ['context-not-ready'] });
+    const loaded = [];
+    const failed = [];
+    for (const [id, payload] of Object.entries(payloads)) {
+      if (!(payload instanceof ArrayBuffer)) { failed.push(id); continue; }
+      try {
+        const buffer = await this._context.decodeAudioData(payload.slice(0));
+        this._footstepSamples.push(buffer);
         loaded.push(id);
       } catch (error) {
         this._lastError = error;
@@ -834,6 +859,66 @@ export class AudioDirector {
     return true;
   }
 
+  /**
+   * Play a first-person step. Grass is deliberately softer and lower-passed,
+   * while the facility uses a brighter hard-floor heel/toe transient.
+   */
+  playFootstep(surface = 'hard', options = {}) {
+    if (!this.ready) return false;
+    const grass = surface === 'grass';
+    const now = this._context.currentTime + 0.004;
+    const sprinting = Boolean(options.sprinting);
+    const strength = sprinting ? 1.12 : 0.92;
+    const event = this._createEvent(options.position, {
+      gain: options.gain ?? 0.62,
+      refDistance: 1.25,
+      maxDistance: 28,
+      rolloffFactor: 1.25
+    });
+    const sample = this._footstepSamples.length
+      ? this._footstepSamples[Math.floor(this._random() * this._footstepSamples.length)]
+      : null;
+    const rate = (grass ? 0.9 : 0.96) + this._random() * 0.12;
+
+    if (sample) {
+      this._sampleLayer(event, sample, {
+        start: now,
+        rate,
+        gain: (grass ? 0.33 : 0.4) * strength,
+        filters: grass
+          ? [{ type: 'highpass', frequency: 52, q: 0.5 }, { type: 'lowpass', frequency: 1380, q: 0.72 }]
+          : [{ type: 'highpass', frequency: 105, q: 0.55 }, { type: 'lowpass', frequency: 4400, q: 0.62 }]
+      });
+    } else {
+      this._noiseLayer(event, {
+        start: now,
+        duration: grass ? 0.1 : 0.075,
+        gain: (grass ? 0.14 : 0.18) * strength,
+        rate,
+        filters: grass
+          ? [{ type: 'highpass', frequency: 55, q: 0.55 }, { type: 'lowpass', frequency: 940, q: 0.75 }]
+          : [{ type: 'highpass', frequency: 130, q: 0.6 }, { type: 'bandpass', frequency: 1750, q: 0.68 }]
+      });
+    }
+
+    if (grass) {
+      this._noiseLayer(event, {
+        start: now + 0.012, duration: 0.095, gain: 0.052 * strength,
+        filter: { type: 'bandpass', frequency: 430 + this._random() * 140, q: 0.46 }
+      });
+    } else {
+      this._oscillatorLayer(event, {
+        start: now + 0.014, duration: 0.034, type: 'triangle',
+        from: 1550 + this._random() * 280, to: 620, gain: 0.024 * strength
+      });
+      this._noiseLayer(event, {
+        start: now + 0.026, duration: 0.045, gain: 0.034 * strength,
+        filter: { type: 'bandpass', frequency: 2650 + this._random() * 340, q: 1.05 }
+      });
+    }
+    return true;
+  }
+
   playCasing(kind = 'rifle', options = {}) {
     if (!this.ready) return false;
     const event = this._createEvent(options.position, {
@@ -1051,6 +1136,7 @@ export class AudioDirector {
     this._noiseBuffer = null;
     this._weaponSamples = Object.create(null);
     this._enemyVoiceSamples = Object.create(null);
+    this._footstepSamples = [];
   }
 }
 

@@ -205,11 +205,21 @@ variants for contact, investigation, backup, flanking, retreat, suppression, and
 enemy states, then passes each through positional/radio processing. The clips
 are not AI-generated voices; they are licensed human-performed recordings.
 
+## Bundled player footsteps
+
+`assets/audio/cc0-kenney-rpg-footsteps/` contains ten unmodified OGG footstep
+clips from [Kenney RPG Audio](https://www.kenney.nl/assets/rpg-audio). The
+package `License.txt` is retained locally and names Kenney Vleugels / Kenney.nl
+as the author. The pack is **CC0 1.0**, so the recordings are permitted in
+personal and commercial projects. The runtime randomly selects a clip, then
+applies hard-floor filtering inside and grass filtering outside; an entirely
+procedural fallback remains available if a clip cannot download or decode.
+
 ## Research-only audio candidates - not bundled
 
-Build 5.1.3 uses project-authored procedural Web Audio, the separately
+Build 5.1.4 uses project-authored procedural Web Audio, the separately
 documented CC BY 3.0 recorded report derivatives above, and the documented
-Kenney CC0 tactical callouts. The following pages remain research links only;
+Kenney CC0 tactical callouts and player footsteps. The following pages remain research links only;
 no additional source master or runtime derivative from them ships in this
 repository:
 
@@ -225,7 +235,6 @@ repository:
   [grass footsteps](https://freesound.org/people/Fission9/sounds/521587/) - surface-aware movement.
 - [Outdoor forest ambience](https://freesound.org/people/Nox_Sound/sounds/570492/) and
   [low-frequency HVAC room tone](https://freesound.org/s/215293/) - zone ambience.
-- [Kenney Voiceover Pack](https://www.kenney.nl/assets/voiceover-pack) - tactical callout candidate.
 
 Before any researched audio enters a public build, archive the original source,
 author, exact license receipt, source URL, editing notes, and runtime derivative.

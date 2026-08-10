@@ -29,7 +29,10 @@ camera.rotation.order='YXZ';
 scene.add(camera); // Critical: camera must be in scene.
 
 const controls=new PointerLockControls(camera,renderer.domElement);
-const pointerLockSupported=typeof renderer.domElement.requestPointerLock==='function'&&'pointerLockElement' in document;
+// Embedded app browsers are commonly hosted in a frame where requesting pointer
+// lock produces a browser-level error before the fallback event can fire.
+const embeddedDocument=(()=>{try{return window.top!==window}catch{return true}})();
+const pointerLockSupported=!embeddedDocument&&typeof renderer.domElement.requestPointerLock==='function'&&'pointerLockElement' in document;
 let embeddedMouseLook=!pointerLockSupported;
 
 scene.add(new THREE.HemisphereLight(0x8ebda8,0x101512,.38));
@@ -44,6 +47,7 @@ let requiredAssetFailure=false;
 const environmentTextures={};
 const weaponSamplePayloads={};
 const enemyVoiceSamplePayloads={};
+const footstepSamplePayloads={};
 const startButton=document.getElementById('startButton'),startPanel=document.getElementById('startPanel'),promptEl=document.getElementById('prompt');
 const graphicsButton=document.getElementById('graphicsButton'),graphicsQuickButton=document.getElementById('graphicsQuickButton');
 const graphicsPanel=document.getElementById('graphicsPanel'),graphicsCloseButton=document.getElementById('graphicsCloseButton'),graphicsHint=document.getElementById('graphicsHint');
@@ -117,19 +121,21 @@ async function loadAudioAssets(){
     {kind:'voice',id:'suppress:male',url:'./assets/audio/cc0-kenney-voiceover/Male-war_suppressing_fire.ogg'},
     {kind:'voice',id:'suppress:female',url:'./assets/audio/cc0-kenney-voiceover/Female-war_supressing_fire.ogg'},
     {kind:'voice',id:'down:male',url:'./assets/audio/cc0-kenney-voiceover/Male-war_medic.ogg'},
-    {kind:'voice',id:'down:female',url:'./assets/audio/cc0-kenney-voiceover/Female-war_medic.ogg'}
+    {kind:'voice',id:'down:female',url:'./assets/audio/cc0-kenney-voiceover/Female-war_medic.ogg'},
+    ...Array.from({length:10},(_,index)=>({kind:'footstep',id:String(index).padStart(2,'0'),url:`./assets/audio/cc0-kenney-rpg-footsteps/footstep${String(index).padStart(2,'0')}.ogg`}))
   ];
   let completed=0;
   const results=await Promise.allSettled(entries.map(async({kind,id,url})=>{
       const response=await fetch(url);
       if(!response.ok)throw new Error(`${id} returned ${response.status}`);
-      (kind==='weapon'?weaponSamplePayloads:enemyVoiceSamplePayloads)[id]=await response.arrayBuffer();
+      const target=kind==='weapon'?weaponSamplePayloads:kind==='voice'?enemyVoiceSamplePayloads:footstepSamplePayloads;
+      target[id]=await response.arrayBuffer();
       completed++;assetProgress.audio=completed/entries.length;updateLoading();
   }));
   const failures=results.filter(result=>result.status==='rejected').length;
   assetProgress.audio=1;updateLoading();
-  const reports=Object.keys(weaponSamplePayloads).length,voices=Object.keys(enemyVoiceSamplePayloads).length;
-  if(reports||voices)status('audio','LOADED',`${reports} reports + ${voices} CC0 voice lines${failures?` + ${failures} fallback`:''}`);
+  const reports=Object.keys(weaponSamplePayloads).length,voices=Object.keys(enemyVoiceSamplePayloads).length,footsteps=Object.keys(footstepSamplePayloads).length;
+  if(reports||voices||footsteps)status('audio','LOADED',`${reports} reports + ${voices} CC0 voice lines + ${footsteps} footsteps${failures?` + ${failures} fallback`:''}`);
   else status('audio','LOADED','procedural fallback');
 }
 async function loadSetDressAsset(name,url){
@@ -814,15 +820,16 @@ function updateEnemies(dt,t){
 
 function prepareRecordedAudio(){
   if(recordedAudioDecodePromise)return;
-  const reportCount=Object.keys(weaponSamplePayloads).length,voiceCount=Object.keys(enemyVoiceSamplePayloads).length;
-  if(!reportCount&&!voiceCount)return;
+  const reportCount=Object.keys(weaponSamplePayloads).length,voiceCount=Object.keys(enemyVoiceSamplePayloads).length,footstepCount=Object.keys(footstepSamplePayloads).length;
+  if(!reportCount&&!voiceCount&&!footstepCount)return;
   recordedAudioDecodePromise=Promise.all([
     reportCount?audio.loadWeaponSamples(weaponSamplePayloads):Promise.resolve({loaded:[]}),
-    voiceCount?audio.loadEnemyVoiceSamples(enemyVoiceSamplePayloads):Promise.resolve({loaded:[]})
-  ]).then(([reports,voices])=>{
-    if(reports.loaded.length||voices.loaded.length)status('audio','LOADED',`${reports.loaded.length} reports + ${voices.loaded.length} CC0 voice lines`);
+    voiceCount?audio.loadEnemyVoiceSamples(enemyVoiceSamplePayloads):Promise.resolve({loaded:[]}),
+    footstepCount?audio.loadFootstepSamples(footstepSamplePayloads):Promise.resolve({loaded:[]})
+  ]).then(([reports,voices,footsteps])=>{
+    if(reports.loaded.length||voices.loaded.length||footsteps.loaded.length)status('audio','LOADED',`${reports.loaded.length} reports + ${voices.loaded.length} CC0 voice lines + ${footsteps.loaded.length} footsteps`);
     else status('audio','LOADED','procedural fallback');
-    return {reports,voices};
+    return {reports,voices,footsteps};
   }).catch(error=>{console.warn('Recorded audio unavailable; procedural fallbacks remain active.',error);status('audio','LOADED','procedural fallback');return null});
 }
 function ensureAudio(){
@@ -1067,7 +1074,7 @@ function move(dt){
     if(!slid)moveVelocity.set(0,0,0);
   }
   camera.position.y=1.72;
-  footstepNoiseTimer-=dt;if(moving&&footstepNoiseTimer<=0){footstepNoiseTimer=sprinting?.34:.55;enemyAISystem.emitNoise({position:camera.position,type:'footsteps',loudness:sprinting?.8:.42,radius:sprinting?15:8,sourceId:'specter-player',sourceFaction:'specter'})}
+  footstepNoiseTimer-=dt;if(moving&&footstepNoiseTimer<=0){footstepNoiseTimer=sprinting?.34:.55;audio.playFootstep(worldOverhaul.outdoorBlend>.52?'grass':'hard',{sprinting});enemyAISystem.emitNoise({position:camera.position,type:'footsteps',loudness:sprinting?.8:.42,radius:sprinting?15:8,sourceId:'specter-player',sourceFaction:'specter'})}
 }
 function restorePower(){
   if(powerOn)return;powerOn=true;worldOverhaul.setPowered(true);
