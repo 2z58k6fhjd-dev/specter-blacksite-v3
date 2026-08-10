@@ -368,6 +368,23 @@ function installPlasticContainers(){
   }
   return placements.length;
 }
+function installRoadBarriers(){
+  const source=assetMap.get('roadBarrier')?.scene;if(!source)return 0;
+  // Keep the central route clear while giving the checkpoint, motor pool, and
+  // perimeter enough real hard cover for the tactical AI to use visually.
+  const placements=[
+    {x:-3.9,z:-56.5,rotation:0,scale:1},{x:3.9,z:-56.5,rotation:0,scale:1},
+    {x:-17.4,z:-81.6,rotation:Math.PI/2,scale:.94},{x:17.8,z:-94.3,rotation:Math.PI/2,scale:.96},
+    {x:-12.6,z:-105.4,rotation:.16,scale:.9},{x:11.8,z:-116.5,rotation:-.22,scale:.92}
+  ];
+  for(const [index,placement] of placements.entries()){
+    const root=new THREE.Group();root.name=`cc0-road-barrier-${index+1}`;root.position.set(placement.x,0,placement.z);root.rotation.y=placement.rotation;
+    const barrier=source.clone(true);normalize(barrier,1.62,true);barrier.scale.multiplyScalar(placement.scale);barrier.name=`concrete-road-barrier-02-${index+1}`;
+    barrier.traverse(object=>{if(object.isMesh){object.castShadow=true;object.receiveShadow=true;object.frustumCulled=true}});
+    root.add(barrier);scene.add(root);collision.push(root);root.updateWorldMatrix(true,true);staticColliderBounds.push(new THREE.Box3().setFromObject(root).expandByScalar(.12));
+  }
+  return placements.length;
+}
 const switchGroup=worldOverhaul.breaker.group;
 const audio=createAudioDirector({seed:0x5ec7e2,powerOn:false,masterVolume:.78,musicVolume:.28,sfxVolume:.88,ambienceVolume:.5});
 let recordedAudioDecodePromise=null;
@@ -1219,6 +1236,7 @@ await Promise.all([
   loadSetDressAsset('steelShelves','./assets/environment/polyhaven-steel-frame-shelves-01/steel_frame_shelves_01_2k.gltf','CC0 industrial shelf'),
   loadSetDressAsset('powerBox','./assets/environment/polyhaven-power-box-01/power_box_01_2k.gltf','CC0 power box'),
   loadSetDressAsset('plasticContainer','./assets/environment/polyhaven-plastic-container/plastic_container_2k.gltf','CC0 exterior container'),
+  loadSetDressAsset('roadBarrier','./assets/environment/polyhaven-concrete-road-barrier-02/concrete_road_barrier_02_2k.gltf','CC0 road barrier'),
   loadAsset('ar15','./assets/ar15/scene.gltf'),
   loadAsset('m9','./assets/m9/scene.gltf'),
   loadAsset('soldier','./assets/soldier/scene.gltf')
@@ -1226,7 +1244,7 @@ await Promise.all([
 if(requiredAssetFailure){
   startButton.disabled=true;startButton.textContent='ASSET CHECK FAILED';loadMessage.textContent='A required model or texture failed to load. Check the diagnostics above.';
 }else{
-  installRifle();installPistol();installRifleVariants();installPlayerModel();installPlayerArms();installIndustrialShelving();installPowerBox();const exteriorContainerCount=installPlasticContainers();const propSummary=[assetMap.has('steelShelves')?'3 industrial shelves':'',assetMap.has('powerBox')?'animated power box':'',exteriorContainerCount?`${exteriorContainerCount} exterior containers`:'' ].filter(Boolean).join(' · ');status('props','LOADED',propSummary||'procedural prop fallback');attachFlashlightToWeapon(currentWeapon);
+  installRifle();installPistol();installRifleVariants();installPlayerModel();installPlayerArms();installIndustrialShelving();installPowerBox();const exteriorContainerCount=installPlasticContainers(),roadBarrierCount=installRoadBarriers();const propSummary=[assetMap.has('steelShelves')?'3 industrial shelves':'',assetMap.has('powerBox')?'animated power box':'',exteriorContainerCount?`${exteriorContainerCount} exterior containers`:'',roadBarrierCount?`${roadBarrierCount} road barriers`:'' ].filter(Boolean).join(' · ');status('props','LOADED',propSummary||'procedural prop fallback');attachFlashlightToWeapon(currentWeapon);
   spawnEnemy(-2.5,-8,'rifleman');spawnEnemy(2.9,-18,'scout');spawnEnemy(-1.2,-27,'breacher');
   spawnEnemy(3.8,-54,'rifleman');spawnEnemy(-7.2,-68,'scout');spawnEnemy(8.5,-88,'breacher');spawnEnemy(-5.4,-108,'marksman');spawnEnemy(12,-122,'commander');
   status('soldier','LOADED','8 tactical hostiles · 5 role kits · full-detail rifles');hud();

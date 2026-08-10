@@ -67,6 +67,14 @@ buffer, and three texture maps are retained in
 official MD5 checksums, and a local license record. The project only adds
 placement, scale, collision, and rendering behavior.
 
+[Concrete Road Barrier 02](https://polyhaven.com/a/concrete_road_barrier_02) by
+Amal Kumar is bundled at a 2K browser-quality tier as six shared-geometry
+checkpoint and perimeter hard-cover props. Poly Haven publishes it under
+**CC0 1.0**. The 43K-triangle source model, buffer, and three 2K texture maps
+are retained in `assets/environment/polyhaven-concrete-road-barrier-02/` with
+official source links, MD5 checksums, and a local license record. The project
+only adds placement, scale, collision, frustum culling, and rendering behavior.
+
 ## Project-authored and derived runtime assets
 
 | Asset | Creation and dependency record | Runtime status |
@@ -234,7 +242,7 @@ procedural fallback remains available if a clip cannot download or decode.
 
 ## Research-only audio candidates - not bundled
 
-Build 5.1.6 uses project-authored procedural Web Audio, the separately
+Build 5.1.7 uses project-authored procedural Web Audio, the separately
 documented CC BY 3.0 recorded report derivatives above, and the documented
 Kenney CC0 tactical callouts and player footsteps. The following pages remain research links only;
 no additional source master or runtime derivative from them ships in this

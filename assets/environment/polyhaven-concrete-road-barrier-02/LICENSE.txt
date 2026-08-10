@@ -1,0 +1,8 @@
+Poly Haven asset: Concrete Road Barrier 02
+Source: https://polyhaven.com/a/concrete_road_barrier_02
+Author: Amal Kumar
+License: CC0 1.0 Universal (CC0 1.0 Public Domain Dedication)
+License URL: https://creativecommons.org/publicdomain/zero/1.0/
+
+The retained model, buffer, and textures are official Poly Haven downloads.
+This local record must remain with redistributed copies of this asset folder.

@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'specter-blacksite-overhaul-foundation-';
-const CACHE_VERSION = 'v516-cc0-exterior-props';
+const CACHE_VERSION = 'v517-cc0-road-barriers';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 
 // The application shell is deliberately small and atomic: if any of these files
@@ -120,6 +120,14 @@ const OPTIONAL_PRECACHE_URLS = [
   './assets/environment/polyhaven-plastic-container/textures/plastic_container_diff_2k.jpg',
   './assets/environment/polyhaven-plastic-container/textures/plastic_container_nor_gl_2k.jpg',
   './assets/environment/polyhaven-plastic-container/textures/plastic_container_arm_2k.jpg',
+
+  './assets/environment/polyhaven-concrete-road-barrier-02/README.md',
+  './assets/environment/polyhaven-concrete-road-barrier-02/LICENSE.txt',
+  './assets/environment/polyhaven-concrete-road-barrier-02/concrete_road_barrier_02_2k.gltf',
+  './assets/environment/polyhaven-concrete-road-barrier-02/concrete_road_barrier_02.bin',
+  './assets/environment/polyhaven-concrete-road-barrier-02/textures/concrete_road_barrier_02_diff_2k.jpg',
+  './assets/environment/polyhaven-concrete-road-barrier-02/textures/concrete_road_barrier_02_nor_gl_2k.jpg',
+  './assets/environment/polyhaven-concrete-road-barrier-02/textures/concrete_road_barrier_02_arm_2k.jpg',
 
   './assets/audio/README.md',
   './assets/audio/cc-by-3.0-tabasco/LICENSE.txt',

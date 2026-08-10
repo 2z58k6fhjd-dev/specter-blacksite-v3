@@ -1,6 +1,6 @@
 # SPECTER: Blacksite
 
-Build: `5.1.6-CC0-EXTERIOR-PROPS`
+Build: `5.1.7-CC0-ROAD-BARRIERS`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build 5.0
 overhauls the controller, viewmodels, combat presentation, enemy behavior,
@@ -39,7 +39,8 @@ keeping the project suitable for static hosting on GitHub Pages.
 - Expanded facility with furnished work areas, storage, server equipment,
   three high-detail CC0 industrial shelf props with collision/shadowing, a
   2K high-detail CC0 Power Box cabinet around the animated breaker hardware,
-  six high-detail CC0 storage containers deployed as exterior hard cover,
+  six high-detail CC0 storage containers and six high-detail CC0 weathered
+  concrete road barriers deployed as exterior hard cover,
   and a powered two-leaf exit.
 - Compact exterior compound with a checkpoint, motor pool, storage yard,
   communications area, service roads, barriers, grounded modern vehicles, and
@@ -198,4 +199,4 @@ prompts, and build records.
 Research links in `THIRD_PARTY_ASSETS.md` are evaluation notes only. Their models,
 textures, and audio are not bundled merely because a source URL is listed. No
 sci-fi, futuristic, fantasy, cartoon, stylized, or visibly low-detail research
-asset was accepted into the build 5.0 runtime.
+asset was accepted into the build 5.1.7 runtime.
