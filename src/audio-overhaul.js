@@ -36,6 +36,7 @@ const DEFAULTS = Object.freeze({
 const VOICE_PATTERNS = Object.freeze({
   contact: [176, 142, 196],
   search: [136, 124, 151],
+  backup: [144, 168, 132],
   investigate: [132, 158],
   flank: [164, 207, 148],
   suppress: [151, 128, 118],
@@ -109,6 +110,7 @@ export class AudioDirector {
     this._powerGain = null;
     this._noiseBuffer = null;
     this._weaponSamples = Object.create(null);
+    this._enemyVoiceSamples = Object.create(null);
     this._zoneBlend = zoneValue(this.options.outdoorBlend);
     this._combatIntensity = clamp(this.options.combatIntensity);
     this._powerOn = Boolean(this.options.powerOn);
@@ -129,6 +131,10 @@ export class AudioDirector {
   get powerOn() { return this._powerOn; }
   get volumes() { return { ...this._volumes }; }
   get weaponSamples() { return Object.keys(this._weaponSamples); }
+  get enemyVoiceSamples() {
+    return Object.freeze(Object.fromEntries(Object.entries(this._enemyVoiceSamples)
+      .map(([type, samples]) => [type, samples.length])));
+  }
 
   /**
    * Create and resume the Web Audio graph. Call from a trusted user gesture.
@@ -180,6 +186,31 @@ export class AudioDirector {
       } catch (error) {
         this._lastError = error;
         failed.push(weapon);
+      }
+    }
+    return Object.freeze({ loaded: Object.freeze(loaded), failed: Object.freeze(failed) });
+  }
+
+  /**
+   * Decode optional human-performed enemy callouts. Payload keys use
+   * `type:variant`, for example `contact:male`; multiple variants avoid the
+   * same actor repeating on every squad state transition.
+   */
+  async loadEnemyVoiceSamples(payloads = {}) {
+    if (!this.ready) return Object.freeze({ loaded: [], failed: ['context-not-ready'] });
+    const loaded = [];
+    const failed = [];
+    for (const [id, payload] of Object.entries(payloads)) {
+      const [type, variant = 'default'] = id.split(':');
+      if (!VOICE_PATTERNS[type] || !(payload instanceof ArrayBuffer)) { failed.push(id); continue; }
+      try {
+        const buffer = await this._context.decodeAudioData(payload.slice(0));
+        const variants = this._enemyVoiceSamples[type] || (this._enemyVoiceSamples[type] = []);
+        variants.push({ variant, buffer });
+        loaded.push(id);
+      } catch (error) {
+        this._lastError = error;
+        failed.push(id);
       }
     }
     return Object.freeze({ loaded: Object.freeze(loaded), failed: Object.freeze(failed) });
@@ -910,8 +941,9 @@ export class AudioDirector {
   }
 
   /**
-   * Play a speech-like but non-linguistic enemy call substitute. It is intended
-   * as an immediate placeholder until licensed or recorded voice lines land.
+   * Play a positional enemy call. Licensed recordings are preferred when they
+   * decoded successfully; the compact synthesized phrase remains a deterministic
+   * fallback for offline/blocked media and unsupported codecs.
    */
   playEnemyCall(position, options = {}) {
     if (!this.ready) return false;
@@ -930,6 +962,26 @@ export class AudioDirector {
       cursor += 0.105;
     }
     const voiceShift = 0.94 + this._random() * 0.12;
+    const recordings = this._enemyVoiceSamples[type];
+    if (recordings?.length) {
+      const recording = recordings[Math.floor(this._random() * recordings.length)];
+      const voiceDuration = recording.buffer.duration / voiceShift;
+      this._sampleLayer(event, recording.buffer, {
+        start: cursor,
+        rate: voiceShift,
+        gain: 0.68 * intensity,
+        filters: options.radio === false
+          ? [{ type: 'highpass', frequency: 110, q: 0.45 }, { type: 'lowpass', frequency: 5800, q: 0.55 }]
+          : [{ type: 'highpass', frequency: 260, q: 0.55 }, { type: 'lowpass', frequency: 2700, q: 0.72 }]
+      });
+      if (options.radio !== false) {
+        this._noiseLayer(event, {
+          start: cursor + voiceDuration, duration: 0.045, gain: 0.055,
+          filter: { type: 'bandpass', frequency: 2500, q: 0.8 }
+        });
+      }
+      return true;
+    }
     for (let index = 0; index < pattern.length; index += 1) {
       const duration = (0.105 + this._random() * 0.045) / intensity;
       const pitch = pattern[index] * voiceShift;
@@ -998,6 +1050,7 @@ export class AudioDirector {
     this._powerGain = null;
     this._noiseBuffer = null;
     this._weaponSamples = Object.create(null);
+    this._enemyVoiceSamples = Object.create(null);
   }
 }
 
