@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'specter-blacksite-overhaul-foundation-';
-const CACHE_VERSION = 'v515-cc0-power-box';
+const CACHE_VERSION = 'v516-cc0-exterior-props';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 
 // The application shell is deliberately small and atomic: if any of these files
@@ -112,6 +112,14 @@ const OPTIONAL_PRECACHE_URLS = [
   './assets/environment/polyhaven-power-box-01/textures/power_box_01_diff_2k.jpg',
   './assets/environment/polyhaven-power-box-01/textures/power_box_01_nor_gl_2k.jpg',
   './assets/environment/polyhaven-power-box-01/textures/power_box_01_arm_2k.jpg',
+
+  './assets/environment/polyhaven-plastic-container/README.md',
+  './assets/environment/polyhaven-plastic-container/LICENSE.txt',
+  './assets/environment/polyhaven-plastic-container/plastic_container_2k.gltf',
+  './assets/environment/polyhaven-plastic-container/plastic_container.bin',
+  './assets/environment/polyhaven-plastic-container/textures/plastic_container_diff_2k.jpg',
+  './assets/environment/polyhaven-plastic-container/textures/plastic_container_nor_gl_2k.jpg',
+  './assets/environment/polyhaven-plastic-container/textures/plastic_container_arm_2k.jpg',
 
   './assets/audio/README.md',
   './assets/audio/cc-by-3.0-tabasco/LICENSE.txt',

@@ -1,0 +1,9 @@
+Poly Haven Plastic Container
+
+Source: https://polyhaven.com/a/plastic_container
+Official files API: https://api.polyhaven.com/files/plastic_container
+License: Creative Commons Zero 1.0 Universal (CC0 1.0)
+License page: https://polyhaven.com/license
+
+Poly Haven lists PierreB3D as the author. This local record is retained with
+the official model files.

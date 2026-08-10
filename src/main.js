@@ -353,6 +353,21 @@ function installPowerBox(){
     const authoredPart=breaker.group.getObjectByName(name);if(authoredPart)authoredPart.visible=false;
   }
 }
+function installPlasticContainers(){
+  const source=assetMap.get('plasticContainer')?.scene;if(!source)return 0;
+  const placements=[
+    {x:-9.2,z:-96.4,rotation:.2,scale:.95},{x:-11.6,z:-99.1,rotation:-.42,scale:.76},
+    {x:-8.1,z:-102.2,rotation:.78,scale:.68},{x:-15.5,z:-112.1,rotation:-.18,scale:.9},
+    {x:9.4,z:-76.5,rotation:.4,scale:.84},{x:20.2,z:-87.6,rotation:-.72,scale:.72}
+  ];
+  for(const [index,placement] of placements.entries()){
+    const root=new THREE.Group();root.name=`cc0-plastic-container-${index+1}`;root.position.set(placement.x,0,placement.z);root.rotation.y=placement.rotation;
+    const container=source.clone(true);normalize(container,.92,true);container.scale.multiplyScalar(placement.scale);container.name=`plastic-container-${index+1}`;
+    container.traverse(object=>{if(object.isMesh){object.castShadow=true;object.receiveShadow=true;object.frustumCulled=true}});
+    root.add(container);scene.add(root);collision.push(root);root.updateWorldMatrix(true,true);staticColliderBounds.push(new THREE.Box3().setFromObject(root).expandByScalar(.08));
+  }
+  return placements.length;
+}
 const switchGroup=worldOverhaul.breaker.group;
 const audio=createAudioDirector({seed:0x5ec7e2,powerOn:false,masterVolume:.78,musicVolume:.28,sfxVolume:.88,ambienceVolume:.5});
 let recordedAudioDecodePromise=null;
@@ -1154,6 +1169,7 @@ const localQAMode=(location.hostname==='127.0.0.1'||location.hostname==='localho
 function applyLocalQA(){
   if(localQAMode==='exterior'){restorePower();camera.position.set(0,1.72,-52);previousAIPlayerPosition.copy(camera.position)}
   if(localQAMode==='breaker'){camera.position.set(-5.98,1.72,5.4);camera.rotation.set(0,Math.PI/2,0);previousAIPlayerPosition.copy(camera.position)}
+  if(localQAMode==='storage'){restorePower();camera.position.set(-5.95,1.72,-98);camera.rotation.set(0,Math.PI/2,0);previousAIPlayerPosition.copy(camera.position)}
   if(localQAMode==='victory'){
     restorePower();for(const enemy of enemies){if(!enemy.userData.dead){enemy.userData.dead=true;enemy.userData.health=0;enemy.userData.ai?.setHealth(0);kills++}}
     camera.position.copy(extractionPoint);previousAIPlayerPosition.copy(camera.position);hud();
@@ -1167,6 +1183,7 @@ await Promise.all([
   loadAudioAssets(),
   loadSetDressAsset('steelShelves','./assets/environment/polyhaven-steel-frame-shelves-01/steel_frame_shelves_01_2k.gltf','CC0 industrial shelf'),
   loadSetDressAsset('powerBox','./assets/environment/polyhaven-power-box-01/power_box_01_2k.gltf','CC0 power box'),
+  loadSetDressAsset('plasticContainer','./assets/environment/polyhaven-plastic-container/plastic_container_2k.gltf','CC0 exterior container'),
   loadAsset('ar15','./assets/ar15/scene.gltf'),
   loadAsset('m9','./assets/m9/scene.gltf'),
   loadAsset('soldier','./assets/soldier/scene.gltf')
@@ -1174,7 +1191,7 @@ await Promise.all([
 if(requiredAssetFailure){
   startButton.disabled=true;startButton.textContent='ASSET CHECK FAILED';loadMessage.textContent='A required model or texture failed to load. Check the diagnostics above.';
 }else{
-  installRifle();installPistol();installRifleVariants();installPlayerModel();installPlayerArms();installIndustrialShelving();installPowerBox();attachFlashlightToWeapon(currentWeapon);
+  installRifle();installPistol();installRifleVariants();installPlayerModel();installPlayerArms();installIndustrialShelving();installPowerBox();const exteriorContainerCount=installPlasticContainers();const propSummary=[assetMap.has('steelShelves')?'3 industrial shelves':'',assetMap.has('powerBox')?'animated power box':'',exteriorContainerCount?`${exteriorContainerCount} exterior containers`:'' ].filter(Boolean).join(' · ');status('props','LOADED',propSummary||'procedural prop fallback');attachFlashlightToWeapon(currentWeapon);
   spawnEnemy(-2.5,-8,'rifleman');spawnEnemy(2.9,-18,'scout');spawnEnemy(-1.2,-27,'breacher');
   spawnEnemy(3.8,-54,'rifleman');spawnEnemy(-7.2,-68,'scout');spawnEnemy(8.5,-88,'breacher');spawnEnemy(-5.4,-108,'marksman');spawnEnemy(12,-122,'commander');
   status('soldier','LOADED','8 tactical hostiles · 5 role kits · full-detail rifles');hud();

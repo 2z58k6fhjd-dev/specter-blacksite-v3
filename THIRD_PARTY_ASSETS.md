@@ -59,6 +59,14 @@ links, official MD5 checksums, and a license record. Its static source door is
 hidden at runtime so the project's own mission door and lever retain their
 animated use-state; the cabinet art itself is not altered.
 
+[Plastic Container](https://polyhaven.com/a/plastic_container) by PierreB3D is
+bundled at a 2K browser-quality tier as six shared-geometry exterior storage
+and cover props. Poly Haven publishes it under **CC0 1.0**. The official glTF,
+buffer, and three texture maps are retained in
+`assets/environment/polyhaven-plastic-container/`, together with source links,
+official MD5 checksums, and a local license record. The project only adds
+placement, scale, collision, and rendering behavior.
+
 ## Project-authored and derived runtime assets
 
 | Asset | Creation and dependency record | Runtime status |
@@ -226,7 +234,7 @@ procedural fallback remains available if a clip cannot download or decode.
 
 ## Research-only audio candidates - not bundled
 
-Build 5.1.5 uses project-authored procedural Web Audio, the separately
+Build 5.1.6 uses project-authored procedural Web Audio, the separately
 documented CC BY 3.0 recorded report derivatives above, and the documented
 Kenney CC0 tactical callouts and player footsteps. The following pages remain research links only;
 no additional source master or runtime derivative from them ships in this
