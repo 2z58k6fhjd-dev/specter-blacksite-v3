@@ -108,6 +108,7 @@ export class AudioDirector {
     this._musicNodes = null;
     this._powerGain = null;
     this._noiseBuffer = null;
+    this._weaponSamples = Object.create(null);
     this._zoneBlend = zoneValue(this.options.outdoorBlend);
     this._combatIntensity = clamp(this.options.combatIntensity);
     this._powerOn = Boolean(this.options.powerOn);
@@ -127,6 +128,7 @@ export class AudioDirector {
   get combatIntensity() { return this._combatIntensity; }
   get powerOn() { return this._powerOn; }
   get volumes() { return { ...this._volumes }; }
+  get weaponSamples() { return Object.keys(this._weaponSamples); }
 
   /**
    * Create and resume the Web Audio graph. Call from a trusted user gesture.
@@ -157,6 +159,31 @@ export class AudioDirector {
 
   /** Alias intended for start-screen handlers. */
   activate() { return this.resume(); }
+
+  /**
+   * Decode optional externally recorded weapon reports after the audio context
+   * has been activated. The procedural layers remain active as a deterministic
+   * fallback and to provide spatial tails, suppression, and casing detail.
+   */
+  async loadWeaponSamples(payloads = {}) {
+    if (!this.ready) return Object.freeze({ loaded: [], failed: ['context-not-ready'] });
+    const loaded = [];
+    const failed = [];
+    for (const [kind, payload] of Object.entries(payloads)) {
+      const weapon = kind === 'pistol' ? 'pistol' : kind === 'rifle' ? 'rifle' : null;
+      if (!weapon || !(payload instanceof ArrayBuffer)) { failed.push(kind); continue; }
+      try {
+        // decodeAudioData can detach its argument, so retain the fetched source.
+        const buffer = await this._context.decodeAudioData(payload.slice(0));
+        this._weaponSamples[weapon] = buffer;
+        loaded.push(weapon);
+      } catch (error) {
+        this._lastError = error;
+        failed.push(weapon);
+      }
+    }
+    return Object.freeze({ loaded: Object.freeze(loaded), failed: Object.freeze(failed) });
+  }
 
   async suspend() {
     if (!this._context || this._context.state !== 'running') return false;
@@ -532,6 +559,39 @@ export class AudioDirector {
     return source;
   }
 
+  _sampleLayer(event, buffer, settings = {}) {
+    if (!buffer) return null;
+    const context = this._context;
+    const start = settings.start ?? context.currentTime;
+    const rate = settings.rate || 1;
+    const source = context.createBufferSource();
+    const gain = context.createGain();
+    const filters = [];
+    source.buffer = buffer;
+    source.playbackRate.value = rate;
+    let node = source;
+    for (const definition of settings.filters || []) {
+      const filter = context.createBiquadFilter();
+      filter.type = definition.type || 'lowpass';
+      filter.frequency.value = definition.frequency || 2500;
+      filter.Q.value = definition.q ?? 0.7;
+      node.connect(filter);
+      node = filter;
+      filters.push(filter);
+    }
+    node.connect(gain).connect(event.input);
+    const duration = Math.max(0.02, Math.min(settings.duration || buffer.duration / rate, buffer.duration / rate));
+    const end = start + duration;
+    gain.gain.setValueAtTime(EPSILON, start);
+    gain.gain.linearRampToValueAtTime(Math.max(EPSILON, settings.gain ?? 0.45), start + Math.min(0.004, duration * 0.08));
+    gain.gain.setValueAtTime(Math.max(EPSILON, settings.gain ?? 0.45), start + duration * 0.48);
+    gain.gain.exponentialRampToValueAtTime(EPSILON, end);
+    this._trackTransient(source, event, [source, ...filters, gain]);
+    source.start(start);
+    source.stop(end + 0.012);
+    return source;
+  }
+
   _oscillatorLayer(event, settings = {}) {
     const context = this._context;
     const start = settings.start ?? context.currentTime;
@@ -608,7 +668,19 @@ export class AudioDirector {
       maxDistance: weapon === 'rifle' ? 105 : 82,
       rolloffFactor: 1.08
     });
-    const transientGain = suppressed ? 0.22 : 1;
+    const sourceSample = this._weaponSamples[weapon];
+    if (sourceSample) {
+      this._sampleLayer(event, sourceSample, {
+        start: now,
+        duration: weapon === 'rifle' ? 1.2 : 1.08,
+        rate: variation,
+        gain: suppressed ? 0.13 : weapon === 'rifle' ? 0.48 : 0.43,
+        filters: suppressed
+          ? [{ type: 'highpass', frequency: 220, q: 0.55 }, { type: 'lowpass', frequency: 2100, q: 0.72 }]
+          : [{ type: 'highpass', frequency: 65, q: 0.4 }]
+      });
+    }
+    const transientGain = suppressed ? 0.22 : sourceSample ? 0.58 : 1;
 
     if (weapon === 'rifle') {
       this._noiseLayer(event, {
@@ -925,6 +997,7 @@ export class AudioDirector {
     this._musicNodes = null;
     this._powerGain = null;
     this._noiseBuffer = null;
+    this._weaponSamples = Object.create(null);
   }
 }
 
