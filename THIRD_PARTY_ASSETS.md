@@ -40,7 +40,7 @@ by [mamont nikita](https://sketchfab.com/mamontnikita62), licensed under
 
 Keep the three local license files with every redistribution.
 
-### Bundled CC0 environment prop
+### Bundled CC0 environment props
 
 [Steel Frame Shelves 01](https://polyhaven.com/a/steel_frame_shelves_01) by
 James Ray Cock is bundled at a 2K browser-quality tier as facility set dressing.
@@ -48,6 +48,23 @@ Poly Haven publishes the asset under **CC0 1.0**. The official glTF, buffer, and
 three texture maps are retained in
 `assets/environment/polyhaven-steel-frame-shelves-01/`, together with source
 links, official MD5 checksums, and a local license record. The project only adds
+placement, scale, collision, and rendering behavior.
+
+[Power Box 01](https://polyhaven.com/a/power_box_01) by Rico Cilliers
+(modeling/texturing) and Yann Kervran (rigging) is bundled at a 2K
+browser-quality tier around the interactive facility breaker. Poly Haven
+publishes it under **CC0 1.0**. The official glTF, buffer, and three texture
+maps live in `assets/environment/polyhaven-power-box-01/` with local source
+links, official MD5 checksums, and a license record. Its static source door is
+hidden at runtime so the project's own mission door and lever retain their
+animated use-state; the cabinet art itself is not altered.
+
+[Plastic Container](https://polyhaven.com/a/plastic_container) by PierreB3D is
+bundled at a 2K browser-quality tier as six shared-geometry exterior storage
+and cover props. Poly Haven publishes it under **CC0 1.0**. The official glTF,
+buffer, and three texture maps are retained in
+`assets/environment/polyhaven-plastic-container/`, together with source links,
+official MD5 checksums, and a local license record. The project only adds
 placement, scale, collision, and rendering behavior.
 
 ## Project-authored and derived runtime assets
@@ -205,11 +222,21 @@ variants for contact, investigation, backup, flanking, retreat, suppression, and
 enemy states, then passes each through positional/radio processing. The clips
 are not AI-generated voices; they are licensed human-performed recordings.
 
+## Bundled player footsteps
+
+`assets/audio/cc0-kenney-rpg-footsteps/` contains ten unmodified OGG footstep
+clips from [Kenney RPG Audio](https://www.kenney.nl/assets/rpg-audio). The
+package `License.txt` is retained locally and names Kenney Vleugels / Kenney.nl
+as the author. The pack is **CC0 1.0**, so the recordings are permitted in
+personal and commercial projects. The runtime randomly selects a clip, then
+applies hard-floor filtering inside and grass filtering outside; an entirely
+procedural fallback remains available if a clip cannot download or decode.
+
 ## Research-only audio candidates - not bundled
 
-Build 5.1.3 uses project-authored procedural Web Audio, the separately
+Build 5.1.6 uses project-authored procedural Web Audio, the separately
 documented CC BY 3.0 recorded report derivatives above, and the documented
-Kenney CC0 tactical callouts. The following pages remain research links only;
+Kenney CC0 tactical callouts and player footsteps. The following pages remain research links only;
 no additional source master or runtime derivative from them ships in this
 repository:
 
@@ -225,7 +252,6 @@ repository:
   [grass footsteps](https://freesound.org/people/Fission9/sounds/521587/) - surface-aware movement.
 - [Outdoor forest ambience](https://freesound.org/people/Nox_Sound/sounds/570492/) and
   [low-frequency HVAC room tone](https://freesound.org/s/215293/) - zone ambience.
-- [Kenney Voiceover Pack](https://www.kenney.nl/assets/voiceover-pack) - tactical callout candidate.
 
 Before any researched audio enters a public build, archive the original source,
 author, exact license receipt, source URL, editing notes, and runtime derivative.

@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'specter-blacksite-overhaul-foundation-';
-const CACHE_VERSION = 'v513-cc0-set-dressing';
+const CACHE_VERSION = 'v516-cc0-exterior-props';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 
 // The application shell is deliberately small and atomic: if any of these files
@@ -105,6 +105,22 @@ const OPTIONAL_PRECACHE_URLS = [
   './assets/environment/polyhaven-steel-frame-shelves-01/textures/steel_frame_shelves_01_nor_gl_2k.jpg',
   './assets/environment/polyhaven-steel-frame-shelves-01/textures/steel_frame_shelves_01_arm_2k.jpg',
 
+  './assets/environment/polyhaven-power-box-01/README.md',
+  './assets/environment/polyhaven-power-box-01/LICENSE.txt',
+  './assets/environment/polyhaven-power-box-01/power_box_01_2k.gltf',
+  './assets/environment/polyhaven-power-box-01/power_box_01.bin',
+  './assets/environment/polyhaven-power-box-01/textures/power_box_01_diff_2k.jpg',
+  './assets/environment/polyhaven-power-box-01/textures/power_box_01_nor_gl_2k.jpg',
+  './assets/environment/polyhaven-power-box-01/textures/power_box_01_arm_2k.jpg',
+
+  './assets/environment/polyhaven-plastic-container/README.md',
+  './assets/environment/polyhaven-plastic-container/LICENSE.txt',
+  './assets/environment/polyhaven-plastic-container/plastic_container_2k.gltf',
+  './assets/environment/polyhaven-plastic-container/plastic_container.bin',
+  './assets/environment/polyhaven-plastic-container/textures/plastic_container_diff_2k.jpg',
+  './assets/environment/polyhaven-plastic-container/textures/plastic_container_nor_gl_2k.jpg',
+  './assets/environment/polyhaven-plastic-container/textures/plastic_container_arm_2k.jpg',
+
   './assets/audio/README.md',
   './assets/audio/cc-by-3.0-tabasco/LICENSE.txt',
   './assets/audio/cc-by-3.0-tabasco/rifle-sks-01.wav',
@@ -126,6 +142,18 @@ const OPTIONAL_PRECACHE_URLS = [
   './assets/audio/cc0-kenney-voiceover/Female-war_supressing_fire.ogg',
   './assets/audio/cc0-kenney-voiceover/Male-war_medic.ogg',
   './assets/audio/cc0-kenney-voiceover/Female-war_medic.ogg',
+  './assets/audio/cc0-kenney-rpg-footsteps/README.md',
+  './assets/audio/cc0-kenney-rpg-footsteps/License.txt',
+  './assets/audio/cc0-kenney-rpg-footsteps/footstep00.ogg',
+  './assets/audio/cc0-kenney-rpg-footsteps/footstep01.ogg',
+  './assets/audio/cc0-kenney-rpg-footsteps/footstep02.ogg',
+  './assets/audio/cc0-kenney-rpg-footsteps/footstep03.ogg',
+  './assets/audio/cc0-kenney-rpg-footsteps/footstep04.ogg',
+  './assets/audio/cc0-kenney-rpg-footsteps/footstep05.ogg',
+  './assets/audio/cc0-kenney-rpg-footsteps/footstep06.ogg',
+  './assets/audio/cc0-kenney-rpg-footsteps/footstep07.ogg',
+  './assets/audio/cc0-kenney-rpg-footsteps/footstep08.ogg',
+  './assets/audio/cc0-kenney-rpg-footsteps/footstep09.ogg',
 
   './README.md',
   './THIRD_PARTY_ASSETS.md',

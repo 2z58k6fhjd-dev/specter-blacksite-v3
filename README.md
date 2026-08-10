@@ -1,6 +1,6 @@
 # SPECTER: Blacksite
 
-Build: `5.1.3-CC0-SET-DRESSING`
+Build: `5.1.6-CC0-EXTERIOR-PROPS`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build 5.0
 overhauls the controller, viewmodels, combat presentation, enemy behavior,
@@ -37,8 +37,10 @@ keeping the project suitable for static hosting on GitHub Pages.
   search, chase, engagement, cover, flanking, suppression, retreat, squad alerts,
   and per-role difficulty tuning.
 - Expanded facility with furnished work areas, storage, server equipment,
-  three high-detail CC0 industrial shelf props with collision/shadowing,
-  animated breaker hardware, and a powered two-leaf exit.
+  three high-detail CC0 industrial shelf props with collision/shadowing, a
+  2K high-detail CC0 Power Box cabinet around the animated breaker hardware,
+  six high-detail CC0 storage containers deployed as exterior hard cover,
+  and a powered two-leaf exit.
 - Compact exterior compound with a checkpoint, motor pool, storage yard,
   communications area, service roads, barriers, grounded modern vehicles, and
   an extraction pad.
@@ -49,9 +51,12 @@ keeping the project suitable for static hosting on GitHub Pages.
 - Eight project-generated PBR v2 material families using 23 browser-ready 2K
   albedo, normal, and packed ORM maps.
 - Procedural indoor/outdoor ambience, adaptive exploration/combat music,
-  spatial weapon and mechanism sounds, footsteps, impacts, and enemy call tones.
+  spatial weapon and mechanism sounds, impacts, and enemy call tones.
   CC BY 3.0 recorded SKS and CZ transient layers now reinforce rifle and pistol
   reports while the procedural system keeps spatial tails and suppression.
+- Ten CC0 recorded player-footstep clips now provide varied movement foley.
+  The facility applies a bright hard-floor treatment while the exterior grass
+  is softer, lower-passed, and lightly rustled; each has a procedural fallback.
 - Fourteen CC0 Kenney human-performed tactical callouts now replace the
   temporary synthetic enemy phrases for contact, investigation, backup,
   flanking, retreat, suppression, and downed states. Male/female variations are radio-filtered,
@@ -148,7 +153,7 @@ and that notice must stay with redistribution. Loading or decoding these layers
 is optional—if they are unavailable, the procedural weapon system remains the
 automatic fallback without blocking the mission.
 
-The high-resolution runtime payload is about 208 MiB, so the first launch
+The high-resolution runtime payload is about 220 MiB, so the first launch
 requires a stable connection and can take noticeably longer on mobile networks.
 The service worker installs the small application shell first, then caches the
 large model and texture payload on a best-effort basis; a failed optional cache
