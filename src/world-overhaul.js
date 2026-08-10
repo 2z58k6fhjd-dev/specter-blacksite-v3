@@ -31,7 +31,7 @@ function createCylinder(name,radius,length,material,position,rotation=null,segme
 
 function createCloudTexture(){
   const canvas=document.createElement('canvas');canvas.width=512;canvas.height=256;const ctx=canvas.getContext('2d');
-  ctx.clearRect(0,0,512,256);const gradient=ctx.createRadialGradient(256,126,12,256,126,205);gradient.addColorStop(0,'rgba(255,255,255,.88)');gradient.addColorStop(.45,'rgba(245,249,248,.68)');gradient.addColorStop(1,'rgba(235,241,241,0)');
+  ctx.clearRect(0,0,512,256);const gradient=ctx.createRadialGradient(256,126,12,256,126,205);gradient.addColorStop(0,'rgba(234,241,243,.72)');gradient.addColorStop(.45,'rgba(181,197,202,.48)');gradient.addColorStop(1,'rgba(177,194,200,0)');
   ctx.fillStyle=gradient;ctx.fillRect(0,0,512,256);const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;return texture;
 }
 
@@ -49,10 +49,10 @@ function addZoneSign(scene,title,subtitle,position,rotationY=0,width=3.4){
 }
 
 function addCloudBank(scene){
-  const texture=createCloudTexture(),material=new THREE.SpriteMaterial({map:texture,color:0xcbd5d5,transparent:true,opacity:.58,depthWrite:false,fog:false});
+  const texture=createCloudTexture(),material=new THREE.SpriteMaterial({map:texture,color:0xb7c5ca,transparent:true,opacity:.44,depthWrite:false,fog:false});
   const clouds=new THREE.Group();clouds.name='exterior-cloud-bank';const random=mulberry32(92);
   for(let index=0;index<20;index++){
-    const cloud=new THREE.Sprite(material.clone());cloud.position.set((random()-.5)*260,42+random()*38,-58-(random()*155));cloud.scale.set(35+random()*55,10+random()*18,1);cloud.material.opacity=.34+random()*.38;clouds.add(cloud);
+    const cloud=new THREE.Sprite(material.clone());cloud.position.set((random()-.5)*260,42+random()*38,-58-(random()*155));cloud.scale.set(35+random()*55,10+random()*18,1);cloud.material.opacity=.24+random()*.27;clouds.add(cloud);
   }
   scene.add(clouds);return clouds;
 }
@@ -309,12 +309,12 @@ export function buildWorldOverhaul({scene,collision,environmentTextures,facility
   const city=addCitySkyline(scene),clouds=addCloudBank(scene);
 
   const sky=new Sky();sky.name='physical-sky';sky.scale.setScalar(1100);scene.add(sky);
-  const uniforms=sky.material.uniforms;uniforms.turbidity.value=5.5;uniforms.rayleigh.value=1.9;uniforms.mieCoefficient.value=.0075;uniforms.mieDirectionalG.value=.84;
-  // Keep the sun behind the player's right shoulder. This produces readable
-  // cross-lighting without bleaching the skyline and scope view at spawn.
-  const phi=THREE.MathUtils.degToRad(90-21),theta=THREE.MathUtils.degToRad(315),sunPosition=new THREE.Vector3().setFromSphericalCoords(1,phi,theta);uniforms.sunPosition.value.copy(sunPosition);
-  const sun=new THREE.DirectionalLight(0xffd6ad,2.05);sun.name='exterior-sun';sun.position.copy(sunPosition).multiplyScalar(110);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-48;sun.shadow.camera.right=48;sun.shadow.camera.top=48;sun.shadow.camera.bottom=-48;sun.shadow.camera.near=1;sun.shadow.camera.far=230;sun.shadow.bias=-.00018;sun.shadow.normalBias=.035;scene.add(sun);
-  const outdoorAmbient=new THREE.HemisphereLight(0x91aab5,0x263421,.56);outdoorAmbient.name='exterior-ambient';scene.add(outdoorAmbient);
+  const uniforms=sky.material.uniforms;uniforms.turbidity.value=7.2;uniforms.rayleigh.value=1.45;uniforms.mieCoefficient.value=.0032;uniforms.mieDirectionalG.value=.77;
+  // Keep the low afternoon sun behind the player's right shoulder.  The old
+  // azimuth put it directly into the QA exterior camera and washed out the sky.
+  const phi=THREE.MathUtils.degToRad(90-34),theta=THREE.MathUtils.degToRad(45),sunPosition=new THREE.Vector3().setFromSphericalCoords(1,phi,theta);uniforms.sunPosition.value.copy(sunPosition);
+  const sun=new THREE.DirectionalLight(0xffdfbd,1.65);sun.name='exterior-sun';sun.position.copy(sunPosition).multiplyScalar(110);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-48;sun.shadow.camera.right=48;sun.shadow.camera.top=48;sun.shadow.camera.bottom=-48;sun.shadow.camera.near=1;sun.shadow.camera.far=230;sun.shadow.bias=-.00018;sun.shadow.normalBias=.035;scene.add(sun);
+  const outdoorAmbient=new THREE.HemisphereLight(0x91aab5,0x263421,.48);outdoorAmbient.name='exterior-ambient';scene.add(outdoorAmbient);
 
   const exit=createExitDoor(scene,collision,materialSet),breaker=createBreakerBox(scene,materialSet);
   createInteriorFurniture({scene,collision,materials:materialSet});
@@ -356,7 +356,7 @@ export function buildWorldOverhaul({scene,collision,environmentTextures,facility
     breaker.redMaterial.emissiveIntensity=THREE.MathUtils.lerp(1.6,.08,breakerProgress);breaker.greenMaterial.emissiveIntensity=THREE.MathUtils.lerp(.06,2.6,breakerProgress);
     exit.progress=damp(exit.progress,exit.target,3.4,dt);exit.left.position.x=THREE.MathUtils.lerp(exit.closedLeft,exit.openLeft,exit.progress);exit.right.position.x=THREE.MathUtils.lerp(exit.closedRight,exit.openRight,exit.progress);exit.leftWindow.position.x=exit.left.position.x;exit.rightWindow.position.x=exit.right.position.x;
     outdoorBlend=damp(outdoorBlend,THREE.MathUtils.smoothstep(-playerZ,42,53),2.2,dt);
-    sun.intensity=THREE.MathUtils.lerp(.12,2.05,outdoorBlend);outdoorAmbient.intensity=THREE.MathUtils.lerp(.06,.56,outdoorBlend);sky.visible=outdoorBlend>.015;clouds.visible=sky.visible;
+    sun.intensity=THREE.MathUtils.lerp(.12,1.65,outdoorBlend);outdoorAmbient.intensity=THREE.MathUtils.lerp(.06,.48,outdoorBlend);sky.visible=outdoorBlend>.015;clouds.visible=sky.visible;
     cityBeaconClock+=dt;communications.beacon.material.color.setHex(Math.sin(cityBeaconClock*2.7)>.35?0xff3825:0x3a0805);
     city.beacons.children.forEach((child,index)=>{if(child.isMesh&&child.geometry?.type==='SphereGeometry')child.visible=Math.sin(cityBeaconClock*2.15+index*.8)>.1});
     if(scene.fog?.isFogExp2){scene.fog.color.lerpColors(interiorFogColor,exteriorFogColor,outdoorBlend);scene.fog.density=THREE.MathUtils.lerp(.012,.00135,outdoorBlend)}

@@ -14,7 +14,7 @@ renderer.setPixelRatio(Math.min(devicePixelRatio,1.25));
 renderer.setSize(innerWidth,innerHeight);
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.14;
+renderer.toneMappingExposure=1.02;
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 document.getElementById('game').appendChild(renderer.domElement);
@@ -1264,7 +1264,7 @@ function animate(){
   requestAnimationFrame(animate);
   const dt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;
   if(started){
-    move(dt);worldOverhaul.update(dt,camera.position.z);renderer.toneMappingExposure=THREE.MathUtils.lerp(1.14,.72,worldOverhaul.outdoorBlend);weaponFill.intensity=THREE.MathUtils.lerp(4.8,1.45,worldOverhaul.outdoorBlend);
+    move(dt);worldOverhaul.update(dt,camera.position.z);renderer.toneMappingExposure=THREE.MathUtils.lerp(1.02,.8,worldOverhaul.outdoorBlend);weaponFill.intensity=THREE.MathUtils.lerp(4.8,1.45,worldOverhaul.outdoorBlend);
     if(!exteriorEntered&&camera.position.z<-47){exteriorEntered=true;objective.textContent='OBJECTIVE: CLEAR THE CHECKPOINT AND PERIMETER';toast('EXTERIOR COMBAT ZONE ENTERED')}
     updatePlayerModel(t);updateWeapon(dt,t);updateWeaponEffects(dt);updateEnemies(dt,t);
     camera.getWorldDirection(audioForward);const combatIntensity=enemies.reduce((level,enemy)=>Math.max(level,enemy.userData.dead?0:enemy.userData.intent?.alertness||0),0);
