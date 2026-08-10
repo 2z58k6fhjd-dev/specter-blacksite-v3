@@ -242,7 +242,7 @@ procedural fallback remains available if a clip cannot download or decode.
 
 ## Research-only audio candidates - not bundled
 
-Build 5.1.9 uses project-authored procedural Web Audio, the separately
+Build 5.2.0 uses project-authored procedural Web Audio, the separately
 documented CC BY 3.0 recorded report derivatives above, and the documented
 Kenney CC0 tactical callouts and player footsteps. The following pages remain research links only;
 no additional source master or runtime derivative from them ships in this

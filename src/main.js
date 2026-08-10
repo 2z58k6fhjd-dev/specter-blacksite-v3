@@ -618,6 +618,9 @@ const enemyCoverCandidates=[
   {position:{x:-7,y:0,z:-58},coverage:.92,priority:.45},{position:{x:6.2,y:0,z:-63},coverage:.92,priority:.4},{position:{x:-12,y:0,z:-79},coverage:.96,priority:.35},
   {position:{x:-4,y:0,z:-89},coverage:.92,priority:.4},{position:{x:5,y:0,z:-107},coverage:.92,priority:.4},{position:{x:-18,y:0,z:-99},coverage:.94,priority:.34},
   {position:{x:13,y:0,z:-118},coverage:.88,priority:.3},{position:{x:21,y:0,z:-120},coverage:.92,priority:.3},
+  {position:{x:-10,y:0,z:-151},coverage:.96,priority:.5,tag:'utility-fuel-tanks'},{position:{x:13,y:0,z:-149},coverage:.95,priority:.48,tag:'utility-container-north'},
+  {position:{x:5,y:0,z:-159},coverage:.94,priority:.48,tag:'utility-pickup'},{position:{x:-20,y:0,z:-154},coverage:.96,priority:.52,tag:'utility-pump-house'},
+  {position:{x:15,y:0,z:-162},coverage:.95,priority:.5,tag:'utility-container-south'},{position:{x:0,y:0,z:-171},coverage:.9,priority:.4,tag:'extraction-service-road'},
   // These stand-off points sit on the protected side of the physical CC0
   // barriers, so a retreat or suppression response produces readable cover
   // behavior instead of sending enemies through the new checkpoint dressing.
@@ -819,7 +822,7 @@ function spawnEnemy(x,z,role='rifleman'){
   root.traverse(object=>{if(object.isMesh)object.userData.enemy=root});
   const interior=z>-45,patrolPoints=interior
     ?[{x:THREE.MathUtils.clamp(x-1.8,-7.8,7.8),y:0,z:THREE.MathUtils.clamp(z+2.8,-42,7)},{x:THREE.MathUtils.clamp(x+1.8,-7.8,7.8),y:0,z:THREE.MathUtils.clamp(z-2.8,-42,7)}]
-    :[{x:THREE.MathUtils.clamp(x-4,-36,36),y:0,z:THREE.MathUtils.clamp(z+4,-132,-48)},{x:THREE.MathUtils.clamp(x+4,-36,36),y:0,z:THREE.MathUtils.clamp(z-4,-132,-48)}];
+    :[{x:THREE.MathUtils.clamp(x-4,-36,36),y:0,z:THREE.MathUtils.clamp(z+4,-176,-48)},{x:THREE.MathUtils.clamp(x+4,-36,36),y:0,z:THREE.MathUtils.clamp(z-4,-176,-48)}];
   const ai=enemyAISystem.addAgent({id:aiId,squadId:interior?'interior':'perimeter',difficulty:role==='commander'?'elite':heavy||role==='marksman'?'hardened':'regular',patrolPoints,health:maxHealth,maxHealth});
   root.userData.ai=ai;root.userData.shadowDetailed=null;enemiesByAIId.set(aiId,root);
   scene.add(root);enemies.push(root);
@@ -1130,7 +1133,7 @@ function renderScopeView(dt){
 }
 
 let started=false,powerOn=false,lightOn=true,hp=100,armor=50,kills=0,exteriorEntered=false,missionWon=false,footstepNoiseTimer=0;
-const keys={},clock=new THREE.Clock(),moveVelocity=new THREE.Vector3(),audioForward=new THREE.Vector3(),extractionPoint=new THREE.Vector3(0,1.72,-128);
+const keys={},clock=new THREE.Clock(),moveVelocity=new THREE.Vector3(),audioForward=new THREE.Vector3(),extractionPoint=new THREE.Vector3(0,1.72,-172);
 function toast(t){const m=document.getElementById('message');m.textContent=t;m.style.opacity=1;clearTimeout(toast.id);toast.id=setTimeout(()=>m.style.opacity=0,1500)}
 function hud(){
   hpEl.textContent=hp;armorEl.textContent=armor;
@@ -1142,7 +1145,7 @@ const hpEl=document.getElementById('hp'),armorEl=document.getElementById('armor'
 const collisionPoint=new THREE.Vector3(),moveNext=new THREE.Vector3(),moveAxisX=new THREE.Vector3(),moveAxisZ=new THREE.Vector3();
 function canMove(next){
   const indoors=next.z>-44.45;
-  if(next.z>8.3||next.z<-135.4)return false;
+  if(next.z>8.3||next.z<-179.4)return false;
   if(indoors&&Math.abs(next.x)>8.45)return false;
   if(!indoors&&Math.abs(next.x)>42.35)return false;
   collisionPoint.set(next.x,1,next.z);
@@ -1231,6 +1234,7 @@ function applyLocalQA(){
   if(localQAMode==='exterior'){restorePower();camera.position.set(0,1.72,-52);previousAIPlayerPosition.copy(camera.position)}
   if(localQAMode==='breaker'){camera.position.set(-5.98,1.72,5.4);camera.rotation.set(0,Math.PI/2,0);previousAIPlayerPosition.copy(camera.position)}
   if(localQAMode==='storage'){restorePower();camera.position.set(-5.95,1.72,-98);camera.rotation.set(0,Math.PI/2,0);previousAIPlayerPosition.copy(camera.position)}
+  if(localQAMode==='utility'){restorePower();camera.position.set(0,1.72,-166);camera.rotation.set(0,0,0);previousAIPlayerPosition.copy(camera.position)}
   if(localQAMode==='victory'){
     restorePower();for(const enemy of enemies){if(!enemy.userData.dead){enemy.userData.dead=true;enemy.userData.health=0;enemy.userData.ai?.setHealth(0);kills++}}
     camera.position.copy(extractionPoint);previousAIPlayerPosition.copy(camera.position);hud();
@@ -1253,9 +1257,10 @@ await Promise.all([
 if(requiredAssetFailure){
   startButton.disabled=true;startButton.textContent='ASSET CHECK FAILED';loadMessage.textContent='A required model or texture failed to load. Check the diagnostics above.';
 }else{
-  installRifle();installPistol();installRifleVariants();installPlayerModel();installPlayerArms();installIndustrialShelving();installPowerBox();const exteriorContainerCount=installPlasticContainers(),roadBarrierCount=installRoadBarriers();const propSummary=[assetMap.has('steelShelves')?'3 industrial shelves':'',assetMap.has('powerBox')?'animated power box':'',exteriorContainerCount?`${exteriorContainerCount} exterior containers`:'',roadBarrierCount?`${roadBarrierCount} road barriers`:'' ].filter(Boolean).join(' · ');status('props','LOADED',propSummary||'procedural prop fallback');attachFlashlightToWeapon(currentWeapon);
+  installRifle();installPistol();installRifleVariants();installPlayerModel();installPlayerArms();installIndustrialShelving();installPowerBox();const exteriorContainerCount=installPlasticContainers(),roadBarrierCount=installRoadBarriers();const propSummary=[assetMap.has('steelShelves')?'3 industrial shelves':'',assetMap.has('powerBox')?'animated power box':'',exteriorContainerCount?`${exteriorContainerCount} exterior containers`:'',roadBarrierCount?`${roadBarrierCount} road barriers`:'',worldOverhaul.utilityYard?'expanded utility yard':'' ].filter(Boolean).join(' · ');status('props','LOADED',propSummary||'procedural prop fallback');attachFlashlightToWeapon(currentWeapon);
   spawnEnemy(-2.5,-8,'rifleman');spawnEnemy(2.9,-18,'scout');spawnEnemy(-1.2,-27,'breacher');
   spawnEnemy(3.8,-54,'rifleman');spawnEnemy(-7.2,-68,'scout');spawnEnemy(8.5,-88,'breacher');spawnEnemy(-5.4,-108,'marksman');spawnEnemy(12,-122,'commander');
+  spawnEnemy(12.5,-145,'scout');spawnEnemy(-14,-151,'breacher');spawnEnemy(6,-165,'marksman');spawnEnemy(-9,-170,'rifleman');
   status('soldier','LOADED','8 tactical hostiles · 5 role kits · full-detail rifles');hud();
   startButton.disabled=false;startButton.textContent='ENTER BLACKSITE';loadMessage.textContent='Assets verified. Mission ready.';
 }

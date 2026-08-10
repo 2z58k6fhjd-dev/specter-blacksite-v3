@@ -214,8 +214,48 @@ function createCommunicationsArea({scene,collision,materials}){
   return {shed,tower,generator,beacon};
 }
 
+function createUtilityYard({scene,collision,materials}){
+  const {asphalt,concrete,darkConcrete,metal,trim,paint,rubber,warning}=materials;
+  const group=new THREE.Group();group.name='utility-yard';
+  const pad=new THREE.Mesh(new THREE.PlaneGeometry(31,28),asphalt);pad.name='utility-yard-pad';pad.rotation.x=-Math.PI/2;pad.position.set(-15,-.094,-155);pad.receiveShadow=true;scene.add(pad);
+
+  const pumpHouse=new THREE.Group();pumpHouse.name='utility-pump-house';pumpHouse.position.set(-20,0,-154);
+  pumpHouse.add(createBox('pump-house-floor',new THREE.Vector3(7.1,.18,5.6),concrete,new THREE.Vector3(0,.09,0)));
+  pumpHouse.add(createBox('pump-house-shell',new THREE.Vector3(6.55,2.9,4.9),darkConcrete,new THREE.Vector3(0,1.45,.15)));
+  pumpHouse.add(createBox('pump-house-roof',new THREE.Vector3(7.25,.2,5.55),metal,new THREE.Vector3(0,3.02,.15)));
+  pumpHouse.add(createBox('pump-house-door',new THREE.Vector3(1.32,2.28,.06),metal,new THREE.Vector3(-1.7,1.14,2.64)));
+  for(let y=1.12;y<2.3;y+=.18)pumpHouse.add(createBox('pump-house-vent-slat',new THREE.Vector3(1.8,.06,.08),trim,new THREE.Vector3(1.4,y,2.66)));
+  scene.add(pumpHouse);setShadow(pumpHouse);
+  const houseCollider=createBox('pump-house-collider',new THREE.Vector3(6.8,3.1,5.2),darkConcrete,new THREE.Vector3(-20,1.55,-153.85));houseCollider.visible=false;scene.add(houseCollider);collision.push(houseCollider);
+
+  const tankMaterial=paint.clone();tankMaterial.color.setHex(0x556866);
+  const tanks=new THREE.Group();tanks.name='utility-fuel-tanks';
+  for(const [x,z] of [[-10.3,-150.4],[-10.3,-158.6]]){
+    const tank=createCylinder('horizontal-fuel-tank',1.16,4.9,tankMaterial,new THREE.Vector3(x,1.47,z),new THREE.Euler(0,0,Math.PI*.5),24);tank.castShadow=true;tank.receiveShadow=true;tanks.add(tank);
+    for(const offset of [-1.55,1.55])tanks.add(createBox('fuel-tank-saddle',new THREE.Vector3(.32,.52,1.9),metal,new THREE.Vector3(x+offset,.34,z)));
+    const tankCollider=createBox('fuel-tank-collider',new THREE.Vector3(5.2,2.45,2.6),tankMaterial,new THREE.Vector3(x,1.22,z));tankCollider.visible=false;scene.add(tankCollider);collision.push(tankCollider);
+  }
+  scene.add(tanks);
+
+  const generator=createBox('utility-generator',new THREE.Vector3(3.3,1.65,1.7),warning,new THREE.Vector3(-3.9,.825,-157.8));scene.add(generator);collision.push(generator);
+  const generatorCanopy=new THREE.Group();generatorCanopy.name='utility-generator-canopy';generatorCanopy.add(createBox('generator-canopy-roof',new THREE.Vector3(4.15,.12,2.45),metal,new THREE.Vector3(-3.9,2.6,-157.8)));
+  for(const x of [-5.75,-2.05])for(const z of [-158.85,-156.75])generatorCanopy.add(createBox('generator-canopy-post',new THREE.Vector3(.12,2.5,.12),trim,new THREE.Vector3(x,1.25,z)));
+  scene.add(generatorCanopy);setShadow(generatorCanopy);
+
+  const containerA=createShippingContainer(materials,new THREE.Vector3(13.2,0,-148.8),Math.PI*.5,0x51595d),containerB=createShippingContainer(materials,new THREE.Vector3(14.8,0,-161.5),0,0x5a493a);scene.add(containerA,containerB);
+  for(const [x,z,size,rotation] of [[13.2,-148.8,new THREE.Vector3(6.2,2.6,2.7),Math.PI*.5],[14.8,-161.5,new THREE.Vector3(2.7,2.6,6.2),0]]){
+    const collider=createBox('utility-container-collider',size,metal,new THREE.Vector3(x,1.3,z),new THREE.Euler(0,rotation,0));collider.visible=false;scene.add(collider);collision.push(collider);
+  }
+  for(const [x,z] of [[-1.2,-146.8],[3.5,-153.5],[1.4,-165.2],[-7,-166]]){
+    const crate=createBox('utility-supply-crate',new THREE.Vector3(1.45,1.18,1.25),darkConcrete,new THREE.Vector3(x,.59,z),new THREE.Euler(0,(x-z)*.04,0));scene.add(crate);collision.push(crate);
+  }
+  const serviceCart=createUtilityTruck(materials,new THREE.Vector3(4.5,0,-158.8),Math.PI*.92);serviceCart.name='utility-response-pickup';serviceCart.scale.set(.84,.84,.84);scene.add(serviceCart);const cartCollider=createBox('utility-pickup-collider',new THREE.Vector3(4.85,2.1,2.2),paint,new THREE.Vector3(4.5,1.05,-158.8),new THREE.Euler(0,Math.PI*.92,0));cartCollider.visible=false;scene.add(cartCollider);collision.push(cartCollider);
+  addZoneSign(scene,'UTILITY YARD','PUMPS · FUEL · GENERATION',new THREE.Vector3(-10.4,3.2,-141.7),Math.PI/2,4.25);
+  return {group,pumpHouse,tanks,generator,containers:[containerA,containerB],serviceCart};
+}
+
 function createExtractionZone(scene,materials){
-  const group=new THREE.Group();group.name='extraction-zone';group.position.set(0,-.075,-128);
+  const group=new THREE.Group();group.name='extraction-zone';group.position.set(0,-.075,-172);
   const pad=new THREE.Mesh(new THREE.CircleGeometry(7.2,48),materials.asphalt);pad.rotation.x=-Math.PI/2;pad.receiveShadow=true;group.add(pad);
   const ringMaterial=new THREE.MeshBasicMaterial({color:0xd7e2d7,side:THREE.DoubleSide,toneMapped:false}),ring=new THREE.Mesh(new THREE.RingGeometry(5.65,5.95,48),ringMaterial);ring.rotation.x=-Math.PI/2;ring.position.y=.012;group.add(ring);
   for(const [x,z,w,d] of [[0,0,1.05,4.2],[-1.25,0,1.05,4.2],[1.25,0,1.05,4.2],[0,0,3.5,.92]]){
@@ -225,7 +265,7 @@ function createExtractionZone(scene,materials){
   for(let index=0;index<12;index++){
     const angle=index/12*Math.PI*2,lamp=createCylinder('extraction-lamp',.085,.05,lampMaterial,new THREE.Vector3(Math.cos(angle)*6.35,.025,Math.sin(angle)*6.35),new THREE.Euler(0,0,Math.PI/2),10);group.add(lamp);
   }
-  scene.add(group);addZoneSign(scene,'EXTRACTION','SECURE ZONE ECHO',new THREE.Vector3(0,2.55,-134.55),0,3.8);return group;
+  scene.add(group);addZoneSign(scene,'EXTRACTION','SECURE ZONE ECHO',new THREE.Vector3(0,2.55,-178.55),0,3.8);return group;
 }
 
 function createInteriorFurniture({scene,collision,materials}){
@@ -301,8 +341,8 @@ export function buildWorldOverhaul({scene,collision,environmentTextures,facility
   const locker=metal.clone();locker.color.setHex(0x4f5954);
   const materialSet={metal,trim,concrete,darkConcrete,door,warning,glass,grassMaterial,asphalt,paint:vehiclePaint,rubber,screen,chair,desk,locker};
 
-  const ground=new THREE.Mesh(new THREE.PlaneGeometry(90,96,1,1),grassMaterial);ground.name='exterior-grass-terrain';ground.rotation.x=-Math.PI/2;ground.position.set(0,-.12,-92);ground.receiveShadow=true;scene.add(ground);
-  const road=new THREE.Mesh(new THREE.PlaneGeometry(8.5,76),asphalt);road.name='service-road';road.rotation.x=-Math.PI/2;road.position.set(0,-.105,-86);road.receiveShadow=true;scene.add(road);
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(90,142,1,1),grassMaterial);ground.name='exterior-grass-terrain';ground.rotation.x=-Math.PI/2;ground.position.set(0,-.12,-113);ground.receiveShadow=true;scene.add(ground);
+  const road=new THREE.Mesh(new THREE.PlaneGeometry(8.5,120),asphalt);road.name='service-road';road.rotation.x=-Math.PI/2;road.position.set(0,-.105,-108);road.receiveShadow=true;scene.add(road);
   const apron=new THREE.Mesh(new THREE.PlaneGeometry(22,13),asphalt);apron.name='exit-apron';apron.rotation.x=-Math.PI/2;apron.position.set(0,-.1,-50);apron.receiveShadow=true;scene.add(apron);
   // Close-range placeholder blade cards and geometric trees were intentionally
   // removed: the PBR ground reads better than visibly low-detail vegetation.
@@ -322,6 +362,7 @@ export function buildWorldOverhaul({scene,collision,environmentTextures,facility
   const motorPool=createMotorPool({scene,collision,materials:materialSet});
   const storageYard=createStorageYard({scene,collision,materials:materialSet});
   const communications=createCommunicationsArea({scene,collision,materials:materialSet});
+  const utilityYard=createUtilityYard({scene,collision,materials:materialSet});
   const extraction=createExtractionZone(scene,materialSet);
 
   // Loading bay details and exterior cover pieces.
@@ -341,10 +382,10 @@ export function buildWorldOverhaul({scene,collision,environmentTextures,facility
   }
   // Boundary fencing keeps the outdoor combat space readable without invisible walls.
   const fenceMaterial=new THREE.MeshStandardMaterial({color:0x4c5551,roughness:.58,metalness:.72,wireframe:true});
-  for(let z=-49;z>=-134;z-=5){
+  for(let z=-49;z>=-178;z-=5){
     for(const x of [-43,43]){const panel=createBox('perimeter-fence',new THREE.Vector3(.08,2.5,4.8),fenceMaterial,new THREE.Vector3(x,1.25,z));scene.add(panel);collision.push(panel)}
   }
-  for(let x=-40;x<=40;x+=5){const panel=createBox('far-perimeter-fence',new THREE.Vector3(4.8,2.5,.08),fenceMaterial,new THREE.Vector3(x,1.25,-136));scene.add(panel);collision.push(panel)}
+  for(let x=-40;x<=40;x+=5){const panel=createBox('far-perimeter-fence',new THREE.Vector3(4.8,2.5,.08),fenceMaterial,new THREE.Vector3(x,1.25,-180));scene.add(panel);collision.push(panel)}
 
   let powered=false,breakerProgress=0,breakerDoorProgress=0,outdoorBlend=0,cityBeaconClock=0;
   const interiorFogColor=new THREE.Color(0x050a08),exteriorFogColor=new THREE.Color(0x637582);
@@ -361,5 +402,5 @@ export function buildWorldOverhaul({scene,collision,environmentTextures,facility
     city.beacons.children.forEach((child,index)=>{if(child.isMesh&&child.geometry?.type==='SphereGeometry')child.visible=Math.sin(cityBeaconClock*2.15+index*.8)>.1});
     if(scene.fog?.isFogExp2){scene.fog.color.lerpColors(interiorFogColor,exteriorFogColor,outdoorBlend);scene.fog.density=THREE.MathUtils.lerp(.012,.00135,outdoorBlend)}
   }
-  return {exit,breaker,sky,sun,outdoorAmbient,vehicle,barriers,city,checkpoint,motorPool,storageYard,communications,extraction,setPowered,update,get exitOpen(){return exit.progress>.9},get outdoorBlend(){return outdoorBlend}};
+  return {exit,breaker,sky,sun,outdoorAmbient,vehicle,barriers,city,checkpoint,motorPool,storageYard,communications,utilityYard,extraction,setPowered,update,get exitOpen(){return exit.progress>.9},get outdoorBlend(){return outdoorBlend}};
 }

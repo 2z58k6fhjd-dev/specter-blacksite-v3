@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'specter-blacksite-overhaul-foundation-';
-const CACHE_VERSION = 'v519-sky-exposure-pass';
+const CACHE_VERSION = 'v520-utility-yard';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 
 // The application shell is deliberately small and atomic: if any of these files

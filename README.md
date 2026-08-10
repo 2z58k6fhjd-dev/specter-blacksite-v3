@@ -1,6 +1,6 @@
 # SPECTER: Blacksite
 
-Build: `5.1.9-SKY-EXPOSURE-PASS`
+Build: `5.2.0-UTILITY-YARD`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build 5.0
 overhauls the controller, viewmodels, combat presentation, enemy behavior,
@@ -43,9 +43,9 @@ keeping the project suitable for static hosting on GitHub Pages.
   concrete road barriers deployed as exterior hard cover that tactical enemies
   can select when suppressed or retreating,
   and a powered two-leaf exit.
-- Compact exterior compound with a checkpoint, motor pool, storage yard,
-  communications area, service roads, barriers, grounded modern vehicles, and
-  an extraction pad.
+- Expanded exterior compound with a checkpoint, motor pool, storage yard,
+  communications area, utility/fuel yard, service roads, barriers, grounded
+  modern vehicles, and a final extraction pad.
 - Instanced, non-explorable city skyline beyond the perimeter for atmosphere.
 - Physical sky, moving cloud bank, sun and shadow lighting, fog transitions,
   ACES tone mapping, SSAO, restrained bloom, and selectable quality presets
@@ -200,4 +200,4 @@ prompts, and build records.
 Research links in `THIRD_PARTY_ASSETS.md` are evaluation notes only. Their models,
 textures, and audio are not bundled merely because a source URL is listed. No
 sci-fi, futuristic, fantasy, cartoon, stylized, or visibly low-detail research
-asset was accepted into the build 5.1.9 runtime.
+asset was accepted into the build 5.2.0 runtime.
