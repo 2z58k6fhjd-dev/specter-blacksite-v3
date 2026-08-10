@@ -1,6 +1,6 @@
 # SPECTER: Blacksite
 
-Build: `5.0.0-OVERHAUL-FOUNDATION`
+Build: `5.1.0-RECORDED-AUDIO`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build 5.0
 overhauls the controller, viewmodels, combat presentation, enemy behavior,
@@ -39,11 +39,14 @@ keeping the project suitable for static hosting on GitHub Pages.
   an extraction pad.
 - Instanced, non-explorable city skyline beyond the perimeter for atmosphere.
 - Physical sky, moving cloud bank, sun and shadow lighting, fog transitions,
-  ACES tone mapping, SSAO, restrained bloom, and quality presets.
+  ACES tone mapping, SSAO, restrained bloom, and selectable quality presets
+  that apply immediately and persist between launches.
 - Eight project-generated PBR v2 material families using 23 browser-ready 2K
   albedo, normal, and packed ORM maps.
 - Procedural indoor/outdoor ambience, adaptive exploration/combat music,
   spatial weapon and mechanism sounds, footsteps, impacts, and enemy call tones.
+  CC BY 3.0 recorded SKS and CZ transient layers now reinforce rifle and pistol
+  reports while the procedural system keeps spatial tails and suppression.
 - Loading progress and diagnostics for models, the player rig, environment maps,
   and graphics pipeline.
 - Complete mission loop and victory state: restore power, clear all eight
@@ -97,6 +100,7 @@ prototype.
 | `F` | Toggle the weapon-mounted flashlight |
 | `R` | Reload |
 | `B` | Toggle SEMI/AUTO when the selected weapon supports it |
+| `G` | Open/close graphics settings; choose Performance, Balanced, High, or Ultra |
 | `1` | HK416 |
 | `2` | Tan M9A4 |
 | `3` | C5-K Compact Carbine |
@@ -119,6 +123,21 @@ Useful rendering query parameters are:
 - `?quality=balanced`
 - `?quality=high` (default; designed around a 6 GB GPU at 1080p)
 - `?quality=ultra` (8 GB GPU target)
+
+The in-game **GRAPHICS** control on the deployment screen and the `GFX` button
+during play expose the same four presets without a reload. The selected preset
+is stored locally, while a valid `?quality=` query parameter intentionally takes
+precedence for a one-off test session.
+
+## Audio provenance and fallback
+
+The runtime retains two short, normalized derivatives from the recorded
+OpenGameArt **Gunshot Sounds** archive by Vincent Sevedge / Tabasco: an SKS
+report for rifle fire and a CZ report for pistol fire. The archive's local
+**CC BY 3.0 Unported** notice is preserved under `assets/audio/`; attribution
+and that notice must stay with redistribution. Loading or decoding these layers
+is optional—if they are unavailable, the procedural weapon system remains the
+automatic fallback without blocking the mission.
 
 The high-resolution runtime payload is about 208 MiB, so the first launch
 requires a stable connection and can take noticeably longer on mobile networks.

@@ -109,6 +109,17 @@ OpenAI image generation on 2026-08-08. They are preserved with their records in
 `assets/environment/README.txt`, but build 5.0 uses the PBR v2 set for its main
 runtime materials.
 
+## Bundled recorded weapon reports
+
+`assets/audio/cc-by-3.0-tabasco/` contains two short, normalized and faded
+derivatives from [Gunshot Sounds](https://opengameart.org/content/gunshot-sounds)
+by Vincent Sevedge / Tabasco. The archive's included `creativecommons.txt` is
+preserved as `LICENSE.txt` and is authoritative: **CC BY 3.0 Unported**. The
+runtime derivatives are `rifle-sks-01.wav` and `pistol-cz-01.wav`; they add
+recorded transient layers while the project-authored Web Audio system keeps
+spatial tails, suppression, and fallback behavior. Attribution to Vincent
+Sevedge / Tabasco and the CC BY 3.0 notice must remain with redistributions.
+
 ## Research-only 3D candidates - not bundled
 
 The following links are retained for future evaluation. None of these candidate
@@ -124,6 +135,9 @@ optimization record, and runtime integration.
 | [Universal Animation Library](https://quaternius.com/packs/universalanimationlibrary.html) | CC0 | Locomotion and armed-combat animation reference |
 | [Modern Soldier](https://sketchfab.com/3d-models/modern-soldier-358b4fb07f0146cb9b9063342db5897a) by Blue Spirit | CC BY 4.0 | Elite/commander candidate after texture and LOD review |
 | [Ultimate Modular Men Pack](https://quaternius.com/packs/ultimatemodularcharacters.html) | CC0 | Civilian/security variety only if visual quality meets the final art bar |
+| [S.W.A.T. Operator](https://sketchfab.com/3d-models/swat-operator-9e82fabf26194896b5ad4a364d864eab) by SpatialNeglect | CC BY 4.0; 106.7k triangles; rigged | Strong close-range tactical-enemy candidate. Requires a downloaded source, dependency attribution audit, browser LODs, and final art review before use. |
+| [FSB Operator](https://sketchfab.com/3d-models/fsb-operator-43a561e941704eefb1ab0614be4f0049) by SpatialNeglect | CC BY 4.0; 114.3k triangles; rigged | Distinct present-day hostile candidate. Requires the same source/dependency/LOD review before use. |
+| [S.W.A.T. Operator Remaster](https://sketchfab.com/3d-models/swat-operator-4k-followers-special-remaster-f6923917c8014578b1c1cb2b4c249268) by SpatialNeglect | CC BY 4.0; 71.8k triangles | Alternate modern tactical silhouette for squad variation after the same review. |
 
 ### Weapons
 
@@ -136,6 +150,14 @@ separate trademark and design review even when a mesh uses a permissive license.
 | [Modern Semi-Automatic Pistol](https://sketchfab.com/3d-models/modern-semi-automatic-pistol-game-ready-pbr-254d63584b73484092bfac7fe9cedca6) by Hafeez Ahmed | CC BY 4.0 | Generic sidearm with separate slide, trigger, and magazine |
 | [M150 Sniper Rifle](https://sketchfab.com/3d-models/m150-sniper-rifle-game-ready-0f71498f1f694b30be77c9779361c6cc) by Bl4ckGh0st | CC BY 4.0 | Precision-rifle candidate with separately rigged action parts |
 | [Ultimate Guns Pack](https://quaternius.com/packs/ultimategun.html) | CC0 | Background/pickup reference only if its final visual quality is acceptable |
+| [US Marine Corps Infantry Rifle](https://sketchfab.com/3d-models/us-marine-corps-infantry-rifle-4276f2000d99445caf755f8356552254) by amogosse3D | CC BY 4.0; 46.1k triangles; 4K PBR | Modern service-rifle candidate with separate action parts, pending direct source and provenance review. |
+| [Modern Warfare M4A1](https://sketchfab.com/3d-models/modern-warefare-m4a1-167dd49ffff14d41ab11b6417f128bf1) by Nneako | CC BY 4.0; 70.9k triangles; 2K PBR | Modern carbine candidate, pending source, attribution, and independent-origin review. |
+| [AK-74M Assault Rifle](https://sketchfab.com/3d-models/ak-74m-assault-rifle-9084c3bae8224d338103997bc3101480) by FJH | CC BY 4.0; 17.6k triangles; 4K PBR | Grounded modern rifle candidate; needs source, 2K runtime texture tier, and animation-anchor review. |
+
+The following candidate was explicitly **rejected** despite its visible CC-BY
+label because its description identifies it as ripped from a commercial game:
+[Tactical M4 - Tan - COD:MW2022](https://sketchfab.com/3d-models/tactical-m4-tan-codmw2022-pbr-8ffacc2ad1cd44d1b3cf8da18ac66e8b). A creator-applied
+license cannot establish rights for an unauthorized derivative asset.
 
 ### Environment, furniture, vehicles, and cover
 
@@ -163,9 +185,10 @@ is not bundled; build 5.0 uses project-authored procedural vehicle geometry.
 
 ## Research-only audio candidates - not bundled
 
-Build 5.0 currently uses project-authored procedural Web Audio. The following
-CC0 pages remain research links only; no source master or runtime derivative
-from them ships in this repository:
+Build 5.1 uses project-authored procedural Web Audio plus the separately
+documented CC BY 3.0 recorded report derivatives above. The following CC0 pages
+remain research links only; no source master or runtime derivative from them
+ships in this repository:
 
 - [AR15 rifle shot](https://freesound.org/people/michorvath/sounds/427596/) and
   [9 mm pistol shot](https://freesound.org/people/michorvath/sounds/427592/) - close transients.
