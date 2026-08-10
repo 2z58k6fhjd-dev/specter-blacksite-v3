@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'specter-blacksite-overhaul-foundation-';
-const CACHE_VERSION = 'v502-graphics-settings';
+const CACHE_VERSION = 'v510-recorded-audio';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 
 // The application shell is deliberately small and atomic: if any of these files
@@ -96,6 +96,11 @@ const OPTIONAL_PRECACHE_URLS = [
   './assets/environment/pbr-v2/grass-soil-albedo.webp',
   './assets/environment/pbr-v2/grass-soil-normal.webp',
   './assets/environment/pbr-v2/grass-soil-orm.webp',
+
+  './assets/audio/README.md',
+  './assets/audio/cc-by-3.0-tabasco/LICENSE.txt',
+  './assets/audio/cc-by-3.0-tabasco/rifle-sks-01.wav',
+  './assets/audio/cc-by-3.0-tabasco/pistol-cz-01.wav',
 
   './README.md',
   './THIRD_PARTY_ASSETS.md',

@@ -6,7 +6,7 @@ import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } f
 import { buildWorldOverhaul } from './world-overhaul.js?v=5.0.0-release';
 import { EnemyAISystem } from './enemy-ai.js?v=5.0.0-release';
 import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS } from './graphics-pipeline.js?v=5.0.1-graphics';
-import { createAudioDirector } from './audio-overhaul.js?v=5.0.0-release';
+import { createAudioDirector } from './audio-overhaul.js?v=5.1.0-audio';
 import { createTacticalAnimator } from './tactical-animation.js?v=5.0.0-release';
 
 const renderer = new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
@@ -39,9 +39,10 @@ scene.add(emergency);
 
 const loader=new GLTFLoader();
 const assetMap=new Map();
-const assetProgress={ar15:0,m9:0,soldier:0,environment:0};
+const assetProgress={ar15:0,m9:0,soldier:0,environment:0,audio:0};
 let requiredAssetFailure=false;
 const environmentTextures={};
+const weaponSamplePayloads={};
 const startButton=document.getElementById('startButton'),startPanel=document.getElementById('startPanel'),promptEl=document.getElementById('prompt');
 const graphicsButton=document.getElementById('graphicsButton'),graphicsQuickButton=document.getElementById('graphicsQuickButton');
 const graphicsPanel=document.getElementById('graphicsPanel'),graphicsCloseButton=document.getElementById('graphicsCloseButton'),graphicsHint=document.getElementById('graphicsHint');
@@ -95,6 +96,27 @@ async function loadEnvironmentAssets(){
     status('environment','LOADED','8 PBR families · 23 maps');
   }catch(error){
     console.error(error);requiredAssetFailure=true;assetProgress.environment=1;updateLoading();status('environment','FAILED',error.message);
+  }
+}
+async function loadAudioAssets(){
+  status('audio','LOADING');
+  const entries=[
+    ['rifle','./assets/audio/cc-by-3.0-tabasco/rifle-sks-01.wav'],
+    ['pistol','./assets/audio/cc-by-3.0-tabasco/pistol-cz-01.wav']
+  ];
+  let completed=0;
+  try{
+    await Promise.all(entries.map(async([name,url])=>{
+      const response=await fetch(url);
+      if(!response.ok)throw new Error(`${name} report returned ${response.status}`);
+      weaponSamplePayloads[name]=await response.arrayBuffer();
+      completed++;assetProgress.audio=completed/entries.length;updateLoading();
+    }));
+    status('audio','LOADED','2 recorded reports · CC BY 3.0');
+  }catch(error){
+    console.warn('Recorded weapon reports unavailable; procedural weapon audio remains active.',error);
+    for(const name of Object.keys(weaponSamplePayloads))delete weaponSamplePayloads[name];
+    assetProgress.audio=1;updateLoading();status('audio','LOADED','procedural fallback');
   }
 }
 function cloneAsset(name,skinned=false){
@@ -264,6 +286,7 @@ const staticColliderBounds=collision.filter(object=>!dynamicColliders.has(object
 const dynamicColliderBounds=[new THREE.Box3(),new THREE.Box3()];
 const switchGroup=worldOverhaul.breaker.group;
 const audio=createAudioDirector({seed:0x5ec7e2,powerOn:false,masterVolume:.78,musicVolume:.28,sfxVolume:.88,ambienceVolume:.5});
+let weaponSampleDecodePromise=null;
 
 const flashlight=new THREE.SpotLight(0xf0fff7,74,30,Math.PI/6,.48,1.2);
 flashlight.position.set(0,0,0);flashlight.target.position.set(0,-.03,-8);
@@ -689,7 +712,18 @@ function updateEnemies(dt,t){
   }
 }
 
-function ensureAudio(){if(!audio.active)audio.resume().catch(error=>console.warn('Audio unavailable.',error))}
+function prepareRecordedWeaponReports(){
+  if(weaponSampleDecodePromise||!Object.keys(weaponSamplePayloads).length)return;
+  weaponSampleDecodePromise=audio.loadWeaponSamples(weaponSamplePayloads).then(result=>{
+    if(result.loaded.length)status('audio','LOADED',`${result.loaded.length} recorded reports · CC BY 3.0`);
+    else status('audio','LOADED','procedural fallback');
+    return result;
+  }).catch(error=>{console.warn('Recorded weapon reports unavailable; procedural weapon audio remains active.',error);status('audio','LOADED','procedural fallback');return null});
+}
+function ensureAudio(){
+  if(!audio.active)audio.resume().then(prepareRecordedWeaponReports).catch(error=>console.warn('Audio unavailable.',error));
+  else prepareRecordedWeaponReports();
+}
 function gunshot(kind){ensureAudio();const profile=weaponProfiles[kind];audio.playWeapon(profile?.family||kind,{outdoorBlend:worldOverhaul.outdoorBlend,suppressed:!!profile?.suppressed})}
 const flashMaterial=new THREE.MeshBasicMaterial({color:0xffd27a,transparent:true,opacity:.95,depthWrite:false,blending:THREE.AdditiveBlending});
 const flashCoreGeometry=new THREE.SphereGeometry(1,8,6),flashConeGeometry=new THREE.ConeGeometry(1,1,8,1,true);
@@ -998,6 +1032,7 @@ renderer.domElement.onclick=()=>{if(started&&!controls.isLocked&&!embeddedMouseL
 document.getElementById('restartButton').onclick=()=>location.reload();
 
 await Promise.all([
+  loadAudioAssets(),
   loadAsset('ar15','./assets/ar15/scene.gltf'),
   loadAsset('m9','./assets/m9/scene.gltf'),
   loadAsset('soldier','./assets/soldier/scene.gltf')

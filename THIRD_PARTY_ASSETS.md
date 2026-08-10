@@ -109,6 +109,17 @@ OpenAI image generation on 2026-08-08. They are preserved with their records in
 `assets/environment/README.txt`, but build 5.0 uses the PBR v2 set for its main
 runtime materials.
 
+## Bundled recorded weapon reports
+
+`assets/audio/cc-by-3.0-tabasco/` contains two short, normalized and faded
+derivatives from [Gunshot Sounds](https://opengameart.org/content/gunshot-sounds)
+by Vincent Sevedge / Tabasco. The archive's included `creativecommons.txt` is
+preserved as `LICENSE.txt` and is authoritative: **CC BY 3.0 Unported**. The
+runtime derivatives are `rifle-sks-01.wav` and `pistol-cz-01.wav`; they add
+recorded transient layers while the project-authored Web Audio system keeps
+spatial tails, suppression, and fallback behavior. Attribution to Vincent
+Sevedge / Tabasco and the CC BY 3.0 notice must remain with redistributions.
+
 ## Research-only 3D candidates - not bundled
 
 The following links are retained for future evaluation. None of these candidate
@@ -174,9 +185,10 @@ is not bundled; build 5.0 uses project-authored procedural vehicle geometry.
 
 ## Research-only audio candidates - not bundled
 
-Build 5.0 currently uses project-authored procedural Web Audio. The following
-CC0 pages remain research links only; no source master or runtime derivative
-from them ships in this repository:
+Build 5.1 uses project-authored procedural Web Audio plus the separately
+documented CC BY 3.0 recorded report derivatives above. The following CC0 pages
+remain research links only; no source master or runtime derivative from them
+ships in this repository:
 
 - [AR15 rifle shot](https://freesound.org/people/michorvath/sounds/427596/) and
   [9 mm pistol shot](https://freesound.org/people/michorvath/sounds/427592/) - close transients.
