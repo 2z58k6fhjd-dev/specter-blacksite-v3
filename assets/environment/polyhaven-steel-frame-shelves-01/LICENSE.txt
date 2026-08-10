@@ -1,0 +1,13 @@
+Steel Frame Shelves 01
+Author: James Ray Cock
+Source: https://polyhaven.com/a/steel_frame_shelves_01
+
+Poly Haven publishes this asset under Creative Commons Zero 1.0 Universal
+(CC0 1.0). The official license page is:
+https://polyhaven.com/license
+
+CC0 1.0 Universal legal text:
+https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+The source file package was downloaded from the official Poly Haven CDN and
+verified against the MD5 values exposed by the official Poly Haven files API.

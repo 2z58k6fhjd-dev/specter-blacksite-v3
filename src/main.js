@@ -6,7 +6,7 @@ import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } f
 import { buildWorldOverhaul } from './world-overhaul.js?v=5.0.0-release';
 import { EnemyAISystem } from './enemy-ai.js?v=5.0.0-release';
 import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS } from './graphics-pipeline.js?v=5.0.1-graphics';
-import { createAudioDirector } from './audio-overhaul.js?v=5.1.0-audio';
+import { createAudioDirector } from './audio-overhaul.js?v=5.1.1-tactical-voices';
 import { createTacticalAnimator } from './tactical-animation.js?v=5.0.0-release';
 
 const renderer = new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
@@ -39,10 +39,11 @@ scene.add(emergency);
 
 const loader=new GLTFLoader();
 const assetMap=new Map();
-const assetProgress={ar15:0,m9:0,soldier:0,environment:0,audio:0};
+const assetProgress={ar15:0,m9:0,soldier:0,environment:0,props:0,audio:0};
 let requiredAssetFailure=false;
 const environmentTextures={};
 const weaponSamplePayloads={};
+const enemyVoiceSamplePayloads={};
 const startButton=document.getElementById('startButton'),startPanel=document.getElementById('startPanel'),promptEl=document.getElementById('prompt');
 const graphicsButton=document.getElementById('graphicsButton'),graphicsQuickButton=document.getElementById('graphicsQuickButton');
 const graphicsPanel=document.getElementById('graphicsPanel'),graphicsCloseButton=document.getElementById('graphicsCloseButton'),graphicsHint=document.getElementById('graphicsHint');
@@ -101,22 +102,49 @@ async function loadEnvironmentAssets(){
 async function loadAudioAssets(){
   status('audio','LOADING');
   const entries=[
-    ['rifle','./assets/audio/cc-by-3.0-tabasco/rifle-sks-01.wav'],
-    ['pistol','./assets/audio/cc-by-3.0-tabasco/pistol-cz-01.wav']
+    {kind:'weapon',id:'rifle',url:'./assets/audio/cc-by-3.0-tabasco/rifle-sks-01.wav'},
+    {kind:'weapon',id:'pistol',url:'./assets/audio/cc-by-3.0-tabasco/pistol-cz-01.wav'},
+    {kind:'voice',id:'contact:male',url:'./assets/audio/cc0-kenney-voiceover/Male-war_target_engaged.ogg'},
+    {kind:'voice',id:'contact:female',url:'./assets/audio/cc0-kenney-voiceover/Female-war_target_engaged.ogg'},
+    {kind:'voice',id:'investigate:male',url:'./assets/audio/cc0-kenney-voiceover/Male-war_look_out.ogg'},
+    {kind:'voice',id:'investigate:female',url:'./assets/audio/cc0-kenney-voiceover/Female-war_look_out.ogg'},
+    {kind:'voice',id:'backup:male',url:'./assets/audio/cc0-kenney-voiceover/Male-war_call_for_backup.ogg'},
+    {kind:'voice',id:'backup:female',url:'./assets/audio/cc0-kenney-voiceover/Female-war_call_for_backup.ogg'},
+    {kind:'voice',id:'flank:male',url:'./assets/audio/cc0-kenney-voiceover/Male-war_cover_me.ogg'},
+    {kind:'voice',id:'flank:female',url:'./assets/audio/cc0-kenney-voiceover/Female-war_cover_me.ogg'},
+    {kind:'voice',id:'retreat:male',url:'./assets/audio/cc0-kenney-voiceover/Male-war_get_down.ogg'},
+    {kind:'voice',id:'retreat:female',url:'./assets/audio/cc0-kenney-voiceover/Female-war_get_down.ogg'},
+    {kind:'voice',id:'suppress:male',url:'./assets/audio/cc0-kenney-voiceover/Male-war_suppressing_fire.ogg'},
+    {kind:'voice',id:'suppress:female',url:'./assets/audio/cc0-kenney-voiceover/Female-war_supressing_fire.ogg'},
+    {kind:'voice',id:'down:male',url:'./assets/audio/cc0-kenney-voiceover/Male-war_medic.ogg'},
+    {kind:'voice',id:'down:female',url:'./assets/audio/cc0-kenney-voiceover/Female-war_medic.ogg'}
   ];
   let completed=0;
-  try{
-    await Promise.all(entries.map(async([name,url])=>{
+  const results=await Promise.allSettled(entries.map(async({kind,id,url})=>{
       const response=await fetch(url);
-      if(!response.ok)throw new Error(`${name} report returned ${response.status}`);
-      weaponSamplePayloads[name]=await response.arrayBuffer();
+      if(!response.ok)throw new Error(`${id} returned ${response.status}`);
+      (kind==='weapon'?weaponSamplePayloads:enemyVoiceSamplePayloads)[id]=await response.arrayBuffer();
       completed++;assetProgress.audio=completed/entries.length;updateLoading();
-    }));
-    status('audio','LOADED','2 recorded reports · CC BY 3.0');
+  }));
+  const failures=results.filter(result=>result.status==='rejected').length;
+  assetProgress.audio=1;updateLoading();
+  const reports=Object.keys(weaponSamplePayloads).length,voices=Object.keys(enemyVoiceSamplePayloads).length;
+  if(reports||voices)status('audio','LOADED',`${reports} reports + ${voices} CC0 voice lines${failures?` + ${failures} fallback`:''}`);
+  else status('audio','LOADED','procedural fallback');
+}
+async function loadSetDressAsset(name,url){
+  status('props','LOADING');
+  try{
+    const gltf=await new Promise((resolve,reject)=>loader.load(url,resolve,undefined,reject));
+    let meshes=0;
+    gltf.scene.traverse(object=>{if(object.isMesh){meshes++;object.castShadow=true;object.receiveShadow=true;object.frustumCulled=true}});
+    assetMap.set(name,gltf);assetProgress.props=1;updateLoading();
+    status('props','LOADED',`${meshes} mesh CC0 industrial shelf`);
+    return true;
   }catch(error){
-    console.warn('Recorded weapon reports unavailable; procedural weapon audio remains active.',error);
-    for(const name of Object.keys(weaponSamplePayloads))delete weaponSamplePayloads[name];
-    assetProgress.audio=1;updateLoading();status('audio','LOADED','procedural fallback');
+    console.warn(`Optional set-dressing asset ${name} unavailable; procedural props remain active.`,error);
+    assetProgress.props=1;updateLoading();status('props','LOADED','procedural prop fallback');
+    return false;
   }
 }
 function cloneAsset(name,skinned=false){
@@ -284,9 +312,25 @@ const worldOverhaul=buildWorldOverhaul({scene,collision,environmentTextures,faci
 const dynamicColliders=new Set([worldOverhaul.exit.left,worldOverhaul.exit.right]);
 const staticColliderBounds=collision.filter(object=>!dynamicColliders.has(object)).map(object=>new THREE.Box3().setFromObject(object).expandByScalar(.3));
 const dynamicColliderBounds=[new THREE.Box3(),new THREE.Box3()];
+function installIndustrialShelving(){
+  const source=assetMap.get('steelShelves')?.scene;if(!source)return;
+  const placements=[
+    {x:-7.52,z:-5.7,rotation:Math.PI/2},
+    {x:7.52,z:-17.7,rotation:-Math.PI/2},
+    {x:-7.52,z:-29.7,rotation:Math.PI/2}
+  ];
+  for(const [index,placement] of placements.entries()){
+    const shelfRoot=new THREE.Group();shelfRoot.name=`cc0-industrial-shelf-${index+1}`;
+    shelfRoot.position.set(placement.x,0,placement.z);shelfRoot.rotation.y=placement.rotation;
+    const shelf=source.clone(true);normalize(shelf,2.1,true);shelf.name=`steel-frame-shelves-01-${index+1}`;
+    shelf.traverse(object=>{if(object.isMesh){object.castShadow=true;object.receiveShadow=true;object.frustumCulled=true}});
+    shelfRoot.add(shelf);scene.add(shelfRoot);collision.push(shelfRoot);
+    shelfRoot.updateWorldMatrix(true,true);staticColliderBounds.push(new THREE.Box3().setFromObject(shelfRoot).expandByScalar(.12));
+  }
+}
 const switchGroup=worldOverhaul.breaker.group;
 const audio=createAudioDirector({seed:0x5ec7e2,powerOn:false,masterVolume:.78,musicVolume:.28,sfxVolume:.88,ambienceVolume:.5});
-let weaponSampleDecodePromise=null;
+let recordedAudioDecodePromise=null;
 
 const flashlight=new THREE.SpotLight(0xf0fff7,74,30,Math.PI/6,.48,1.2);
 flashlight.position.set(0,0,0);flashlight.target.position.set(0,-.03,-8);
@@ -523,8 +567,28 @@ const enemyGunMat=new THREE.MeshStandardMaterial({color:0x303733,roughness:.42,m
 const enemyGunAccent=new THREE.MeshStandardMaterial({color:0x4c574f,roughness:.62,metalness:.38});
 const enemyGunLens=new THREE.MeshStandardMaterial({color:0x315148,emissive:0x15342b,emissiveIntensity:.55,roughness:.18,metalness:.5});
 const enemyArmorMat=new THREE.MeshStandardMaterial({color:0x28352d,roughness:.78,metalness:.22});
+const enemyKitGeometry=Object.freeze({
+  plate:new THREE.BoxGeometry(.5,.38,.16),
+  collar:new THREE.BoxGeometry(.56,.11,.19),
+  pouch:new THREE.BoxGeometry(.13,.19,.085),
+  smallPouch:new THREE.BoxGeometry(.09,.13,.07),
+  belt:new THREE.BoxGeometry(.58,.12,.2),
+  backpack:new THREE.BoxGeometry(.4,.5,.2),
+  radio:new THREE.BoxGeometry(.09,.25,.065),
+  antenna:new THREE.CylinderGeometry(.008,.008,.58,8),
+  shoulder:new THREE.SphereGeometry(.14,12,8),
+  knee:new THREE.SphereGeometry(.125,12,8),
+  helmet:new THREE.SphereGeometry(.19,16,10,0,Math.PI*2,0,Math.PI*.55),
+  helmetRail:new THREE.BoxGeometry(.025,.055,.15),
+  visor:new THREE.BoxGeometry(.24,.075,.035),
+  cap:new THREE.CylinderGeometry(.15,.18,.075,16),
+  capBrim:new THREE.BoxGeometry(.24,.025,.12),
+  headset:new THREE.CylinderGeometry(.052,.052,.028,10),
+  holster:new THREE.BoxGeometry(.13,.28,.075),
+  patch:new THREE.BoxGeometry(.13,.04,.11)
+});
 function enemyWeaponPart(group,geometry,material,position,rotation=null){
-  const mesh=new THREE.Mesh(geometry,material);mesh.position.copy(position);if(rotation)mesh.rotation.copy(rotation);mesh.castShadow=true;group.add(mesh);return mesh;
+  const mesh=new THREE.Mesh(geometry,material);mesh.position.copy(position);if(rotation)mesh.rotation.copy(rotation);mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);return mesh;
 }
 function createEnemyRifle(heavy=false,role='rifleman'){
   const marksman=role==='marksman',compact=role==='breacher',suppressed=marksman||role==='scout';
@@ -562,23 +626,59 @@ function createEnemyRifle(heavy=false,role='rifleman'){
 function addEnemyRoleEquipment(root,role){
   const palette={rifleman:0x2b3930,scout:0x24322d,breacher:0x30352f,marksman:0x374036,commander:0x3f4235};
   const armor=enemyArmorMat.clone();armor.color.setHex(palette[role]||palette.rifleman);
-  if(role==='breacher'||role==='commander'){
-    enemyWeaponPart(root,new THREE.BoxGeometry(.52,.46,.18),armor,new THREE.Vector3(0,1.33,-.08));
-    enemyWeaponPart(root,new THREE.BoxGeometry(.58,.12,.2),armor,new THREE.Vector3(0,1.58,-.04));
-    for(const x of [-.18,0,.18])enemyWeaponPart(root,new THREE.BoxGeometry(.14,.23,.09),armor,new THREE.Vector3(x,1.28,-.2));
+  const webbing=new THREE.MeshStandardMaterial({color:0x1c2620,roughness:.8,metalness:.08});
+  const cloth=new THREE.MeshStandardMaterial({color:0x566455,roughness:.92,metalness:0});
+  const polymer=new THREE.MeshStandardMaterial({color:0x171d1a,roughness:.55,metalness:.24});
+  const marker=new THREE.MeshBasicMaterial({color:role==='commander'?0xc7b76f:role==='breacher'?0x8e4f35:0x5d8e72,toneMapped:false});
+  const part=(name,geometry,material,x,y,z,rotation=null,scale=null)=>{
+    const mesh=enemyWeaponPart(root,geometry,material,new THREE.Vector3(x,y,z),rotation);mesh.name=`enemy-${role}-${name}`;if(scale)mesh.scale.copy(scale);return mesh;
+  };
+
+  // Every hostile gets a present-day plate carrier, belt, and an identifiable helmet or cap.
+  part('plate-carrier',enemyKitGeometry.plate,armor,0,1.34,-.105);
+  part('carrier-collar',enemyKitGeometry.collar,webbing,0,1.57,-.05);
+  part('battle-belt',enemyKitGeometry.belt,webbing,0,1.02,.01);
+  part('left-shoulder-patch',enemyKitGeometry.patch,marker,-.35,1.55,-.015,new THREE.Euler(0,0,.25));
+  part('right-shoulder-webbing',enemyKitGeometry.patch,webbing,.35,1.55,-.015,new THREE.Euler(0,0,-.25));
+  for(const x of [-.17,0,.17])part(`front-pouch-${x}`,enemyKitGeometry.pouch,role==='commander'?webbing:armor,x,1.29,-.21);
+
+  if(role==='scout'||role==='marksman'){
+    part('field-cap',enemyKitGeometry.cap,cloth,0,1.79,.01);
+    part('field-cap-brim',enemyKitGeometry.capBrim,cloth,0,1.79,-.145);
+  }else{
+    part('ballistic-helmet',enemyKitGeometry.helmet,polymer,0,1.82,.01);
+    part('left-helmet-rail',enemyKitGeometry.helmetRail,webbing,-.17,1.81,.01,new THREE.Euler(0,0,.06));
+    part('right-helmet-rail',enemyKitGeometry.helmetRail,webbing,.17,1.81,.01,new THREE.Euler(0,0,-.06));
+  }
+
+  if(role==='rifleman'){
+    part('utility-pouch-left',enemyKitGeometry.smallPouch,webbing,-.29,1.16,-.16);
+    part('utility-pouch-right',enemyKitGeometry.smallPouch,webbing,.29,1.16,-.16);
+    part('thigh-holster',enemyKitGeometry.holster,polymer,.31,.76,.02,new THREE.Euler(0,0,-.08));
   }
   if(role==='scout'||role==='commander'){
-    enemyWeaponPart(root,new THREE.BoxGeometry(.38,.5,.2),armor,new THREE.Vector3(0,1.31,.19));
-    enemyWeaponPart(root,new THREE.BoxGeometry(.1,.32,.08),enemyGunMat,new THREE.Vector3(.24,1.43,.2));
-    enemyWeaponPart(root,new THREE.CylinderGeometry(.008,.008,.68,8),enemyGunMat,new THREE.Vector3(.24,1.89,.2),new THREE.Euler(0,0,.08));
+    part('assault-pack',enemyKitGeometry.backpack,armor,0,1.31,.19);
+    part('radio',enemyKitGeometry.radio,polymer,.24,1.43,.2);
+    part('radio-antenna',enemyKitGeometry.antenna,polymer,.24,1.85,.2,new THREE.Euler(0,0,.08));
+    part('headset-left',enemyKitGeometry.headset,polymer,-.18,1.73,.01,new THREE.Euler(0,Math.PI/2,0));
+  }
+  if(role==='breacher'){
+    part('heavy-front-armor',enemyKitGeometry.plate,armor,0,1.35,-.215,new THREE.Euler(),new THREE.Vector3(1.1,1.22,1));
+    part('visor',enemyKitGeometry.visor,new THREE.MeshStandardMaterial({color:0x202d28,roughness:.22,metalness:.66}),0,1.8,-.17);
+    part('left-shoulder-pad',enemyKitGeometry.shoulder,armor,-.37,1.49,0,new THREE.Euler(0,0,.2),new THREE.Vector3(1.08,.64,1));
+    part('right-shoulder-pad',enemyKitGeometry.shoulder,armor,.37,1.49,0,new THREE.Euler(0,0,-.2),new THREE.Vector3(1.08,.64,1));
+    part('left-knee-pad',enemyKitGeometry.knee,polymer,-.18,.47,-.08,new THREE.Euler(Math.PI*.5,0,0),new THREE.Vector3(1,.58,.42));
+    part('right-knee-pad',enemyKitGeometry.knee,polymer,.18,.47,-.08,new THREE.Euler(Math.PI*.5,0,0),new THREE.Vector3(1,.58,.42));
   }
   if(role==='marksman'){
-    enemyWeaponPart(root,new THREE.BoxGeometry(.46,.25,.15),armor,new THREE.Vector3(0,1.42,.14));
+    part('marksman-pack',enemyKitGeometry.backpack,armor,0,1.31,.19,new THREE.Euler(),new THREE.Vector3(.9,.9,1));
+    part('rangefinder-pouch',enemyKitGeometry.smallPouch,polymer,.27,1.44,-.17);
     const shoulderCape=new THREE.Mesh(new THREE.PlaneGeometry(.82,.72,4,4),armor);shoulderCape.name='marksman-shoulder-cover';shoulderCape.position.set(0,1.45,.14);shoulderCape.rotation.x=-.18;shoulderCape.castShadow=true;root.add(shoulderCape);
   }
   if(role==='commander'){
-    const patch=new THREE.MeshBasicMaterial({color:0xc5b26f,toneMapped:false});
-    enemyWeaponPart(root,new THREE.BoxGeometry(.12,.035,.16),patch,new THREE.Vector3(.27,1.55,-.2));
+    part('command-patch',enemyKitGeometry.patch,marker,.27,1.55,-.2);
+    part('right-headset',enemyKitGeometry.headset,polymer,.18,1.73,.01,new THREE.Euler(0,Math.PI/2,0));
+    part('command-holster',enemyKitGeometry.holster,polymer,-.31,.76,.02,new THREE.Euler(0,0,.08));
   }
 }
 function updatePlayerArms(dt,t,reloadWave,equipDrop){
@@ -697,7 +797,7 @@ function updateEnemies(dt,t){
     }
     const intent=intents.get(data.aiId);data.intent=intent;
     if(intent?.state!==data.lastAIState){
-      const voiceType={suspicious:'investigate',investigate:'investigate',search:'search',chase:'contact',engage:'contact',retreat:'retreat',suppressed:'suppress',dead:'down'}[intent?.state];
+      const voiceType=intent?.move?.mode==='flank'?'flank':{suspicious:'investigate',investigate:'investigate',search:'backup',chase:'contact',engage:'contact',retreat:'retreat',suppressed:'suppress',dead:'down'}[intent?.state];
       if(voiceType&&t-lastEnemyCallTime>4.2){lastEnemyCallTime=t;audio.playEnemyCall(enemy.position,{type:voiceType,radio:intent?.state!=='dead',intensity:data.heavy?1.05:.86})}
       data.lastAIState=intent?.state;
     }
@@ -712,17 +812,22 @@ function updateEnemies(dt,t){
   }
 }
 
-function prepareRecordedWeaponReports(){
-  if(weaponSampleDecodePromise||!Object.keys(weaponSamplePayloads).length)return;
-  weaponSampleDecodePromise=audio.loadWeaponSamples(weaponSamplePayloads).then(result=>{
-    if(result.loaded.length)status('audio','LOADED',`${result.loaded.length} recorded reports · CC BY 3.0`);
+function prepareRecordedAudio(){
+  if(recordedAudioDecodePromise)return;
+  const reportCount=Object.keys(weaponSamplePayloads).length,voiceCount=Object.keys(enemyVoiceSamplePayloads).length;
+  if(!reportCount&&!voiceCount)return;
+  recordedAudioDecodePromise=Promise.all([
+    reportCount?audio.loadWeaponSamples(weaponSamplePayloads):Promise.resolve({loaded:[]}),
+    voiceCount?audio.loadEnemyVoiceSamples(enemyVoiceSamplePayloads):Promise.resolve({loaded:[]})
+  ]).then(([reports,voices])=>{
+    if(reports.loaded.length||voices.loaded.length)status('audio','LOADED',`${reports.loaded.length} reports + ${voices.loaded.length} CC0 voice lines`);
     else status('audio','LOADED','procedural fallback');
-    return result;
-  }).catch(error=>{console.warn('Recorded weapon reports unavailable; procedural weapon audio remains active.',error);status('audio','LOADED','procedural fallback');return null});
+    return {reports,voices};
+  }).catch(error=>{console.warn('Recorded audio unavailable; procedural fallbacks remain active.',error);status('audio','LOADED','procedural fallback');return null});
 }
 function ensureAudio(){
-  if(!audio.active)audio.resume().then(prepareRecordedWeaponReports).catch(error=>console.warn('Audio unavailable.',error));
-  else prepareRecordedWeaponReports();
+  if(!audio.active)audio.resume().then(prepareRecordedAudio).catch(error=>console.warn('Audio unavailable.',error));
+  else prepareRecordedAudio();
 }
 function gunshot(kind){ensureAudio();const profile=weaponProfiles[kind];audio.playWeapon(profile?.family||kind,{outdoorBlend:worldOverhaul.outdoorBlend,suppressed:!!profile?.suppressed})}
 const flashMaterial=new THREE.MeshBasicMaterial({color:0xffd27a,transparent:true,opacity:.95,depthWrite:false,blending:THREE.AdditiveBlending});
@@ -1033,6 +1138,7 @@ document.getElementById('restartButton').onclick=()=>location.reload();
 
 await Promise.all([
   loadAudioAssets(),
+  loadSetDressAsset('steelShelves','./assets/environment/polyhaven-steel-frame-shelves-01/steel_frame_shelves_01_2k.gltf'),
   loadAsset('ar15','./assets/ar15/scene.gltf'),
   loadAsset('m9','./assets/m9/scene.gltf'),
   loadAsset('soldier','./assets/soldier/scene.gltf')
@@ -1040,7 +1146,7 @@ await Promise.all([
 if(requiredAssetFailure){
   startButton.disabled=true;startButton.textContent='ASSET CHECK FAILED';loadMessage.textContent='A required model or texture failed to load. Check the diagnostics above.';
 }else{
-  installRifle();installPistol();installRifleVariants();installPlayerModel();installPlayerArms();attachFlashlightToWeapon(currentWeapon);
+  installRifle();installPistol();installRifleVariants();installPlayerModel();installPlayerArms();installIndustrialShelving();attachFlashlightToWeapon(currentWeapon);
   spawnEnemy(-2.5,-8,'rifleman');spawnEnemy(2.9,-18,'scout');spawnEnemy(-1.2,-27,'breacher');
   spawnEnemy(3.8,-54,'rifleman');spawnEnemy(-7.2,-68,'scout');spawnEnemy(8.5,-88,'breacher');spawnEnemy(-5.4,-108,'marksman');spawnEnemy(12,-122,'commander');
   status('soldier','LOADED','8 tactical hostiles · 5 role kits · full-detail rifles');hud();

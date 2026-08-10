@@ -1,6 +1,6 @@
 # SPECTER: Blacksite
 
-Build: `5.1.0-RECORDED-AUDIO`
+Build: `5.1.3-CC0-SET-DRESSING`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build 5.0
 overhauls the controller, viewmodels, combat presentation, enemy behavior,
@@ -29,10 +29,15 @@ keeping the project suitable for static hosting on GitHub Pages.
   clones of the bundled AR-15 with role-specific scaling, tints, and suppressors;
   the roles are not falsely represented as five separately downloaded character
   models.
+- Role kits add distinct modern silhouettes: ballistic helmets or field caps,
+  plate carriers, mag and utility pouches, battle belts, radios, assault packs,
+  headsets, marksman gear, command kit, and breacher armor/visor/knee pads.
+  These are project-authored additions to the bundled licensed soldier rig.
 - Tactical enemy AI with patrol, sight and hearing perception, investigation,
   search, chase, engagement, cover, flanking, suppression, retreat, squad alerts,
   and per-role difficulty tuning.
 - Expanded facility with furnished work areas, storage, server equipment,
+  three high-detail CC0 industrial shelf props with collision/shadowing,
   animated breaker hardware, and a powered two-leaf exit.
 - Compact exterior compound with a checkpoint, motor pool, storage yard,
   communications area, service roads, barriers, grounded modern vehicles, and
@@ -47,6 +52,10 @@ keeping the project suitable for static hosting on GitHub Pages.
   spatial weapon and mechanism sounds, footsteps, impacts, and enemy call tones.
   CC BY 3.0 recorded SKS and CZ transient layers now reinforce rifle and pistol
   reports while the procedural system keeps spatial tails and suppression.
+- Fourteen CC0 Kenney human-performed tactical callouts now replace the
+  temporary synthetic enemy phrases for contact, investigation, backup,
+  flanking, retreat, suppression, and downed states. Male/female variations are radio-filtered,
+  spatialized, and retain a procedural fallback if a clip cannot decode.
 - Loading progress and diagnostics for models, the player rig, environment maps,
   and graphics pipeline.
 - Complete mission loop and victory state: restore power, clear all eight
