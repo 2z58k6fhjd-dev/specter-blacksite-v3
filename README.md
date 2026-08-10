@@ -1,6 +1,6 @@
 # SPECTER: Blacksite
 
-Build: `5.0.0-OVERHAUL-FOUNDATION`
+Build: `5.0.1-OVERHAUL-FOUNDATION`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build 5.0
 overhauls the controller, viewmodels, combat presentation, enemy behavior,
@@ -39,7 +39,8 @@ keeping the project suitable for static hosting on GitHub Pages.
   an extraction pad.
 - Instanced, non-explorable city skyline beyond the perimeter for atmosphere.
 - Physical sky, moving cloud bank, sun and shadow lighting, fog transitions,
-  ACES tone mapping, SSAO, restrained bloom, and quality presets.
+  ACES tone mapping, SSAO, restrained bloom, and selectable quality presets
+  that apply immediately and persist between launches.
 - Eight project-generated PBR v2 material families using 23 browser-ready 2K
   albedo, normal, and packed ORM maps.
 - Procedural indoor/outdoor ambience, adaptive exploration/combat music,
@@ -97,6 +98,7 @@ prototype.
 | `F` | Toggle the weapon-mounted flashlight |
 | `R` | Reload |
 | `B` | Toggle SEMI/AUTO when the selected weapon supports it |
+| `G` | Open/close graphics settings; choose Performance, Balanced, High, or Ultra |
 | `1` | HK416 |
 | `2` | Tan M9A4 |
 | `3` | C5-K Compact Carbine |
@@ -119,6 +121,11 @@ Useful rendering query parameters are:
 - `?quality=balanced`
 - `?quality=high` (default; designed around a 6 GB GPU at 1080p)
 - `?quality=ultra` (8 GB GPU target)
+
+The in-game **GRAPHICS** control on the deployment screen and the `GFX` button
+during play expose the same four presets without a reload. The selected preset
+is stored locally, while a valid `?quality=` query parameter intentionally takes
+precedence for a one-off test session.
 
 The high-resolution runtime payload is about 208 MiB, so the first launch
 requires a stable connection and can take noticeably longer on mobile networks.

@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#06100c">
   <title>SPECTER: Blacksite — Overhaul Foundation</title>
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./styles.css?v=5.0.0-release">
+  <link rel="stylesheet" href="./styles.css?v=5.0.1-graphics">
 </head>
 <body>
   <div id="game"></div>
@@ -18,8 +18,9 @@
       <div class="loadTrack"><div id="loadBar"></div></div>
       <div id="loadPercent">0%</div>
       <button id="startButton" disabled>LOADING ASSETS</button>
+      <button id="graphicsButton" class="secondaryButton" type="button">GRAPHICS: HIGH (6 GB)</button>
       <a id="modelPreviewLink" href="./player-model.html">VIEW SPECTER PLAYER MODEL</a>
-      <small>WASD move · Mouse look · Left click fire · Hold right click ADS (click toggles ADS in embedded mode) · Shift sprint · E use · F flashlight · R reload · B fire mode · 1–5 weapons</small>
+      <small>WASD move · Mouse look · Left click fire · Hold right click ADS (click toggles ADS in embedded mode) · Shift sprint · E use · F flashlight · R reload · B fire mode · G graphics · 1–5 weapons</small>
     </div>
   </section>
   <section id="victoryPanel">
@@ -30,7 +31,19 @@
       <button id="restartButton">REDEPLOY</button>
     </div>
   </section>
-  <div id="build">BUILD 5.0.0-OVERHAUL-FOUNDATION</div>
+  <div id="build">BUILD 5.0.1-OVERHAUL-FOUNDATION</div>
+  <button id="graphicsQuickButton" type="button" aria-expanded="false">GFX</button>
+  <section id="graphicsPanel" aria-label="Graphics quality" aria-hidden="true">
+    <div class="graphicsHeader"><strong>GRAPHICS QUALITY</strong><button id="graphicsCloseButton" type="button" aria-label="Close graphics settings">×</button></div>
+    <p id="graphicsHint">HIGH (6 GB) · SSAO + BLOOM</p>
+    <div class="graphicsOptions" role="group" aria-label="Quality presets">
+      <button type="button" data-quality="performance">PERFORMANCE<span>4 GB · direct lighting</span></button>
+      <button type="button" data-quality="balanced">BALANCED<span>6 GB · SSAO</span></button>
+      <button type="button" data-quality="high">HIGH<span>6 GB · SSAO + bloom</span></button>
+      <button type="button" data-quality="ultra">ULTRA<span>8 GB · max render scale</span></button>
+    </div>
+    <small>Changes apply immediately and are remembered. Press G to toggle.</small>
+  </section>
   <div id="objective">OBJECTIVE: RESTORE FACILITY POWER</div>
   <div id="prompt"></div>
   <div id="message"></div>
@@ -68,6 +81,6 @@
     }
   }
   </script>
-  <script type="module" src="./src/main.js?v=5.0.0-release"></script>
+  <script type="module" src="./src/main.js?v=5.0.1-graphics"></script>
 </body>
 </html>
