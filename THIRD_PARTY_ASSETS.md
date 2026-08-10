@@ -40,17 +40,27 @@ by [mamont nikita](https://sketchfab.com/mamontnikita62), licensed under
 
 Keep the three local license files with every redistribution.
 
+### Bundled CC0 environment prop
+
+[Steel Frame Shelves 01](https://polyhaven.com/a/steel_frame_shelves_01) by
+James Ray Cock is bundled at a 2K browser-quality tier as facility set dressing.
+Poly Haven publishes the asset under **CC0 1.0**. The official glTF, buffer, and
+three texture maps are retained in
+`assets/environment/polyhaven-steel-frame-shelves-01/`, together with source
+links, official MD5 checksums, and a local license record. The project only adds
+placement, scale, collision, and rendering behavior.
+
 ## Project-authored and derived runtime assets
 
 | Asset | Creation and dependency record | Runtime status |
 | --- | --- | --- |
 | SPECTER operator | Runtime adaptation of the bundled Russian Soldier rig, with project-authored black-multicam treatment and equipment geometry; same CC BY 4.0 attribution obligation | Bundled through `src/specter-operator.js`; notes in `assets/player/README.txt` |
-| Enemy role variants | Eight runtime enemies in five roles, all derived from the same bundled Russian Soldier rig with project-authored material, equipment, health, and AI variation; each carries a full textured clone of the bundled AR-15 with role-specific scale, tint, and suppressor treatment | Bundled; not represented as five separate source character models; soldier CC BY 4.0 and AR-15 CC BY-NC 4.0 obligations both apply |
+| Enemy role variants | Eight runtime enemies in five roles, all derived from the same bundled Russian Soldier rig with project-authored material, health, AI, and visible equipment variation: role carriers, helmets/caps, packs, radios, pouches, headsets, command kit, and breacher armor; each carries a full textured clone of the bundled AR-15 with role-specific scale, tint, and suppressor treatment | Bundled; not represented as five separate source character models; soldier CC BY 4.0 and AR-15 CC BY-NC 4.0 obligations both apply |
 | C5-K Compact Carbine | Full high-resolution clone of the bundled AR-15 source with project-authored compact proportions, material tint, handling data, and anchors | Bundled and player-selectable; CC BY-NC 4.0 applies through the source clone |
 | R7.62 Designated Rifle | Full high-resolution clone of the bundled AR-15 source with project-authored marksman proportions, material tint, handling data, and anchors | Bundled and player-selectable; CC BY-NC 4.0 applies through the source clone |
 | MCR-300 Suppressed | Full high-resolution clone of the bundled AR-15 source with a project-authored suppressor, material tint, handling data, and anchors | Bundled and player-selectable; CC BY-NC 4.0 applies through the source clone |
 | Facility, exterior compound, vehicles, props, extraction zone, and distant city | Project-authored procedural Three.js geometry | Bundled |
-| Procedural audio director | Project-authored Web Audio synthesis and mixing; no downloaded sound files | Bundled through `src/audio-overhaul.js` |
+| Audio director and fallback layers | Project-authored Web Audio synthesis and mixing, with deterministic fallbacks | Bundled through `src/audio-overhaul.js` |
 
 The C5-K, R7.62, and MCR-300 runtime weapons are complete high-resolution AR-15
 source clones with project-authored variant treatments. They are not claimed to
@@ -183,12 +193,25 @@ The [Ural 4320](https://sketchfab.com/3d-models/ural-4320-f953c51a5dbc4a15949f4d
 by Brout was identified as a CC BY 4.0 present-day military truck candidate. It
 is not bundled; build 5.0 uses project-authored procedural vehicle geometry.
 
+## Bundled tactical voice callouts
+
+`assets/audio/cc0-kenney-voiceover/` contains fourteen unmodified OGG clips from
+[Kenney Voiceover Pack #1](https://www.kenney.nl/assets/voiceover-pack/). The
+official package's `License.txt` and `Credits.txt` are retained locally. Kenney
+licenses the pack as **CC0 1.0**, so the clips are permitted in personal and
+commercial projects; the source records the male actor as Jeffrey M. Smith and
+the female actor as Giselle. The runtime chooses between male and female
+variants for contact, investigation, backup, flanking, retreat, suppression, and downed
+enemy states, then passes each through positional/radio processing. The clips
+are not AI-generated voices; they are licensed human-performed recordings.
+
 ## Research-only audio candidates - not bundled
 
-Build 5.1 uses project-authored procedural Web Audio plus the separately
-documented CC BY 3.0 recorded report derivatives above. The following CC0 pages
-remain research links only; no source master or runtime derivative from them
-ships in this repository:
+Build 5.1.3 uses project-authored procedural Web Audio, the separately
+documented CC BY 3.0 recorded report derivatives above, and the documented
+Kenney CC0 tactical callouts. The following pages remain research links only;
+no additional source master or runtime derivative from them ships in this
+repository:
 
 - [AR15 rifle shot](https://freesound.org/people/michorvath/sounds/427596/) and
   [9 mm pistol shot](https://freesound.org/people/michorvath/sounds/427592/) - close transients.
