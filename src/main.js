@@ -607,6 +607,38 @@ const enemyGunMat=new THREE.MeshStandardMaterial({color:0x303733,roughness:.42,m
 const enemyGunAccent=new THREE.MeshStandardMaterial({color:0x4c574f,roughness:.62,metalness:.38});
 const enemyGunLens=new THREE.MeshStandardMaterial({color:0x315148,emissive:0x15342b,emissiveIntensity:.55,roughness:.18,metalness:.5});
 const enemyArmorMat=new THREE.MeshStandardMaterial({color:0x28352d,roughness:.78,metalness:.22});
+// Cloned skinned characters share source materials.  Keep the role treatment
+// visually distinct, but cache each treatment once instead of creating a full
+// texture/material set for every hostile.
+const enemyMaterialVariants=new Map();
+const enemyRoleEquipmentMaterials=new Map();
+function enemyMaterialVariant(material,variant,tint=0xffffff,minRoughness=0){
+  if(!material?.clone)return material;
+  let variants=enemyMaterialVariants.get(variant);
+  if(!variants){variants=new WeakMap();enemyMaterialVariants.set(variant,variants)}
+  let result=variants.get(material);
+  if(!result){
+    result=material.clone();
+    if(result.color)result.color.multiply(new THREE.Color(tint));
+    if(Number.isFinite(result.roughness))result.roughness=Math.max(result.roughness,minRoughness);
+    variants.set(material,result);
+  }
+  return result;
+}
+function roleEquipmentMaterials(role){
+  if(enemyRoleEquipmentMaterials.has(role))return enemyRoleEquipmentMaterials.get(role);
+  const palette={rifleman:0x2b3930,scout:0x24322d,breacher:0x30352f,marksman:0x374036,commander:0x3f4235};
+  const armor=enemyArmorMat.clone();armor.color.setHex(palette[role]||palette.rifleman);
+  const materials=Object.freeze({
+    armor,
+    webbing:new THREE.MeshStandardMaterial({color:0x1c2620,roughness:.8,metalness:.08}),
+    cloth:new THREE.MeshStandardMaterial({color:0x566455,roughness:.92,metalness:0}),
+    polymer:new THREE.MeshStandardMaterial({color:0x171d1a,roughness:.55,metalness:.24}),
+    marker:new THREE.MeshBasicMaterial({color:role==='commander'?0xc7b76f:role==='breacher'?0x8e4f35:0x5d8e72,toneMapped:false}),
+    visor:new THREE.MeshStandardMaterial({color:0x202d28,roughness:.22,metalness:.66})
+  });
+  enemyRoleEquipmentMaterials.set(role,materials);return materials;
+}
 const enemyKitGeometry=Object.freeze({
   plate:new THREE.BoxGeometry(.5,.38,.16),
   collar:new THREE.BoxGeometry(.56,.11,.19),
@@ -645,8 +677,8 @@ function createEnemyRifle(heavy=false,role='rifleman'){
     model.traverse(object=>{
       if(!object.isMesh)return;
       const materials=Array.isArray(object.material)?object.material:[object.material];
-      const clones=materials.map(material=>{const clone=material?.clone?.()||material;if(clone?.color)clone.color.multiply(new THREE.Color(weaponTint));clone.roughness=Math.max(clone.roughness??.42,.38);return clone});
-      object.material=Array.isArray(object.material)?clones:clones[0];object.castShadow=false;object.receiveShadow=false;
+      const variants=materials.map(material=>enemyMaterialVariant(material,`weapon-${role}`,weaponTint,.38));
+      object.material=Array.isArray(object.material)?variants:variants[0];object.castShadow=false;object.receiveShadow=false;
     });
     group.add(model);faceWeaponForward(model,group,'Handguard','Stock');
     const modelBox=boundsInSpace(model,group),handguardBox=boundsInSpace(model.getObjectByName('Handguard')||model,group),receiverBox=boundsInSpace(model.getObjectByName('Dust cover')||model.getObjectByName('upper receiver part')||model,group);
@@ -664,12 +696,7 @@ function createEnemyRifle(heavy=false,role='rifleman'){
 }
 
 function addEnemyRoleEquipment(root,role){
-  const palette={rifleman:0x2b3930,scout:0x24322d,breacher:0x30352f,marksman:0x374036,commander:0x3f4235};
-  const armor=enemyArmorMat.clone();armor.color.setHex(palette[role]||palette.rifleman);
-  const webbing=new THREE.MeshStandardMaterial({color:0x1c2620,roughness:.8,metalness:.08});
-  const cloth=new THREE.MeshStandardMaterial({color:0x566455,roughness:.92,metalness:0});
-  const polymer=new THREE.MeshStandardMaterial({color:0x171d1a,roughness:.55,metalness:.24});
-  const marker=new THREE.MeshBasicMaterial({color:role==='commander'?0xc7b76f:role==='breacher'?0x8e4f35:0x5d8e72,toneMapped:false});
+  const {armor,webbing,cloth,polymer,marker,visor}=roleEquipmentMaterials(role);
   const part=(name,geometry,material,x,y,z,rotation=null,scale=null)=>{
     const mesh=enemyWeaponPart(root,geometry,material,new THREE.Vector3(x,y,z),rotation);mesh.name=`enemy-${role}-${name}`;if(scale)mesh.scale.copy(scale);return mesh;
   };
@@ -704,7 +731,7 @@ function addEnemyRoleEquipment(root,role){
   }
   if(role==='breacher'){
     part('heavy-front-armor',enemyKitGeometry.plate,armor,0,1.35,-.215,new THREE.Euler(),new THREE.Vector3(1.1,1.22,1));
-    part('visor',enemyKitGeometry.visor,new THREE.MeshStandardMaterial({color:0x202d28,roughness:.22,metalness:.66}),0,1.8,-.17);
+    part('visor',enemyKitGeometry.visor,visor,0,1.8,-.17);
     part('left-shoulder-pad',enemyKitGeometry.shoulder,armor,-.37,1.49,0,new THREE.Euler(0,0,.2),new THREE.Vector3(1.08,.64,1));
     part('right-shoulder-pad',enemyKitGeometry.shoulder,armor,.37,1.49,0,new THREE.Euler(0,0,-.2),new THREE.Vector3(1.08,.64,1));
     part('left-knee-pad',enemyKitGeometry.knee,polymer,-.18,.47,-.08,new THREE.Euler(Math.PI*.5,0,0),new THREE.Vector3(1,.58,.42));
@@ -756,7 +783,7 @@ function spawnEnemy(x,z,role='rifleman'){
     const height=role==='scout'?1.9:role==='commander'?2.14:heavy?2.08:1.98;
     model.rotation.y=Math.PI;normalize(model,height,true);
     const tint={rifleman:0x738074,scout:0x60746c,breacher:0x6a7068,marksman:0x78806f,commander:0x827b65}[role]||0x738074;
-    model.traverse(o=>{if(o.isMesh){o.userData.enemy=root;o.frustumCulled=true;const materials=Array.isArray(o.material)?o.material:[o.material];const clones=materials.map(material=>{const clone=material?.clone?.()||material;if(clone?.color)clone.color.multiply(new THREE.Color(tint));clone.roughness=Math.max(clone.roughness??.5,.62);return clone});o.material=Array.isArray(o.material)?clones:clones[0]}});root.add(model);
+    model.traverse(o=>{if(o.isMesh){o.userData.enemy=root;o.frustumCulled=true;const materials=Array.isArray(o.material)?o.material:[o.material];const variants=materials.map(material=>enemyMaterialVariant(material,`soldier-${role}`,tint,.62));o.material=Array.isArray(o.material)?variants:variants[0]}});root.add(model);
     root.userData.model=model;
     root.userData.animator=createTacticalAnimator(model,{weapon:'rifle',phase:root.userData.phase});
   }
@@ -768,7 +795,7 @@ function spawnEnemy(x,z,role='rifleman'){
     ?[{x:THREE.MathUtils.clamp(x-1.8,-7.8,7.8),y:0,z:THREE.MathUtils.clamp(z+2.8,-42,7)},{x:THREE.MathUtils.clamp(x+1.8,-7.8,7.8),y:0,z:THREE.MathUtils.clamp(z-2.8,-42,7)}]
     :[{x:THREE.MathUtils.clamp(x-4,-36,36),y:0,z:THREE.MathUtils.clamp(z+4,-132,-48)},{x:THREE.MathUtils.clamp(x+4,-36,36),y:0,z:THREE.MathUtils.clamp(z-4,-132,-48)}];
   const ai=enemyAISystem.addAgent({id:aiId,squadId:interior?'interior':'perimeter',difficulty:role==='commander'?'elite':heavy||role==='marksman'?'hardened':'regular',patrolPoints,health:maxHealth,maxHealth});
-  root.userData.ai=ai;enemiesByAIId.set(aiId,root);
+  root.userData.ai=ai;root.userData.shadowDetailed=null;enemiesByAIId.set(aiId,root);
   scene.add(root);enemies.push(root);
 }
 function animateEnemyWeapon(enemy,dt,t,isMoving,deathProgress=0){
@@ -779,9 +806,10 @@ function animateEnemyWeapon(enemy,dt,t,isMoving,deathProgress=0){
   data.weapon.rotation.x=-.06+data.recoil*.16+stride*.025+deathProgress*.52;data.weapon.rotation.z=stride*.025+deathProgress*.28;
 }
 const enemyRaycaster=new THREE.Raycaster();
+const enemySightOrigin=new THREE.Vector3(),enemySightDirection=new THREE.Vector3(),enemyNextPosition=new THREE.Vector3(),enemyXAxisPosition=new THREE.Vector3(),enemyZAxisPosition=new THREE.Vector3(),enemyReactionLocal=new THREE.Vector3();
 function enemyCanSeePlayer(enemy){
-  const origin=enemy.userData.muzzle?.getWorldPosition(new THREE.Vector3())||enemy.position.clone().add(new THREE.Vector3(0,1.4,0));
-  const direction=camera.position.clone().sub(origin);const length=direction.length();direction.normalize();
+  const origin=enemy.userData.muzzle?.getWorldPosition(enemySightOrigin)||enemySightOrigin.copy(enemy.position).addScaledVector(THREE.Object3D.DEFAULT_UP,1.4);
+  const direction=enemySightDirection.copy(camera.position).sub(origin);const length=direction.length();direction.normalize();
   enemyRaycaster.set(origin,direction);enemyRaycaster.near=0;enemyRaycaster.far=length;
   const obstruction=enemyRaycaster.intersectObjects(collision,true)[0];return !obstruction||obstruction.distance>=length-.35;
 }
@@ -804,11 +832,17 @@ function rotateEnemyToward(enemy,target,dt){
 }
 function tryMoveEnemy(enemy,target,speed,stoppingDistance,dt){
   enemyMoveDirection.set(target.x-enemy.position.x,0,target.z-enemy.position.z);const distance=enemyMoveDirection.length();if(distance<=stoppingDistance)return false;
-  enemyMoveDirection.multiplyScalar(1/distance);const step=Math.min(speed*dt,Math.max(0,distance-stoppingDistance)),next=enemy.position.clone().addScaledVector(enemyMoveDirection,step);
+  enemyMoveDirection.multiplyScalar(1/distance);const step=Math.min(speed*dt,Math.max(0,distance-stoppingDistance)),next=enemyNextPosition.copy(enemy.position).addScaledVector(enemyMoveDirection,step);
   if(canMove(next)){enemy.position.x=next.x;enemy.position.z=next.z;return true}
-  const xOnly=enemy.position.clone();xOnly.x=next.x;if(canMove(xOnly)){enemy.position.x=xOnly.x;return true}
-  const zOnly=enemy.position.clone();zOnly.z=next.z;if(canMove(zOnly)){enemy.position.z=zOnly.z;return true}
+  const xOnly=enemyXAxisPosition.copy(enemy.position);xOnly.x=next.x;if(canMove(xOnly)){enemy.position.x=xOnly.x;return true}
+  const zOnly=enemyZAxisPosition.copy(enemy.position);zOnly.z=next.z;if(canMove(zOnly)){enemy.position.z=zOnly.z;return true}
   return false;
+}
+function updateEnemyShadows(enemy,enabled){
+  const data=enemy.userData;
+  if(data.shadowDetailed===enabled)return;
+  data.shadowDetailed=enabled;
+  enemy.traverse(object=>{if(object.isMesh)object.castShadow=enabled});
 }
 function updateEnemies(dt,t){
   aiPlayerVelocity.copy(camera.position).sub(previousAIPlayerPosition).multiplyScalar(1/Math.max(dt,.001));previousAIPlayerPosition.copy(camera.position);
@@ -826,9 +860,10 @@ function updateEnemies(dt,t){
     };
   });
   for(const enemy of enemies){
-    const data=enemy.userData,distance=enemy.position.distanceTo(camera.position),showDetailedWeapon=distance<24;
+    const data=enemy.userData,distance=enemy.position.distanceTo(camera.position),showDetailedWeapon=distance<18;
     if(data.weaponDetail)data.weaponDetail.visible=showDetailedWeapon;
     if(data.weaponProxy)data.weaponProxy.visible=!showDetailedWeapon;
+    updateEnemyShadows(enemy,distance<18&&!data.dead);
     if(data.dead){
       const animation=data.animator?.update(dt,{locomotion:'idle',weapon:'rifle',weaponReady:false});
       data.deathProgress=animation?.deathProgress??Math.min(1,data.deathProgress+dt*1.25);
@@ -939,7 +974,7 @@ function impact(hit){
   impactMarks.setMatrixAt(impactCursor,impactTransform.matrix);impactCursor=(impactCursor+1)%maxImpactMarks;impactMarks.count=Math.min(maxImpactMarks,impactMarks.count+1);impactMarks.instanceMatrix.needsUpdate=true;
 }
 function enemyReactionDirection(enemy,origin=camera.position){
-  const local=enemy.worldToLocal(origin.clone());
+  const local=enemy.worldToLocal(enemyReactionLocal.copy(origin));
   return Math.abs(local.x)>Math.abs(local.z)?(local.x>0?'right':'left'):(local.z>0?'back':'front');
 }
 function triggerFireAnimation(kind){
