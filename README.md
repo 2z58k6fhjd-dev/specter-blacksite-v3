@@ -1,6 +1,6 @@
 # SPECTER: Blacksite
 
-Build: `5.2.1-HOSTILE-DIAGNOSTICS`
+Build: `5.2.2-GRASS-DETAIL`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build 5.0
 overhauls the controller, viewmodels, combat presentation, enemy behavior,
@@ -46,6 +46,8 @@ keeping the project suitable for static hosting on GitHub Pages.
 - Expanded exterior compound with a checkpoint, motor pool, storage yard,
   communications area, utility/fuel yard, service roads, barriers, grounded
   modern vehicles, and a final extraction pad.
+- A 6,800-clump instanced grass layer adds close-range depth across the PBR
+  exterior terrain while keeping the vegetation to a single efficient draw call.
 - Instanced, non-explorable city skyline beyond the perimeter for atmosphere.
 - Physical sky, moving cloud bank, sun and shadow lighting, fog transitions,
   ACES tone mapping, SSAO, restrained bloom, and selectable quality presets
@@ -200,4 +202,4 @@ prompts, and build records.
 Research links in `THIRD_PARTY_ASSETS.md` are evaluation notes only. Their models,
 textures, and audio are not bundled merely because a source URL is listed. No
 sci-fi, futuristic, fantasy, cartoon, stylized, or visibly low-detail research
-asset was accepted into the build 5.2.1 runtime.
+asset was accepted into the build 5.2.2 runtime.

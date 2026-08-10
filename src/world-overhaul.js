@@ -58,15 +58,30 @@ function addCloudBank(scene){
 }
 
 function addGrassBlades(scene){
-  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute([-.065,0,0,.065,0,0,0,.38,0],3));geometry.setAttribute('normal',new THREE.Float32BufferAttribute([0,0,1,0,0,1,0,0,1],3));geometry.computeBoundingSphere();
-  const material=new THREE.MeshStandardMaterial({color:0x2f4e28,roughness:1,metalness:0,side:THREE.DoubleSide});
-  const count=3600,grass=new THREE.InstancedMesh(geometry,material,count),matrix=new THREE.Matrix4(),quaternion=new THREE.Quaternion(),scale=new THREE.Vector3(),position=new THREE.Vector3(),random=mulberry32(4242);
+  // Three crossed, tapered blades per clump give the PBR ground actual close
+  // range depth.  They are one instanced draw and intentionally do not cast
+  // individual shadows, so the high preset stays within a desktop frame budget.
+  const geometry=new THREE.BufferGeometry(),bladeVertices=[
+    -.035,0,-.012,.035,0,.012,.008,.42,.018,
+    -.028,0,.024,.028,0,-.024,-.012,.34,.002,
+    -.022,0,-.031,.022,0,.031,.018,.29,-.006
+  ];
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute(bladeVertices,3));geometry.computeVertexNormals();geometry.computeBoundingSphere();
+  const material=new THREE.MeshStandardMaterial({color:0xffffff,vertexColors:true,roughness:.94,metalness:0,side:THREE.DoubleSide});
+  const count=6800,grass=new THREE.InstancedMesh(geometry,material,count),matrix=new THREE.Matrix4(),quaternion=new THREE.Quaternion(),scale=new THREE.Vector3(),position=new THREE.Vector3(),random=mulberry32(4242),color=new THREE.Color();
+  const isHardscape=(x,z)=>Math.abs(x)<5.2||
+    (x>-31&&x<2&&z>-171&&z<-140)||
+    (x>-31&&x<2&&z>-115&&z<-92)||
+    (x>1&&x<30&&z>-131&&z<-70)||
+    (x>-9&&x<9&&z>-181&&z<-163)||
+    (x>-16&&x<16&&z>-69&&z<-47);
   for(let index=0;index<count;index++){
-    let x=(random()-.5)*82,z=-48-random()*86;
-    if(Math.abs(x)<5.1&&z>-115)x=(x<0?-1:1)*(5.4+random()*34);
-    position.set(x,-.01,z);quaternion.setFromAxisAngle(up,random()*Math.PI);scale.set(.7+random()*.95,.55+random()*1.15,.7+random()*.95);matrix.compose(position,quaternion,scale);grass.setMatrixAt(index,matrix);
+    let x=0,z=0,attempts=0;
+    do{x=(random()-.5)*82;z=-49-random()*130;attempts++}while(isHardscape(x,z)&&attempts<16);
+    position.set(x,-.005,z);quaternion.setFromAxisAngle(up,random()*Math.PI);scale.set(.7+random()*1.15,.65+random()*1.25,.7+random()*1.15);matrix.compose(position,quaternion,scale);grass.setMatrixAt(index,matrix);
+    color.setHSL(.25+random()*.06,.28+random()*.2,.19+random()*.09);grass.setColorAt(index,color);
   }
-  grass.instanceMatrix.needsUpdate=true;grass.castShadow=true;grass.receiveShadow=true;grass.frustumCulled=true;grass.name='instanced-grass';scene.add(grass);return grass;
+  grass.instanceMatrix.needsUpdate=true;if(grass.instanceColor)grass.instanceColor.needsUpdate=true;grass.computeBoundingSphere();grass.castShadow=false;grass.receiveShadow=true;grass.frustumCulled=true;grass.name='instanced-exterior-grass-clumps';scene.add(grass);return grass;
 }
 
 function addPerimeterTrees(scene){
@@ -344,8 +359,7 @@ export function buildWorldOverhaul({scene,collision,environmentTextures,facility
   const ground=new THREE.Mesh(new THREE.PlaneGeometry(90,142,1,1),grassMaterial);ground.name='exterior-grass-terrain';ground.rotation.x=-Math.PI/2;ground.position.set(0,-.12,-113);ground.receiveShadow=true;scene.add(ground);
   const road=new THREE.Mesh(new THREE.PlaneGeometry(8.5,120),asphalt);road.name='service-road';road.rotation.x=-Math.PI/2;road.position.set(0,-.105,-108);road.receiveShadow=true;scene.add(road);
   const apron=new THREE.Mesh(new THREE.PlaneGeometry(22,13),asphalt);apron.name='exit-apron';apron.rotation.x=-Math.PI/2;apron.position.set(0,-.1,-50);apron.receiveShadow=true;scene.add(apron);
-  // Close-range placeholder blade cards and geometric trees were intentionally
-  // removed: the PBR ground reads better than visibly low-detail vegetation.
+  const grass=addGrassBlades(scene);
   const city=addCitySkyline(scene),clouds=addCloudBank(scene);
 
   const sky=new Sky();sky.name='physical-sky';sky.scale.setScalar(1100);scene.add(sky);
@@ -402,5 +416,5 @@ export function buildWorldOverhaul({scene,collision,environmentTextures,facility
     city.beacons.children.forEach((child,index)=>{if(child.isMesh&&child.geometry?.type==='SphereGeometry')child.visible=Math.sin(cityBeaconClock*2.15+index*.8)>.1});
     if(scene.fog?.isFogExp2){scene.fog.color.lerpColors(interiorFogColor,exteriorFogColor,outdoorBlend);scene.fog.density=THREE.MathUtils.lerp(.012,.00135,outdoorBlend)}
   }
-  return {exit,breaker,sky,sun,outdoorAmbient,vehicle,barriers,city,checkpoint,motorPool,storageYard,communications,utilityYard,extraction,setPowered,update,get exitOpen(){return exit.progress>.9},get outdoorBlend(){return outdoorBlend}};
+  return {exit,breaker,sky,sun,outdoorAmbient,vehicle,barriers,city,grass,checkpoint,motorPool,storageYard,communications,utilityYard,extraction,setPowered,update,get exitOpen(){return exit.progress>.9},get outdoorBlend(){return outdoorBlend}};
 }
