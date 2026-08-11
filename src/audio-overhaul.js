@@ -26,6 +26,9 @@ const DEFAULTS = Object.freeze({
   masterVolume: 0.82,
   musicVolume: 0.3,
   sfxVolume: 0.9,
+  // Voice has its own bus so players can keep gunfire and environmental cues
+  // audible without letting squad radio chatter dominate the mix.
+  voiceVolume: 0.86,
   ambienceVolume: 0.52,
   outdoorBlend: 0,
   combatIntensity: 0,
@@ -45,6 +48,24 @@ const VOICE_PATTERNS = Object.freeze({
   down: [104, 76, 59],
   clear: [132, 165],
   radio: [154, 181, 142]
+});
+
+// The recorded package contains one rifle and one pistol transient.  These
+// profiles preserve their attribution while giving each selectable weapon a
+// different report envelope, action weight, and indoor/outdoor tail.
+const DEFAULT_WEAPON_REPORT = Object.freeze({
+  sample: 'rifle', rate: 1, sampleDuration: 1.2, sampleGain: 1,
+  transientLength: 1, transientGain: 1, brightness: 1,
+  bodyPitch: 1, bodyGain: 1, indoorTail: 1, outdoorTail: 1,
+  tailGain: 1, tailPitch: 1, maxDistance: 105, suppressed: false
+});
+
+const WEAPON_REPORT_PROFILES = Object.freeze({
+  rifle: DEFAULT_WEAPON_REPORT,
+  compact: Object.freeze({ rate: 1.08, sampleDuration: 0.94, sampleGain: 0.94, transientLength: 0.88, brightness: 1.14, bodyPitch: 0.92, bodyGain: 0.9, indoorTail: 0.82, outdoorTail: 0.76, tailGain: 0.9, tailPitch: 1.08, maxDistance: 96 }),
+  marksman: Object.freeze({ rate: 0.88, sampleDuration: 1.34, sampleGain: 1.12, transientLength: 1.12, transientGain: 1.08, brightness: 0.84, bodyPitch: 1.25, bodyGain: 1.1, indoorTail: 1.2, outdoorTail: 1.34, tailGain: 1.1, tailPitch: 0.82, maxDistance: 128 }),
+  suppressed: Object.freeze({ rate: 0.96, sampleDuration: 0.84, sampleGain: 0.86, transientLength: 0.72, transientGain: 0.68, brightness: 0.58, bodyPitch: 0.92, bodyGain: 0.72, indoorTail: 0.25, outdoorTail: 0.2, tailGain: 0.35, tailPitch: 0.72, maxDistance: 78, suppressed: true }),
+  pistol: Object.freeze({ sample: 'pistol', rate: 1.03, sampleDuration: 1.0, sampleGain: 1, transientLength: 0.92, brightness: 1.08, bodyPitch: 1.04, bodyGain: 0.96, indoorTail: 0.9, outdoorTail: 0.86, tailGain: 0.95, tailPitch: 1.06, maxDistance: 82 })
 });
 
 function clamp(value, minimum = 0, maximum = 1) {
@@ -119,6 +140,7 @@ export class AudioDirector {
       master: clamp(this.options.masterVolume),
       music: clamp(this.options.musicVolume),
       sfx: clamp(this.options.sfxVolume),
+      voice: clamp(this.options.voiceVolume),
       ambience: clamp(this.options.ambienceVolume)
     };
   }
@@ -259,13 +281,15 @@ export class AudioDirector {
     const master = context.createGain();
     const music = context.createGain();
     const sfx = context.createGain();
+    const voice = context.createGain();
     const ambience = context.createGain();
     music.connect(master);
     sfx.connect(master);
+    voice.connect(master);
     ambience.connect(master);
     master.connect(compressor).connect(context.destination);
 
-    this._buses = { master, music, sfx, ambience, compressor };
+    this._buses = { master, music, sfx, voice, ambience, compressor };
     this._noiseBuffer = this._createNoiseBuffer(4);
     this._initialized = true;
     this._applyVolumes(0);
@@ -425,6 +449,7 @@ export class AudioDirector {
     this._ramp(this._buses.master.gain, this._volumes.master, fadeSeconds);
     this._ramp(this._buses.music.gain, this._volumes.music, fadeSeconds);
     this._ramp(this._buses.sfx.gain, this._volumes.sfx, fadeSeconds);
+    this._ramp(this._buses.voice.gain, this._volumes.voice, fadeSeconds);
     this._ramp(this._buses.ambience.gain, this._volumes.ambience, fadeSeconds);
   }
 
@@ -442,6 +467,13 @@ export class AudioDirector {
 
   setSfxVolume(value, fadeSeconds = 0.08) {
     this._volumes.sfx = clamp(value);
+    this._applyVolumes(fadeSeconds);
+    return this;
+  }
+
+  /** Set the dedicated enemy dialogue/radio volume without muting SFX. */
+  setVoiceVolume(value, fadeSeconds = 0.08) {
+    this._volumes.voice = clamp(value);
     this._applyVolumes(fadeSeconds);
     return this;
   }
@@ -554,7 +586,7 @@ export class AudioDirector {
 
   _createEvent(position, settings = {}) {
     const context = this._context;
-    const bus = this._buses[settings.bus || 'sfx'];
+    const bus = this._buses[settings.bus || 'sfx'] || this._buses.sfx;
     const input = context.createGain();
     input.gain.value = clamp(settings.gain ?? 1, 0, 2);
     const event = { input, nodes: [input], active: 0 };
@@ -707,30 +739,31 @@ export class AudioDirector {
   }
 
   /**
-   * Play a layered rifle or pistol report. options.position makes it spatial.
-   * @param {'rifle'|'pistol'} kind
+   * Play a layered weapon report. options.position makes it spatial.
+   * @param {'rifle'|'compact'|'marksman'|'suppressed'|'pistol'} kind
    * @param {{position?:Object|number[],gain?:number,suppressed?:boolean,casing?:boolean,outdoorBlend?:number}} options
    */
   playWeapon(kind = 'rifle', options = {}) {
     if (!this.ready) return false;
-    const weapon = kind === 'pistol' ? 'pistol' : 'rifle';
+    const report = { ...DEFAULT_WEAPON_REPORT, ...(WEAPON_REPORT_PROFILES[kind] || {}) };
+    const weapon = report.sample;
     const context = this._context;
     const now = context.currentTime + 0.004;
-    const suppressed = Boolean(options.suppressed);
-    const variation = 0.96 + this._random() * 0.08;
+    const suppressed = Boolean(options.suppressed || report.suppressed);
+    const variation = report.rate * (0.96 + this._random() * 0.08);
     const event = this._createEvent(options.position, {
       gain: options.gain ?? 1,
       refDistance: 2.2,
-      maxDistance: weapon === 'rifle' ? 105 : 82,
+      maxDistance: report.maxDistance,
       rolloffFactor: 1.08
     });
     const sourceSample = this._weaponSamples[weapon];
     if (sourceSample) {
       this._sampleLayer(event, sourceSample, {
         start: now,
-        duration: weapon === 'rifle' ? 1.2 : 1.08,
+        duration: report.sampleDuration,
         rate: variation,
-        gain: suppressed ? 0.13 : weapon === 'rifle' ? 0.48 : 0.43,
+        gain: (suppressed ? 0.13 : weapon === 'rifle' ? 0.48 : 0.43) * report.sampleGain,
         filters: suppressed
           ? [{ type: 'highpass', frequency: 220, q: 0.55 }, { type: 'lowpass', frequency: 2100, q: 0.72 }]
           : [{ type: 'highpass', frequency: 65, q: 0.4 }]
@@ -740,37 +773,37 @@ export class AudioDirector {
 
     if (weapon === 'rifle') {
       this._noiseLayer(event, {
-        start: now, duration: suppressed ? 0.055 : 0.095, gain: 0.72 * transientGain,
+        start: now, duration: (suppressed ? 0.055 : 0.095) * report.transientLength, gain: 0.72 * transientGain * report.transientGain,
         rate: variation,
         filters: [
           { type: 'highpass', frequency: suppressed ? 180 : 70, q: 0.45 },
-          { type: 'lowpass', frequency: suppressed ? 1900 : 7200, q: 0.72 }
+          { type: 'lowpass', frequency: (suppressed ? 1900 : 7200) * report.brightness, q: 0.72 }
         ]
       });
       this._oscillatorLayer(event, {
-        start: now, duration: 0.105, type: 'square', from: 138 * variation, to: 43,
-        gain: 0.24 * transientGain
+        start: now, duration: 0.105 * report.transientLength, type: 'square', from: 138 * variation * report.bodyPitch, to: 43 * report.bodyPitch,
+        gain: 0.24 * transientGain * report.bodyGain
       });
       this._noiseLayer(event, {
-        start: now + 0.013, duration: 0.035, gain: 0.16,
-        filter: { type: 'bandpass', frequency: 2850 * variation, q: 1.3 }
+        start: now + 0.013, duration: 0.035 * report.transientLength, gain: 0.16 * report.transientGain,
+        filter: { type: 'bandpass', frequency: 2850 * variation * report.brightness, q: 1.3 }
       });
     } else {
       this._noiseLayer(event, {
-        start: now, duration: suppressed ? 0.045 : 0.075, gain: 0.58 * transientGain,
+        start: now, duration: (suppressed ? 0.045 : 0.075) * report.transientLength, gain: 0.58 * transientGain * report.transientGain,
         rate: variation,
         filters: [
           { type: 'highpass', frequency: suppressed ? 260 : 110, q: 0.5 },
-          { type: 'lowpass', frequency: suppressed ? 2300 : 8400, q: 0.65 }
+          { type: 'lowpass', frequency: (suppressed ? 2300 : 8400) * report.brightness, q: 0.65 }
         ]
       });
       this._oscillatorLayer(event, {
-        start: now, duration: 0.085, type: 'square', from: 172 * variation, to: 58,
-        gain: 0.18 * transientGain
+        start: now, duration: 0.085 * report.transientLength, type: 'square', from: 172 * variation * report.bodyPitch, to: 58 * report.bodyPitch,
+        gain: 0.18 * transientGain * report.bodyGain
       });
       this._oscillatorLayer(event, {
-        start: now + 0.014, duration: 0.038, type: 'triangle', from: 2450, to: 880,
-        gain: 0.075
+        start: now + 0.014, duration: 0.038 * report.transientLength, type: 'triangle', from: 2450 * report.brightness, to: 880 * report.brightness,
+        gain: 0.075 * report.transientGain
       });
     }
 
@@ -781,19 +814,19 @@ export class AudioDirector {
       if (indoorStrength > 0.01) {
         this._noiseLayer(event, {
           start: now + 0.022,
-          duration: weapon === 'rifle' ? 0.34 : 0.26,
+          duration: (weapon === 'rifle' ? 0.34 : 0.26) * report.indoorTail,
           attack: 0.018,
-          gain: (weapon === 'rifle' ? 0.21 : 0.15) * indoorStrength,
-          filter: { type: 'bandpass', frequency: weapon === 'rifle' ? 690 : 880, q: 0.55 }
+          gain: (weapon === 'rifle' ? 0.21 : 0.15) * indoorStrength * report.tailGain,
+          filter: { type: 'bandpass', frequency: (weapon === 'rifle' ? 690 : 880) * report.tailPitch, q: 0.55 }
         });
       }
       if (outdoorStrength > 0.01) {
         this._noiseLayer(event, {
           start: now + 0.028,
-          duration: weapon === 'rifle' ? 0.72 : 0.52,
+          duration: (weapon === 'rifle' ? 0.72 : 0.52) * report.outdoorTail,
           attack: 0.024,
-          gain: (weapon === 'rifle' ? 0.13 : 0.095) * outdoorStrength,
-          filter: { type: 'bandpass', frequency: weapon === 'rifle' ? 510 : 690, q: 0.42 }
+          gain: (weapon === 'rifle' ? 0.13 : 0.095) * outdoorStrength * report.tailGain,
+          filter: { type: 'bandpass', frequency: (weapon === 'rifle' ? 510 : 690) * report.tailPitch, q: 0.42 }
         });
       }
     }
@@ -1035,15 +1068,23 @@ export class AudioDirector {
     const type = String(options.type || 'contact');
     const pattern = VOICE_PATTERNS[type] || VOICE_PATTERNS.contact;
     const intensity = clamp(options.intensity ?? 0.85, 0.15, 1.25);
-    const event = this._createEvent(position, {
+    // Direct shouts remain short-range and physical.  Radio traffic is still
+    // anchored to the emitting operator (so it can be located), but carries
+    // farther with a narrower, filtered mix and a small key-up/key-down bed.
+    // `radioMix` lets callers use a softer radio treatment for nearby squads.
+    const radio = options.radio !== false;
+    const radioMix = radio ? clamp(options.radioMix ?? 0.72) : 0;
+    const positional = options.positional !== false;
+    const event = this._createEvent(positional ? position : null, {
+      bus: 'voice',
       gain: options.gain ?? 0.78,
-      refDistance: 2,
-      maxDistance: options.maxDistance || 58,
-      rolloffFactor: 1.12
+      refDistance: options.refDistance ?? (1.8 + radioMix * 2.4),
+      maxDistance: options.maxDistance ?? (58 + radioMix * 34),
+      rolloffFactor: options.rolloffFactor ?? (1.12 - radioMix * 0.42)
     });
     let cursor = this._context.currentTime + 0.004;
-    if (options.radio !== false) {
-      this._radioLayers(event, cursor, 0.72);
+    if (radio && radioMix > EPSILON) {
+      this._radioLayers(event, cursor, radioMix);
       cursor += 0.105;
     }
     const voiceShift = 0.94 + this._random() * 0.12;
@@ -1055,13 +1096,14 @@ export class AudioDirector {
         start: cursor,
         rate: voiceShift,
         gain: 0.68 * intensity,
-        filters: options.radio === false
-          ? [{ type: 'highpass', frequency: 110, q: 0.45 }, { type: 'lowpass', frequency: 5800, q: 0.55 }]
-          : [{ type: 'highpass', frequency: 260, q: 0.55 }, { type: 'lowpass', frequency: 2700, q: 0.72 }]
+        filters: [
+          { type: 'highpass', frequency: 110 + radioMix * 150, q: 0.45 + radioMix * 0.1 },
+          { type: 'lowpass', frequency: 5800 - radioMix * 3100, q: 0.55 + radioMix * 0.17 }
+        ]
       });
-      if (options.radio !== false) {
+      if (radio && radioMix > EPSILON) {
         this._noiseLayer(event, {
-          start: cursor + voiceDuration, duration: 0.045, gain: 0.055,
+          start: cursor + voiceDuration, duration: 0.045, gain: 0.055 * radioMix,
           filter: { type: 'bandpass', frequency: 2500, q: 0.8 }
         });
       }
@@ -1080,7 +1122,7 @@ export class AudioDirector {
         gain: 0.075 * intensity,
         filters: [
           { type: 'highpass', frequency: 105, q: 0.4 },
-          { type: 'lowpass', frequency: options.radio === false ? 3300 : 2250, q: 0.75 }
+          { type: 'lowpass', frequency: 3300 - radioMix * 1050, q: 0.75 }
         ]
       });
       this._oscillatorLayer(event, {
@@ -1099,9 +1141,9 @@ export class AudioDirector {
       });
       cursor += duration + 0.025 + this._random() * 0.028;
     }
-    if (options.radio !== false) {
+    if (radio && radioMix > EPSILON) {
       this._noiseLayer(event, {
-        start: cursor, duration: 0.045, gain: 0.055,
+        start: cursor, duration: 0.045, gain: 0.055 * radioMix,
         filter: { type: 'bandpass', frequency: 2500, q: 0.8 }
       });
     }

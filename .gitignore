@@ -1,0 +1,2 @@
+# Generated locally by scripts/release.mjs and rebuilt in CI.
+.release/

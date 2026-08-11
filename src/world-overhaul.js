@@ -84,37 +84,124 @@ function addGrassBlades(scene){
   grass.instanceMatrix.needsUpdate=true;if(grass.instanceColor)grass.instanceColor.needsUpdate=true;grass.computeBoundingSphere();grass.castShadow=false;grass.receiveShadow=true;grass.frustumCulled=true;grass.name='instanced-exterior-grass-clumps';scene.add(grass);return grass;
 }
 
-function addPerimeterTrees(scene){
-  const trunkMaterial=new THREE.MeshStandardMaterial({color:0x44372b,roughness:.96});
-  const leafMaterial=new THREE.MeshStandardMaterial({color:0x25482c,roughness:.96,side:THREE.DoubleSide});
-  const trees=new THREE.Group();trees.name='perimeter-trees';const random=mulberry32(818);
-  for(let index=0;index<34;index++){
-    const side=index%2?-1:1,x=side*(34+random()*13),z=-49-random()*86,height=5.5+random()*5;
-    const trunk=createCylinder('tree-trunk',.16+random()*.12,height*.55,trunkMaterial,new THREE.Vector3(x,height*.275,z),null,10);
-    const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(height*.23,1),leafMaterial);crown.name='tree-crown';crown.position.set(x,height*.72,z);crown.scale.set(.8+random()*.45,1.15+random()*.35,.8+random()*.45);crown.castShadow=true;crown.receiveShadow=true;trees.add(trunk,crown);
+function addForestInstanceLayer(name,geometry,material,trees,transform,{castShadow=false,receiveShadow=false,colorOffset=0,hueOffset=0,saturationOffset=0,lightnessMultiplier=1}={}){
+  const mesh=new THREE.InstancedMesh(geometry,material,trees.length),matrix=new THREE.Matrix4(),position=new THREE.Vector3(),scale=new THREE.Vector3(),quaternion=new THREE.Quaternion(),color=new THREE.Color();
+  mesh.name=name;mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);mesh.userData.maxInstances=trees.length;mesh.userData.forestLod=name.includes('near')?'near':name.includes('mid')?'mid':'far';mesh.userData.forestCastsShadow=castShadow;
+  for(let index=0;index<trees.length;index++){
+    const tree=trees[index];transform(tree,position,scale);quaternion.setFromAxisAngle(up,tree.rotation);matrix.compose(position,quaternion,scale);mesh.setMatrixAt(index,matrix);
+    if(material.vertexColors){
+      color.setHSL((tree.hue+hueOffset+1)%1,THREE.MathUtils.clamp(tree.saturation+saturationOffset,.08,.82),THREE.MathUtils.clamp(tree.lightness*lightnessMultiplier+colorOffset,.08,.72));mesh.setColorAt(index,color);
+    }
   }
-  scene.add(trees);return trees;
+  mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;mesh.computeBoundingSphere();mesh.castShadow=castShadow;mesh.receiveShadow=receiveShadow;mesh.frustumCulled=true;return mesh;
 }
 
-function addCitySkyline(scene){
-  const facadeCanvas=document.createElement('canvas');facadeCanvas.width=256;facadeCanvas.height=512;const facadeContext=facadeCanvas.getContext('2d');facadeContext.fillStyle='#1f292b';facadeContext.fillRect(0,0,256,512);
-  for(let y=22;y<500;y+=30)for(let x=14;x<248;x+=30){const lit=(x*7+y*11)%9<2;facadeContext.fillStyle=lit?'#8c9271':'#314043';facadeContext.fillRect(x,y,12,9)}
-  const facadeTexture=new THREE.CanvasTexture(facadeCanvas);facadeTexture.colorSpace=THREE.SRGBColorSpace;facadeTexture.wrapS=facadeTexture.wrapT=THREE.RepeatWrapping;facadeTexture.repeat.set(1.5,3);
-  const count=82,geometry=new THREE.BoxGeometry(1,1,1),material=new THREE.MeshStandardMaterial({color:0x526064,map:facadeTexture,roughness:.86,metalness:.12,emissive:0x0c1213,emissiveIntensity:.28});
-  const towers=new THREE.InstancedMesh(geometry,material,count),matrix=new THREE.Matrix4(),position=new THREE.Vector3(),quaternion=new THREE.Quaternion(),scale=new THREE.Vector3(),random=mulberry32(5050),color=new THREE.Color();
-  for(let index=0;index<count;index++){
-    const centerBias=(index/(count-1)-.5),x=centerBias*520+(random()-.5)*24,z=-420-random()*250;
-    const distanceFactor=THREE.MathUtils.clamp((-z-415)/255,0,1),height=(24+random()*72)*(1-distanceFactor*.2)+(Math.abs(x)<72?random()*26:0),width=7+random()*15,depth=7+random()*18;
-    position.set(x,height*.5-.3,z);scale.set(width,height,depth);matrix.compose(position,quaternion,scale);towers.setMatrixAt(index,matrix);
-    color.setHSL(.47+random()*.08,.12+random()*.12,.17+random()*.1);towers.setColorAt(index,color);
+function createCrossedBillboardGeometry(){
+  // Two perpendicular cards are kept in one indexed geometry, allowing every
+  // photo tree to be submitted through one InstancedMesh draw call rather than
+  // one Sprite / draw per tree.
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute([
+    -.5,0,0, .5,0,0, .5,1,0, -.5,1,0,
+    0,0,-.5, 0,0,.5, 0,1,.5, 0,1,-.5
+  ],3));
+  geometry.setAttribute('uv',new THREE.Float32BufferAttribute([
+    0,0, 1,0, 1,1, 0,1,
+    0,0, 1,0, 1,1, 0,1
+  ],2));
+  geometry.setIndex([0,1,2,0,2,3,4,5,6,4,6,7]);geometry.computeBoundingSphere();return geometry;
+}
+
+function addForestBackdrop(scene,groundMaterial,firBillboard=null){
+  // A licensed high-detail tree pack is not bundled yet. This is a deliberately
+  // texture-free procedural fallback using the project's existing material
+  // palette; it is not presented as a substitute for authored 4K foliage.
+  const forest=new THREE.Group();forest.name='pnw-perimeter-forest';
+  const forestFloor=new THREE.Mesh(new THREE.PlaneGeometry(460,440),groundMaterial);forestFloor.name='pnw-forest-floor';forestFloor.rotation.x=-Math.PI/2;forestFloor.position.set(0,-.16,-244);forestFloor.receiveShadow=true;forest.add(forestFloor);
+  const trunkMaterial=new THREE.MeshStandardMaterial({color:0x5b422a,emissive:0x120b06,emissiveIntensity:.24,roughness:.98,metalness:0,flatShading:false});
+  const lowerNeedleMaterial=new THREE.MeshStandardMaterial({color:0x2e7139,emissive:0x0b2110,emissiveIntensity:.3,roughness:.97,metalness:0,flatShading:false});
+  const upperNeedleMaterial=lowerNeedleMaterial.clone();upperNeedleMaterial.color.setHex(0x3d8145);upperNeedleMaterial.emissive.setHex(0x102912);
+  const trunkGeometry=new THREE.CylinderGeometry(.28,.42,1,10,2),needleGeometry=new THREE.ConeGeometry(1,1,12,3);
+  const random=mulberry32(7716),nearTrees=[],midTrees=[],farTrees=[];
+  const makeTree=(x,z,height)=>({x,z,height,crown:.78+random()*.52,rotation:random()*Math.PI*2,hue:.27+random()*.045,saturation:.22+random()*.18,lightness:.15+random()*.11});
+  // The closest row sits beyond the physical fence. No tree mesh is added to
+  // collision, so the existing readable combat boundary remains authoritative.
+  for(let index=0;index<176;index++){
+    const side=index%2?-1:1,x=side*(50+random()*18),z=-51-random()*132;
+    nearTrees.push(makeTree(x,z,12+random()*12));
   }
-  towers.instanceMatrix.needsUpdate=true;if(towers.instanceColor)towers.instanceColor.needsUpdate=true;towers.frustumCulled=true;towers.castShadow=false;towers.receiveShadow=false;towers.name='distant-city-skyline';scene.add(towers);
-  const beaconMaterial=new THREE.MeshBasicMaterial({color:0xff3b2b,toneMapped:false}),beacons=new THREE.Group();beacons.name='city-rooftop-beacons';
-  for(const [x,y,z] of [[-78,78,-478],[24,94,-536],[104,83,-452],[-158,72,-584]]){
-    const mast=createCylinder('city-mast',.09,5,new THREE.MeshStandardMaterial({color:0x354244,metalness:.8,roughness:.4}),new THREE.Vector3(x,y,z));mast.castShadow=false;
-    const beacon=new THREE.Mesh(new THREE.SphereGeometry(.32,8,6),beaconMaterial);beacon.position.set(x,y+2.6,z);beacons.add(mast,beacon);
+  for(let index=0;index<348;index++){
+    const x=(random()-.5)*204,z=-190-random()*104;
+    midTrees.push(makeTree(x,z,14+random()*15));
   }
-  scene.add(beacons);return {towers,beacons};
+  for(let index=0;index<560;index++){
+    const x=(random()-.5)*352,z=-286-random()*152;
+    farTrees.push(makeTree(x,z,16+random()*19));
+  }
+  const layers=[];
+  const addLayer=(name,geometry,material,trees,transform,options={})=>{const mesh=addForestInstanceLayer(name,geometry,material,trees,transform,options);forest.add(mesh);layers.push(mesh);return mesh};
+  const trunkTransform=(tree,position,scale)=>{position.set(tree.x,tree.height*.36,tree.z);scale.set(tree.crown*.88,tree.height*.72,tree.crown*.88)};
+  const lowerNeedleTransform=(tree,position,scale)=>{position.set(tree.x,tree.height*.42,tree.z);scale.set(tree.crown*2.75,tree.height*.56,tree.crown*2.75)};
+  const middleNeedleTransform=(tree,position,scale)=>{position.set(tree.x,tree.height*.64,tree.z);scale.set(tree.crown*2.08,tree.height*.48,tree.crown*2.08)};
+  const topNeedleTransform=(tree,position,scale)=>{position.set(tree.x,tree.height*.84,tree.z);scale.set(tree.crown*1.35,tree.height*.38,tree.crown*1.35)};
+  const farNeedleTransform=(tree,position,scale)=>{position.set(tree.x,tree.height*.46,tree.z);scale.set(tree.crown*2.38,tree.height*.92,tree.crown*2.38)};
+  const trunkColor={hueOffset:-.2,saturationOffset:-.13,lightnessMultiplier:1.35,colorOffset:.09};
+  const lowerNeedleColor={saturationOffset:.08,lightnessMultiplier:1.5,colorOffset:.1};
+  const upperNeedleColor={saturationOffset:.04,lightnessMultiplier:1.6,colorOffset:.13};
+  addLayer('forest-near-trunks',trunkGeometry,trunkMaterial,nearTrees,trunkTransform,{castShadow:true,receiveShadow:true,...trunkColor});
+  addLayer('forest-near-lower-needles',needleGeometry,lowerNeedleMaterial,nearTrees,lowerNeedleTransform,{castShadow:true,receiveShadow:true,...lowerNeedleColor});
+  addLayer('forest-near-middle-needles',needleGeometry,upperNeedleMaterial,nearTrees,middleNeedleTransform,{castShadow:true,receiveShadow:true,...upperNeedleColor});
+  addLayer('forest-near-top-needles',needleGeometry,upperNeedleMaterial,nearTrees,topNeedleTransform,{castShadow:true,receiveShadow:true,...upperNeedleColor,colorOffset:.18});
+  addLayer('forest-mid-trunks',trunkGeometry,trunkMaterial,midTrees,trunkTransform,trunkColor);
+  addLayer('forest-mid-lower-needles',needleGeometry,lowerNeedleMaterial,midTrees,lowerNeedleTransform,lowerNeedleColor);
+  addLayer('forest-mid-top-needles',needleGeometry,upperNeedleMaterial,midTrees,middleNeedleTransform,upperNeedleColor);
+  addLayer('forest-far-needles',needleGeometry,upperNeedleMaterial,farTrees,farNeedleTransform,{...upperNeedleColor,colorOffset:.1});
+
+  // The authored photo-card layer is intentionally optional: low and medium
+  // settings retain the procedural trees as the low-cost, distant fallback.
+  // A generated CanvasTexture (or normal Texture) lets high-tier presets add
+  // recognisable fir silhouettes without streaming the enormous raw tree mesh.
+  let photoTreeLayer=null,photoTreeCount=0;
+  if(firBillboard?.isTexture){
+    firBillboard.colorSpace=THREE.SRGBColorSpace;
+    const photoTreeMaterial=new THREE.MeshBasicMaterial({map:firBillboard,transparent:true,alphaTest:.09,side:THREE.DoubleSide,depthWrite:true,fog:true});
+    const photoTreeGeometry=createCrossedBillboardGeometry(),photoTrees=[],photoRandom=mulberry32(59371);
+    const addPhotoTree=(x,z)=>photoTrees.push({x,z,height:10+photoRandom()*12,width:5.6+photoRandom()*4.8,rotation:photoRandom()*Math.PI*2});
+    // Keep these scenic cards just outside the perimeter and clear of the
+    // extraction gate's sightline. They are never inserted into collision.
+    for(let index=0;index<48;index++){
+      const side=index%2?-1:1;addPhotoTree(side*(46+photoRandom()*10),-54-photoRandom()*120);
+    }
+    for(let index=0;index<24;index++){
+      let x=0;do{x=(photoRandom()-.5)*152}while(Math.abs(x)<8);addPhotoTree(x,-188-photoRandom()*42);
+    }
+    photoTreeLayer=new THREE.InstancedMesh(photoTreeGeometry,photoTreeMaterial,photoTrees.length);photoTreeLayer.name='forest-high-tier-photo-impostors';photoTreeLayer.instanceMatrix.setUsage(THREE.StaticDrawUsage);photoTreeLayer.userData.maxInstances=photoTrees.length;photoTreeLayer.userData.forestLod='photo';photoTreeLayer.userData.highTierOnly=true;
+    const matrix=new THREE.Matrix4(),position=new THREE.Vector3(),scale=new THREE.Vector3(),quaternion=new THREE.Quaternion();
+    for(let index=0;index<photoTrees.length;index++){
+      const tree=photoTrees[index];position.set(tree.x,-.14,tree.z);scale.set(tree.width,tree.height,tree.width);quaternion.setFromAxisAngle(up,tree.rotation);matrix.compose(position,quaternion,scale);photoTreeLayer.setMatrixAt(index,matrix);
+    }
+    photoTreeLayer.instanceMatrix.needsUpdate=true;photoTreeLayer.computeBoundingSphere();photoTreeLayer.castShadow=false;photoTreeLayer.receiveShadow=false;photoTreeLayer.visible=false;forest.add(photoTreeLayer);
+  }
+  scene.add(forest);
+
+  const densityValue=value=>{
+    if(typeof value==='number'&&Number.isFinite(value))return THREE.MathUtils.clamp(value,0,1);
+    return ({off:0,low:.24,medium:.58,high:.84,ultra:.94,extreme:1}[String(value||'').toLowerCase()]??.84);
+  };
+  const activeTreeCounts={near:0,mid:0,far:0,photo:0};
+  function setDensity(value,{photoEnabled=true}={}){
+    const density=densityValue(value),fractions=density<=0?{near:0,mid:0,far:0}:{near:THREE.MathUtils.clamp((density-.24)/.76,0,1),mid:THREE.MathUtils.clamp((density-.08)/.92,0,1),far:Math.max(.18,density)};
+    for(const mesh of layers){const lod=mesh.userData.forestLod;mesh.count=Math.round(mesh.userData.maxInstances*fractions[lod])}
+    // High starts with a light silhouette pass; ultra and extreme fill the
+    // whole deterministic batch. Off/low/medium do not render photo cards.
+    const photoFraction=photoTreeLayer&&photoEnabled&&density>=.72?THREE.MathUtils.smoothstep(density,.72,1):0;
+    photoTreeCount=photoTreeLayer?Math.round(photoTreeLayer.userData.maxInstances*photoFraction):0;
+    if(photoTreeLayer){photoTreeLayer.count=photoTreeCount;photoTreeLayer.visible=photoTreeCount>0;photoTreeLayer.material.opacity=.48+.52*photoFraction}
+    activeTreeCounts.near=Math.round(nearTrees.length*fractions.near);activeTreeCounts.mid=Math.round(midTrees.length*fractions.mid);activeTreeCounts.far=Math.round(farTrees.length*fractions.far);activeTreeCounts.photo=photoTreeCount;forest.visible=density>0;
+    return {density,near:activeTreeCounts.near,mid:activeTreeCounts.mid,far:activeTreeCounts.far,photo:activeTreeCounts.photo,total:activeTreeCounts.near+activeTreeCounts.mid+activeTreeCounts.far+activeTreeCounts.photo};
+  }
+  function setShadows(enabled){for(const mesh of layers)mesh.castShadow=Boolean(enabled&&mesh.userData.forestCastsShadow)}
+  return {group:forest,layers,setDensity,setShadows,get activeTreeCounts(){return {...activeTreeCounts}}};
 }
 
 function createBarrier(material,x,z,rotation=0){
@@ -283,6 +370,27 @@ function createExtractionZone(scene,materials){
   scene.add(group);addZoneSign(scene,'EXTRACTION','SECURE ZONE ECHO',new THREE.Vector3(0,2.55,-178.55),0,3.8);return group;
 }
 
+function createForestExtractionGate(scene,materials){
+  const group=new THREE.Group();group.name='forest-extraction-gate';group.position.set(0,0,-180);
+  const steel=materials.door.clone();steel.color.setHex(0x38453f);steel.roughness=.58;
+  const hazard=new THREE.MeshStandardMaterial({color:0x4f3821,roughness:.58,metalness:.46});
+  const left=new THREE.Group(),right=new THREE.Group();left.name='forest-gate-left';right.name='forest-gate-right';
+  const makeLeaf=(root,sign)=>{
+    const frame=createBox('forest-gate-leaf-frame',new THREE.Vector3(4.1,2.6,.12),steel,new THREE.Vector3(0,1.3,0));root.add(frame);
+    for(let x=-1.62;x<=1.62;x+=.54){const bar=createBox('forest-gate-bar',new THREE.Vector3(.1,2.18,.06),steel,new THREE.Vector3(x,1.3,-.1));root.add(bar)}
+    for(const y of [.48,1.22,1.96]){const rail=createBox('forest-gate-rail',new THREE.Vector3(3.82,.08,.07),steel,new THREE.Vector3(0,y,-.11));root.add(rail)}
+    const stripe=createBox('forest-gate-hazard-stripe',new THREE.Vector3(2.4,.12,.075),hazard,new THREE.Vector3(sign*.35,2.16,-.13),new THREE.Euler(0,0,sign*.14));root.add(stripe);
+  };
+  makeLeaf(left,-1);makeLeaf(right,1);left.position.x=-2.08;right.position.x=2.08;
+  const postMaterial=materials.trim;
+  for(const x of [-4.32,4.32]){
+    group.add(createBox('forest-gate-post',new THREE.Vector3(.28,3.25,.28),postMaterial,new THREE.Vector3(x,1.625,0)));
+    const lamp=new THREE.PointLight(0xff6b32,.7,4,2);lamp.name='forest-gate-warning-lamp';lamp.position.set(x,3.24,-.18);group.add(lamp);
+  }
+  group.add(left,right);scene.add(group);setShadow(group);
+  return {group,left,right,closedLeft:-2.08,closedRight:2.08,openLeft:-5.45,openRight:5.45,progress:0,target:0};
+}
+
 function createInteriorFurniture({scene,collision,materials}){
   const {desk,chair,locker,screen,metal}=materials;
   const addCollider=mesh=>{scene.add(mesh);collision.push(mesh);return mesh};
@@ -308,6 +416,15 @@ function createInteriorFurniture({scene,collision,materials}){
 
 function createBreakerBox(scene,materials){
   const {metal,trim,warning}=materials,group=new THREE.Group();group.name='breaker-box';group.position.set(-8.72,1.5,5.4);group.rotation.y=Math.PI/2;
+  // A dark cavity and a proud metal frame make the breaker read as a cabinet
+  // seated into the corridor wall rather than a floating interaction prop.
+  const recessMaterial=trim.clone();recessMaterial.color.setHex(0x080d0b);recessMaterial.roughness=.72;
+  const recess=createBox('breaker-wall-recess',new THREE.Vector3(.16,1.48,1.14),recessMaterial,new THREE.Vector3(.095,0,0));
+  const recessFrameMaterial=metal.clone();recessFrameMaterial.color.setHex(0x313c38);recessFrameMaterial.roughness=.62;
+  const frameTop=createBox('breaker-recess-frame-top',new THREE.Vector3(.08,.09,1.18),recessFrameMaterial,new THREE.Vector3(-.035,.74,0));
+  const frameBottom=createBox('breaker-recess-frame-bottom',new THREE.Vector3(.08,.09,1.18),recessFrameMaterial,new THREE.Vector3(-.035,-.74,0));
+  const frameLeft=createBox('breaker-recess-frame-left',new THREE.Vector3(.08,1.5,.09),recessFrameMaterial,new THREE.Vector3(-.035,0,-.545));
+  const frameRight=createBox('breaker-recess-frame-right',new THREE.Vector3(.08,1.5,.09),recessFrameMaterial,new THREE.Vector3(-.035,0,.545));
   const enclosure=createBox('breaker-enclosure',new THREE.Vector3(.18,1.1,.78),metal,new THREE.Vector3(0,0,0));
   const inset=createBox('breaker-inset',new THREE.Vector3(.025,.78,.55),trim,new THREE.Vector3(-.105,0,0));
   const hinge=createCylinder('breaker-hinge',.035,.86,trim,new THREE.Vector3(-.13,0,-.38));
@@ -322,8 +439,8 @@ function createBreakerBox(scene,materials){
   const green=new THREE.MeshStandardMaterial({color:0x163a24,emissive:0x29ff83,emissiveIntensity:.1,roughness:.24});
   const redLamp=createCylinder('breaker-red-lamp',.055,.025,red,new THREE.Vector3(-.12,.39,-.18),new THREE.Euler(0,0,Math.PI/2),12);
   const greenLamp=createCylinder('breaker-green-lamp',.055,.025,green,new THREE.Vector3(-.12,.39,.18),new THREE.Euler(0,0,Math.PI/2),12);
-  group.add(enclosure,inset,hinge,doorPivot,leverPivot,redLamp,greenLamp);scene.add(group);setShadow(group);
-  return {group,doorPivot,doorPanel,leverPivot,redLamp,greenLamp,redMaterial:red,greenMaterial:green};
+  group.add(recess,frameTop,frameBottom,frameLeft,frameRight,enclosure,inset,hinge,doorPivot,leverPivot,redLamp,greenLamp);scene.add(group);setShadow(group);
+  return {group,recess,doorPivot,doorPanel,leverPivot,redLamp,greenLamp,redMaterial:red,greenMaterial:green};
 }
 
 function createExitDoor(scene,collision,materials){
@@ -360,7 +477,7 @@ export function buildWorldOverhaul({scene,collision,environmentTextures,facility
   const road=new THREE.Mesh(new THREE.PlaneGeometry(8.5,120),asphalt);road.name='service-road';road.rotation.x=-Math.PI/2;road.position.set(0,-.105,-108);road.receiveShadow=true;scene.add(road);
   const apron=new THREE.Mesh(new THREE.PlaneGeometry(22,13),asphalt);apron.name='exit-apron';apron.rotation.x=-Math.PI/2;apron.position.set(0,-.1,-50);apron.receiveShadow=true;scene.add(apron);
   const grass=addGrassBlades(scene);
-  const city=addCitySkyline(scene),clouds=addCloudBank(scene);
+  const forest=addForestBackdrop(scene,grassMaterial,environmentTextures.firBillboard),clouds=addCloudBank(scene);
 
   const sky=new Sky();sky.name='physical-sky';sky.scale.setScalar(1100);scene.add(sky);
   const uniforms=sky.material.uniforms;uniforms.turbidity.value=7.2;uniforms.rayleigh.value=1.45;uniforms.mieCoefficient.value=.0032;uniforms.mieDirectionalG.value=.77;
@@ -377,7 +494,7 @@ export function buildWorldOverhaul({scene,collision,environmentTextures,facility
   const storageYard=createStorageYard({scene,collision,materials:materialSet});
   const communications=createCommunicationsArea({scene,collision,materials:materialSet});
   const utilityYard=createUtilityYard({scene,collision,materials:materialSet});
-  const extraction=createExtractionZone(scene,materialSet);
+  const extraction=createExtractionZone(scene,materialSet),extractionGate=createForestExtractionGate(scene,materialSet);
 
   // Loading bay details and exterior cover pieces.
   for(const [x,z] of [[-5.6,-36.2],[-3.9,-39.6],[3.9,-37.4]]){
@@ -399,22 +516,55 @@ export function buildWorldOverhaul({scene,collision,environmentTextures,facility
   for(let z=-49;z>=-178;z-=5){
     for(const x of [-43,43]){const panel=createBox('perimeter-fence',new THREE.Vector3(.08,2.5,4.8),fenceMaterial,new THREE.Vector3(x,1.25,z));scene.add(panel);collision.push(panel)}
   }
-  for(let x=-40;x<=40;x+=5){const panel=createBox('far-perimeter-fence',new THREE.Vector3(4.8,2.5,.08),fenceMaterial,new THREE.Vector3(x,1.25,-180));scene.add(panel);collision.push(panel)}
+  for(let x=-40;x<=40;x+=5){
+    if(Math.abs(x)<5.5)continue;
+    const panel=createBox('far-perimeter-fence',new THREE.Vector3(4.8,2.5,.08),fenceMaterial,new THREE.Vector3(x,1.25,-180));scene.add(panel);collision.push(panel)
+  }
 
-  let powered=false,breakerProgress=0,breakerDoorProgress=0,outdoorBlend=0,cityBeaconClock=0;
+  let powered=false,breakerProgress=0,breakerDoorProgress=0,outdoorBlend=0,communicationsBeaconClock=0;
+  let lightingProfile={sun:1,ambient:1,grass:true,forestDensity:'high',fog:true,shadows:true,shadowMapSize:2048};
   const interiorFogColor=new THREE.Color(0x050a08),exteriorFogColor=new THREE.Color(0x637582);
+  function setGraphicsQuality(quality,effectivePreset={}){
+    const profiles={
+      intel:{sun:.78,ambient:.86,grass:false,forestDensity:'low',fog:true,shadows:false,shadowMapSize:0},
+      performance:{sun:.9,ambient:.92,grass:false,forestDensity:'low',fog:true,shadows:true,shadowMapSize:1024},
+      balanced:{sun:.96,ambient:.98,grass:true,forestDensity:'medium',fog:true,shadows:true,shadowMapSize:1536},
+      high:{sun:1,ambient:1,grass:true,forestDensity:'high',fog:true,shadows:true,shadowMapSize:2048},
+      ultra:{sun:1.04,ambient:1.03,grass:true,forestDensity:'ultra',fog:true,shadows:true,shadowMapSize:3072},
+      extreme:{sun:1.08,ambient:1.06,grass:true,forestDensity:'extreme',fog:true,shadows:true,shadowMapSize:4096}
+    };
+    const profile=profiles[quality]||profiles.high,preset=effectivePreset&&typeof effectivePreset==='object'?effectivePreset:{};
+    const grassEnabled=typeof preset.grassEnabled==='boolean'?preset.grassEnabled:profile.grass;
+    const fogEnabled=typeof preset.fogEnabled==='boolean'?preset.fogEnabled:profile.fog;
+    const shadowsEnabled=typeof preset.shadows==='boolean'?preset.shadows:profile.shadows;
+    const requestedShadowMapSize=Number(preset.shadowMapSize),shadowMapSize=shadowsEnabled?(Number.isFinite(requestedShadowMapSize)&&requestedShadowMapSize>0?requestedShadowMapSize:profile.shadowMapSize):0;
+    const forestDensity=preset.forestDensity??profile.forestDensity,forestState=forest.setDensity(forestDensity,{photoEnabled:preset.textureTier!=='low'});
+    lightingProfile={...profile,grass:grassEnabled,forestDensity:forestState.density,fog:fogEnabled,shadows:shadowsEnabled,shadowMapSize};
+    grass.visible=lightingProfile.grass;
+    sun.castShadow=lightingProfile.shadows;
+    forest.setShadows(lightingProfile.shadows);
+    const shadowSize=lightingProfile.shadowMapSize;
+    if(!shadowSize&&sun.shadow.map){
+      sun.shadow.map.dispose();sun.shadow.map=null;
+    }else if(shadowSize&&sun.shadow.mapSize.x!==shadowSize){
+      sun.shadow.map?.dispose();sun.shadow.mapSize.set(shadowSize,shadowSize);sun.shadow.needsUpdate=true;
+    }
+    return {grassEnabled:lightingProfile.grass,forestDensity:forestState.density,forestTrees:forestState.total,fogEnabled:lightingProfile.fog,shadowsEnabled:lightingProfile.shadows,shadowMapSize:shadowSize};
+  }
   function setPowered(value){powered=!!value;exit.target=powered?1:0}
+  function setExtractionGateOpen(value=true){extractionGate.target=value?1:0}
   function update(dt,playerZ){
     breakerDoorProgress=damp(breakerDoorProgress,powered?1:0,7,dt);breaker.doorPivot.rotation.y=THREE.MathUtils.lerp(0,-1.48,breakerDoorProgress);
     const leverTarget=powered?THREE.MathUtils.smoothstep(breakerDoorProgress,.38,.92):0;
     breakerProgress=damp(breakerProgress,leverTarget,10,dt);breaker.leverPivot.rotation.z=THREE.MathUtils.lerp(-.62,.62,breakerProgress);
     breaker.redMaterial.emissiveIntensity=THREE.MathUtils.lerp(1.6,.08,breakerProgress);breaker.greenMaterial.emissiveIntensity=THREE.MathUtils.lerp(.06,2.6,breakerProgress);
     exit.progress=damp(exit.progress,exit.target,3.4,dt);exit.left.position.x=THREE.MathUtils.lerp(exit.closedLeft,exit.openLeft,exit.progress);exit.right.position.x=THREE.MathUtils.lerp(exit.closedRight,exit.openRight,exit.progress);exit.leftWindow.position.x=exit.left.position.x;exit.rightWindow.position.x=exit.right.position.x;
+    extractionGate.progress=damp(extractionGate.progress,extractionGate.target,2.5,dt);extractionGate.left.position.x=THREE.MathUtils.lerp(extractionGate.closedLeft,extractionGate.openLeft,extractionGate.progress);extractionGate.right.position.x=THREE.MathUtils.lerp(extractionGate.closedRight,extractionGate.openRight,extractionGate.progress);
     outdoorBlend=damp(outdoorBlend,THREE.MathUtils.smoothstep(-playerZ,42,53),2.2,dt);
-    sun.intensity=THREE.MathUtils.lerp(.12,1.65,outdoorBlend);outdoorAmbient.intensity=THREE.MathUtils.lerp(.06,.48,outdoorBlend);sky.visible=outdoorBlend>.015;clouds.visible=sky.visible;
-    cityBeaconClock+=dt;communications.beacon.material.color.setHex(Math.sin(cityBeaconClock*2.7)>.35?0xff3825:0x3a0805);
-    city.beacons.children.forEach((child,index)=>{if(child.isMesh&&child.geometry?.type==='SphereGeometry')child.visible=Math.sin(cityBeaconClock*2.15+index*.8)>.1});
-    if(scene.fog?.isFogExp2){scene.fog.color.lerpColors(interiorFogColor,exteriorFogColor,outdoorBlend);scene.fog.density=THREE.MathUtils.lerp(.012,.00135,outdoorBlend)}
+    sun.intensity=THREE.MathUtils.lerp(.12,1.65,outdoorBlend)*lightingProfile.sun;outdoorAmbient.intensity=THREE.MathUtils.lerp(.06,.48,outdoorBlend)*lightingProfile.ambient;sky.visible=outdoorBlend>.015;clouds.visible=sky.visible;
+    communicationsBeaconClock+=dt;communications.beacon.material.color.setHex(Math.sin(communicationsBeaconClock*2.7)>.35?0xff3825:0x3a0805);
+    if(scene.fog?.isFogExp2){scene.fog.color.lerpColors(interiorFogColor,exteriorFogColor,outdoorBlend);scene.fog.density=lightingProfile.fog?THREE.MathUtils.lerp(.012,.00135,outdoorBlend):0}
   }
-  return {exit,breaker,sky,sun,outdoorAmbient,vehicle,barriers,city,grass,checkpoint,motorPool,storageYard,communications,utilityYard,extraction,setPowered,update,get exitOpen(){return exit.progress>.9},get outdoorBlend(){return outdoorBlend}};
+  setGraphicsQuality('high');
+  return {exit,breaker,sky,sun,outdoorAmbient,vehicle,barriers,forest,grass,checkpoint,motorPool,storageYard,communications,utilityYard,extraction,extractionGate,setPowered,setExtractionGateOpen,setGraphicsQuality,update,get exitOpen(){return exit.progress>.9},get outdoorBlend(){return outdoorBlend}};
 }

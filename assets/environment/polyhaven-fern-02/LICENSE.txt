@@ -1,0 +1,9 @@
+Poly Haven Fern 02
+
+Source: https://polyhaven.com/a/fern_02
+Official files API: https://api.polyhaven.com/files/fern_02
+License: Creative Commons Zero 1.0 Universal (CC0 1.0)
+License page: https://polyhaven.com/license
+
+Poly Haven lists Rico Cilliers for modeling and Rob Tuytel for scanning. This
+local record is retained with the official model files.

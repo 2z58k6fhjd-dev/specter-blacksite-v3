@@ -1,0 +1,16 @@
+{
+  "name": "specter-blacksite",
+  "private": true,
+  "version": "5.4.1",
+  "type": "module",
+  "description": "Static SPECTER: Blacksite release verification and GitHub Pages packaging.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "validate:release": "node scripts/release.mjs validate",
+    "package:release": "node scripts/release.mjs package",
+    "verify:release": "node scripts/release.mjs verify",
+    "release:check": "npm run validate:release && npm run package:release && npm run verify:release"
+  }
+}

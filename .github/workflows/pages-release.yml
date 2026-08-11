@@ -1,0 +1,80 @@
+name: Verify and deploy GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Validate and package release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+    steps:
+      - name: Check out the verified main revision
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate syntax, asset closure, and licenses
+        run: npm run validate:release
+
+      - name: Package the tested repository revision
+        env:
+          RELEASE_VERSION: main-${{ github.sha }}
+        run: npm run package:release
+
+      - name: Test release ZIP integrity
+        run: unzip -t .release/pages/releases/*.zip
+
+      - name: Verify Pages package and release ZIP
+        run: npm run verify:release
+
+      - name: Retain the verified release files
+        uses: actions/upload-artifact@v4
+        with:
+          name: specter-blacksite-release-${{ github.sha }}
+          path: |
+            .release/pages/releases/*.zip
+            .release/pages/releases/*.md
+            .release/pages/releases/release-manifest.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload the verified Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .release/pages
+
+  deploy:
+    name: Deploy verified Pages build
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

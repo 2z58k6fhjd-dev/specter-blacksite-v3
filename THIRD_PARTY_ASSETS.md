@@ -1,6 +1,6 @@
 # SPECTER: Blacksite - Asset Provenance and License Manifest
 
-This manifest distinguishes assets that ship with build 5.0 from links retained
+This manifest distinguishes assets that ship with build `5.4.1-FOREST-FOLIAGE` from links retained
 only for research. A source appearing in a research table does not mean its
 files were downloaded, integrated, or redistributed.
 
@@ -52,12 +52,13 @@ placement, scale, collision, and rendering behavior.
 
 [Power Box 01](https://polyhaven.com/a/power_box_01) by Rico Cilliers
 (modeling/texturing) and Yann Kervran (rigging) is bundled at a 2K
-browser-quality tier around the interactive facility breaker. Poly Haven
-publishes it under **CC0 1.0**. The official glTF, buffer, and three texture
-maps live in `assets/environment/polyhaven-power-box-01/` with local source
-links, official MD5 checksums, and a license record. Its static source door is
-hidden at runtime so the project's own mission door and lever retain their
-animated use-state; the cabinet art itself is not altered.
+browser-quality tier as the recessed, wall-mounted cabinet around the interactive
+facility breaker. Poly Haven publishes it under **CC0 1.0**. The official glTF,
+buffer, and three texture maps live in
+`assets/environment/polyhaven-power-box-01/` with local source links, official
+MD5 checksums, and a license record. Its static source door is hidden at runtime
+so the project's own mission door and lever retain their animated use-state; the
+cabinet art itself is not altered.
 
 [Plastic Container](https://polyhaven.com/a/plastic_container) by PierreB3D is
 bundled at a 2K browser-quality tier as six shared-geometry exterior storage
@@ -75,6 +76,16 @@ are retained in `assets/environment/polyhaven-concrete-road-barrier-02/` with
 official source links, MD5 checksums, and a local license record. The project
 only adds placement, scale, collision, frustum culling, and rendering behavior.
 
+[Fern 02](https://polyhaven.com/a/fern_02) by Rico Cilliers (modeling) and Rob Tuytel (scanning) is bundled as a raw 4K source set in
+`assets/environment/polyhaven-fern-02/`: the original glTF, buffer, and 4K
+albedo, normal, and ARM maps. Poly Haven publishes the asset under **CC0 1.0**.
+The folder's `README.md` and `LICENSE.txt` preserve the source and license
+record alongside the runtime files.
+The runtime streams sparse, non-colliding Fern 02 dressing only after the core
+mission is playable, when vegetation density is High, Ultra, or Extreme and the
+texture tier is not Low. Competitive Low does not request or render Fern 02. The
+raw 4K maps remain excluded from lower vegetation budgets.
+
 ## Project-authored and derived runtime assets
 
 | Asset | Creation and dependency record | Runtime status |
@@ -84,8 +95,12 @@ only adds placement, scale, collision, frustum culling, and rendering behavior.
 | C5-K Compact Carbine | Full high-resolution clone of the bundled AR-15 source with project-authored compact proportions, material tint, handling data, and anchors | Bundled and player-selectable; CC BY-NC 4.0 applies through the source clone |
 | R7.62 Designated Rifle | Full high-resolution clone of the bundled AR-15 source with project-authored marksman proportions, material tint, handling data, and anchors | Bundled and player-selectable; CC BY-NC 4.0 applies through the source clone |
 | MCR-300 Suppressed | Full high-resolution clone of the bundled AR-15 source with a project-authored suppressor, material tint, handling data, and anchors | Bundled and player-selectable; CC BY-NC 4.0 applies through the source clone |
-| Facility, exterior compound, vehicles, props, extraction zone, and distant city | Project-authored procedural Three.js geometry | Bundled |
-| Audio director and fallback layers | Project-authored Web Audio synthesis and mixing, with deterministic fallbacks | Bundled through `src/audio-overhaul.js` |
+| Facility, exterior compound, vehicles, props, extraction zone, and non-explorable PNW perimeter forest | Project-authored procedural Three.js geometry; its baseline forest is a texture-free instanced fallback beyond the boundary, with no collision or explorable terrain | Bundled |
+| High-tier fir-tree photo-tree impostors | Project-generated optional `assets/environment/generated/fir-tree-billboard-v1.png`, loaded into `environmentTextures.firBillboard` and used through one shared material and instanced draw | High/Ultra/Extreme vegetation only; absent when the non-critical texture fetch fails; 2D impostors, not a bundled Fir Tree 01 model, full 3D trees, photogrammetry, or AAA geometry |
+| Weapon action timelines | Project-authored marker choreography for reload, equip, and chamber/bolt-check actions; markers synchronize magazine/action/ready events, visual motion, and existing sound cues | Bundled; not imported mocap or a third-party animation pack |
+| Tactical death drops | Project-authored detach, throw, settle, and cleanup behavior for each defeated enemy's existing carried rifle and role equipment | Bundled presentation only; no pickup, inventory, or loot assets/system |
+| Forest-gate pursuit extraction | Project-authored gate, camera/controller handoff, pursuit audio/visual cues, subtitles, and victory transition | Bundled controlled end beat; no additional licensed scenario asset or post-gate combat space |
+| Audio director, enemy subtitle presentation, and fallback layers | Project-authored Web Audio synthesis, mixing, subtitles, separate voice bus, and deterministic fallbacks; recorded assets are listed separately below | Bundled through `src/audio-overhaul.js` and the main runtime |
 
 The C5-K, R7.62, and MCR-300 runtime weapons are complete high-resolution AR-15
 source clones with project-authored variant treatments. They are not claimed to
@@ -99,7 +114,7 @@ every enemy weapon clone.
 
 `src/modern-arsenal.js` is preserved as an optional project-authored prototype
 module. It contains compact-carbine, marksman-rifle, and procedural T12 tactical
-autoloader factories plus metadata and animation anchors. Build 5.0 does not
+autoloader factories plus metadata and animation anchors. Build 5.4.1-FOREST-FOLIAGE does not
 import, execute, or precache this module, and no runtime weapon slot selects it.
 In particular, the procedural T12 failed the final close-up art-quality gate and
 has no selectable slot; slot 5 is the full-source MCR-300 suppressed rifle
@@ -141,7 +156,7 @@ redistributions.
 The original `concrete-wall.webp`, `metal-floor.webp`, `utility-panels.webp`, and
 `grass-field-v1.webp` files were generated specifically for this project with
 OpenAI image generation on 2026-08-08. They are preserved with their records in
-`assets/environment/README.txt`, but build 5.0 uses the PBR v2 set for its main
+`assets/environment/README.txt`, but build 5.4.1-FOREST-FOLIAGE uses the PBR v2 set for its main
 runtime materials.
 
 ## Bundled recorded weapon reports
@@ -158,7 +173,7 @@ Sevedge / Tabasco and the CC BY 3.0 notice must remain with redistributions.
 ## Research-only 3D candidates - not bundled
 
 The following links are retained for future evaluation. None of these candidate
-archives or models should be described as included in build 5.0 unless a future
+archives or models should be described as included in build 5.4.1-FOREST-FOLIAGE unless a future
 commit adds the source files, local license receipt, author, conversion notes,
 optimization record, and runtime integration.
 
@@ -208,15 +223,15 @@ links only and are not bundled:
 - [Modular Chainlink Fence](https://polyhaven.com/a/modular_chainlink_fence) - exterior boundary candidate after LOD and texture optimization.
 - [Concrete Road Barrier 02](https://polyhaven.com/a/concrete_road_barrier_02) and
   [Wooden Crate 01](https://polyhaven.com/a/wooden_crate_01) - checkpoint cover.
-- [Fern 02](https://polyhaven.com/a/fern_02),
-  [Shrub 03](https://polyhaven.com/a/shrub_03),
-  [Rock 07](https://polyhaven.com/a/rock_07), and
-  [Tree Stump 01](https://polyhaven.com/a/tree_stump_01) - exterior set dressing candidates.
+- [Shrub 03](https://polyhaven.com/a/shrub_03), [Rock 07](https://polyhaven.com/a/rock_07),
+  and [Tree Stump 01](https://polyhaven.com/a/tree_stump_01) - exterior set
+  dressing candidates. Fern 02 is documented above as a bundled CC0 source set,
+  not a research-only runtime asset.
 - [Kloofendal 48d Partly Cloudy](https://polyhaven.com/a/kloofendal_48d_partly_cloudy) - environment-lighting candidate, to be reduced to a browser-safe runtime map.
 
 The [Ural 4320](https://sketchfab.com/3d-models/ural-4320-f953c51a5dbc4a15949f4dcc0905c4e8)
 by Brout was identified as a CC BY 4.0 present-day military truck candidate. It
-is not bundled; build 5.0 uses project-authored procedural vehicle geometry.
+is not bundled; build 5.4.1-FOREST-FOLIAGE uses project-authored procedural vehicle geometry.
 
 ## Bundled tactical voice callouts
 
@@ -226,9 +241,14 @@ official package's `License.txt` and `Credits.txt` are retained locally. Kenney
 licenses the pack as **CC0 1.0**, so the clips are permitted in personal and
 commercial projects; the source records the male actor as Jeffrey M. Smith and
 the female actor as Giselle. The runtime chooses between male and female
-variants for contact, investigation, backup, flanking, retreat, suppression, and downed
-enemy states, then passes each through positional/radio processing. The clips
-are not AI-generated voices; they are licensed human-performed recordings.
+variants for contact, investigation, backup, flanking, retreat, suppression, and
+downed enemy states, then passes each through positional/radio processing. The
+runtime presents role/callsign subtitles for those calls and provides a persistent
+Voice Volume slider on its own voice bus, separate from effects and music. The
+clips are not AI-generated voices; they are licensed human-performed recordings.
+If a recorded call cannot download or decode, the project-authored procedural
+fallback keeps the encounter functional without substituting a new bundled voice
+asset.
 
 ## Bundled player footsteps
 
@@ -242,7 +262,7 @@ procedural fallback remains available if a clip cannot download or decode.
 
 ## Research-only audio candidates - not bundled
 
-Build 5.3.0 uses project-authored procedural Web Audio, the separately
+Build 5.4.1-FOREST-FOLIAGE uses project-authored procedural Web Audio, the separately
 documented CC BY 3.0 recorded report derivatives above, and the documented
 Kenney CC0 tactical callouts and player footsteps. The following pages remain research links only;
 no additional source master or runtime derivative from them ships in this
@@ -266,12 +286,14 @@ author, exact license receipt, source URL, editing notes, and runtime derivative
 
 ## Explicitly rejected and excluded content
 
-Build 5.0 does not integrate sci-fi, futuristic, fantasy, anachronistic,
+Build 5.4.1-FOREST-FOLIAGE does not integrate sci-fi, futuristic, fantasy, anachronistic,
 cartoon, stylized, or visibly low-detail research assets. Small or stylized
 soldier and vehicle downloads used during research were rejected as final art
-and are not part of the runtime repository. Rejected experimental vegetation
-billboards also remain outside the runtime because they did not meet transparency
-and quality requirements.
+and are not part of the runtime repository. Earlier rejected experimental
+vegetation billboards also remain outside the runtime because they did not meet
+transparency and quality requirements. They are distinct from the specifically
+documented project-generated high-tier fir impostor, which remains a constrained
+2D background treatment rather than a claim of AAA tree geometry.
 
 The project-authored procedural T12 prototype is likewise excluded from the live
 loadout after failing the close-up weapon-art gate. Its optional source module is
@@ -286,12 +308,31 @@ license does not override the visual-quality, technical, or provenance review.
 
 - Convert accepted runtime models to GLB and evaluate Meshopt/Draco only after
   measuring decode cost.
-- Prefer KTX2/Basis textures; reserve 4K maps for first-person hero weapons or a
-  single elite character.
+- Prefer KTX2/Basis textures; keep raw 4K maps limited to first-person hero
+  weapons, a single elite character, or the documented sparse High/Ultra/Extreme
+  Fern 02 dressing.
 - Target 1K-2K textures and at least three LODs for repeated props and common
   enemies.
-- Use instancing for vegetation, fences, barriers, and skyline buildings.
+- Use instancing for vegetation, fences, barriers, and perimeter forest layers.
 - Never ship million-triangle grass or multi-million-triangle trees directly;
   bake cards and LODs first, then visually verify them.
 - Keep source and license archives outside the runtime preload list while still
   preserving them in the distributable project record.
+- AUTO uses browser-reported capabilities plus a short runtime benchmark only;
+  it is a conservative starting estimate, not a precise measure of available
+  VRAM. Manual profiles and custom settings remain available to the player.
+- Competitive Low retains 512px downsampled first-person viewmodel weapon
+  textures while deliberately reducing world texture sampling, grass, dense
+  foliage, shadows, and post-processing. It must not be advertised as the
+  high-detail close-up texture mode.
+- Keep the current perimeter forest outside the collision boundary. It is a
+  project-authored, texture-free LOD backdrop at its baseline and not an
+  authored high-detail foliage pack or an explorable forest map.
+- The project-generated photo-tree impostors are allowed only at High, Ultra,
+  and Extreme vegetation density. Keep them as non-colliding, shared-material,
+  instanced 2D impostors; do not relabel them as scanned/modelled 3D trees or an
+  AAA foliage asset. If their optional texture is unavailable, omit the batch and
+  retain the procedural forest fallback.
+- Fern 02's bundled raw 4K glTF/JPG source set streams only after the core
+  mission is playable, at High, Ultra, or Extreme vegetation density with a
+  non-Low texture tier. Competitive Low does not request or render it.

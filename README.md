@@ -1,13 +1,13 @@
 # SPECTER: Blacksite
 
-Build: `5.3.0-ULTRA-SSR`
+Build: `5.4.1-FOREST-FOLIAGE`
 
-SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build 5.0
-overhauls the controller, viewmodels, combat presentation, enemy behavior,
-facility, exterior compound, rendering, materials, audio, and mission flow while
-keeping the project suitable for static hosting on GitHub Pages.
+SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build
+5.4.1 continues the controller, viewmodel, combat presentation, enemy behavior,
+facility, exterior-compound, rendering, materials, audio, and mission-flow work
+while keeping the project suitable for static hosting on GitHub Pages.
 
-## Build 5.0 highlights
+## Build 5.4.1 highlights
 
 - Damped first-person movement, sprint transitions, camera motion, weapon bob,
   and mouse-driven sway.
@@ -23,6 +23,13 @@ keeping the project suitable for static hosting on GitHub Pages.
   and weapon grips derived from the bundled 127-joint soldier rig.
 - Procedural equip, sprint, sway, reload, recoil, casing ejection, pistol-slide,
   hit, suppression, locomotion, and grounded death animation systems.
+- Reload, equip, and chamber/bolt-check actions share marker timelines: magazine,
+  action, and ready markers synchronize the ammo transition, slide/bolt motion,
+  and sound cues. This is project-authored procedural choreography, not imported
+  motion capture or a separately licensed weapon-animation pack.
+- Defeated enemies throw down their carried rifle and role equipment with a
+  short settling/cleanup pass. These tactical death drops are visual combat
+  dressing only; they are not a pickup, inventory, or loot system.
 - Twelve hostiles across rifleman, scout, breacher, marksman, and commander role
   variants. These roles share the bundled soldier source rig and are varied with
   materials, equipment, durability, and behavior. Their weapons are full textured
@@ -38,7 +45,8 @@ keeping the project suitable for static hosting on GitHub Pages.
   and per-role difficulty tuning.
 - Expanded facility with furnished work areas, storage, server equipment,
   three high-detail CC0 industrial shelf props with collision/shadowing, a
-  2K high-detail CC0 Power Box cabinet around the animated breaker hardware,
+  recessed, wall-mounted 2K high-detail CC0 Power Box cabinet around the
+  animated breaker hardware,
   six high-detail CC0 storage containers and six high-detail CC0 weathered
   concrete road barriers deployed as exterior hard cover that tactical enemies
   can select when suppressed or retreating,
@@ -47,12 +55,35 @@ keeping the project suitable for static hosting on GitHub Pages.
   communications area, utility/fuel yard, service roads, barriers, grounded
   modern vehicles, and a final extraction pad.
 - A 6,800-clump instanced grass layer adds close-range depth across the PBR
-  exterior terrain while keeping the vegetation to a single efficient draw call.
-- Instanced, non-explorable city skyline beyond the perimeter for atmosphere.
-- Physical sky, moving cloud bank, sun and shadow lighting, fog transitions,
-  ACES tone mapping, SSAO, restrained bloom, and a full-resolution SSR pass in
-  the 8 GB Ultra preset; selectable quality presets apply immediately and persist
-  between launches.
+  exterior terrain while keeping the vegetation to a single efficient draw call;
+  it can be disabled independently for low-end hardware.
+- Instanced, non-explorable Pacific Northwest perimeter forest with near, mid,
+  and far LOD layers replaces the old skyline atmosphere. Its baseline layers
+  sit beyond the fence, have no collision, and remain a deliberately
+  texture-free procedural fallback--not a substitute for a future authored
+  high-detail tree pack.
+- Project-generated 2D photo-tree impostors supplement the procedural fallback
+  only at **High**, **Ultra**, and **Extreme** vegetation density. They use one
+  shared, instanced texture treatment with no collision and stay absent if the
+  optional texture is unavailable; they are not represented as full 3D,
+  photogrammetric, or AAA tree geometry.
+- The raw 4K **Fern 02** CC0 source set streams only after the core mission is
+  playable, when vegetation density is **High**, **Ultra**, or **Extreme** and
+  the texture tier is not Low. It supplies sparse, non-colliding foreground
+  clumps near the fence and extraction route. Competitive Low does not request
+  or render it; its raw 4K maps are deliberately excluded from lower vegetation
+  budgets. See `THIRD_PARTY_ASSETS.md` for source and credit details.
+- AUTO chooses a conservative graphics starting point from browser-reported
+  capabilities and a short in-game benchmark. It is an estimate rather than a
+  precise VRAM test; players can choose Competitive Low, Performance, Balanced,
+  High, Ultra, or Extreme instead.
+- Competitive Low / Intel HD 4600 uses a direct-render path that disables
+  shadows, post-processing, ground grass, dense foliage, and costly world
+  texture sampling while retaining intentionally downsampled **512px first-person viewmodel weapon textures**. It is a clarity/performance mode,
+  not a high-detail texture setting.
+- Custom graphics controls independently set render scale, texture tier,
+  shadows, vegetation, grass, fog, ambient occlusion, reflections, and bloom,
+  and display an active-resource GPU-memory estimate.
 - Eight project-generated PBR v2 material families using 23 browser-ready 2K
   albedo, normal, and packed ORM maps.
 - Procedural indoor/outdoor ambience, adaptive exploration/combat music,
@@ -65,21 +96,28 @@ keeping the project suitable for static hosting on GitHub Pages.
 - Fourteen CC0 Kenney human-performed tactical callouts now replace the
   temporary synthetic enemy phrases for contact, investigation, backup,
   flanking, retreat, suppression, and downed states. Male/female variations are radio-filtered,
-  spatialized, and retain a procedural fallback if a clip cannot decode.
+  spatialized, paired with role/callsign subtitles, and retain a procedural
+  fallback if a clip cannot decode. The persistent **Voice Volume** slider
+  affects enemy voice/radio playback separately from effects and music.
 - Loading progress and diagnostics for models, the player rig, environment maps,
   and graphics pipeline.
 - Complete mission loop and victory state: restore power, clear all twelve
-  hostiles, then reach the extraction pad.
+  hostiles, reach the extraction pad, pass through the opening forest gate, and
+  survive the short pursuit/exfiltration handoff.
 
 ## Mission
 
-1. Restore power at the animated facility breaker.
+1. Restore power at the recessed, wall-mounted facility breaker.
 2. Leave through the powered exterior doors.
 3. Clear the checkpoint and perimeter compound.
 4. Reach the marked extraction pad after all hostiles are neutralized.
+5. The forest gate opens and carries SPECTER into a brief pursuit/exfiltration
+   sequence before the victory handoff.
 
 The final condition displays the `BLACKSITE SECURED` victory screen with mission
-statistics and a redeploy option.
+statistics and a redeploy option. The gate run is a controlled audiovisual end
+beat: pursuit shots and radio calls are present for atmosphere, but do not damage
+the player or create an additional combat encounter.
 
 ## Weapons
 
@@ -118,8 +156,9 @@ prototype.
 | `E` | Use the power breaker |
 | `F` | Toggle the weapon-mounted flashlight |
 | `R` | Reload |
+| `C` | Chamber/bolt check (action animation) |
 | `B` | Toggle SEMI/AUTO when the selected weapon supports it |
-| `G` | Open/close graphics settings; choose Performance, Balanced, High, or Ultra |
+| `G` | Open/close graphics settings; use AUTO, a manual profile, or custom controls |
 | `1` | HK416 |
 | `2` | Tan M9A4 |
 | `3` | C5-K Compact Carbine |
@@ -138,15 +177,18 @@ structure intact.
 
 Useful rendering query parameters are:
 
+- `?quality=auto`
+- `?quality=intel` (Competitive Low)
 - `?quality=performance`
 - `?quality=balanced`
 - `?quality=high` (default; designed around a 6 GB GPU at 1080p)
 - `?quality=ultra` (8 GB GPU target)
+- `?quality=extreme` (10 GB target)
 
 The in-game **GRAPHICS** control on the deployment screen and the `GFX` button
-during play expose the same four presets without a reload. The selected preset
-is stored locally, while a valid `?quality=` query parameter intentionally takes
-precedence for a one-off test session.
+during play expose AUTO, the six manual profiles, and custom controls without a
+reload. The selected preference is stored locally, while a valid `?quality=`
+query parameter intentionally takes precedence for a one-off test session.
 
 ## Audio provenance and fallback
 
@@ -155,7 +197,7 @@ OpenGameArt **Gunshot Sounds** archive by Vincent Sevedge / Tabasco: an SKS
 report for rifle fire and a CZ report for pistol fire. The archive's local
 **CC BY 3.0 Unported** notice is preserved under `assets/audio/`; attribution
 and that notice must stay with redistribution. Loading or decoding these layers
-is optional—if they are unavailable, the procedural weapon system remains the
+is optional; if they are unavailable, the procedural weapon system remains the
 automatic fallback without blocking the mission.
 
 The high-resolution runtime payload is about 220 MiB, so the first launch
@@ -176,9 +218,31 @@ utility panel, vehicle paint, vehicle rubber, and grass/soil families. The map
 convention, generation prompts, hashes, browser budget, and visual QA record are
 documented in `assets/environment/pbr-v2/README.md` and `manifest.json`.
 
-The default high preset enables soft shadows, screen-space ambient occlusion,
+The default High preset enables soft shadows, screen-space ambient occlusion,
 restrained bloom, and the final output pass while capping pixel ratio for a
-desktop-browser frame budget. Use the lower presets on integrated graphics.
+desktop-browser frame budget. **Competitive Low (Intel HD 4600)** is the safe
+starting point for older integrated graphics: it uses a 0.60 render-scale cap,
+direct rendering, no dynamic shadows, 1x anisotropy, hides the exterior grass
+layer, and retains 512px downsampled first-person viewmodel weapon textures.
+The **Extreme (10 GB)** tier raises the render-scale cap to 2.0, enables 4096px
+sun shadows, 16x texture sampling where supported, SSAO, full-resolution SSR,
+and stronger bloom.
+
+The shipped environment pack remains 23 native 2048px WebP maps. Extreme is
+**4K-ready**, not falsely labeled as a 4K environment pack: it reports a 2K PBR
+fallback until a native `assets/environment/pbr-v2-4k/` asset tier is supplied.
+High-resolution weapon source textures remain in the project payload; Competitive
+Low uses 512px copies for the first-person viewmodel rather than promising the
+full close-up texture treatment on constrained hardware.
+
+High vegetation can additionally show project-generated 2D photo-tree impostors
+through a shared, instanced material; they are hidden at Off, Low, and Medium
+density and use no collision. This keeps the procedural forest as the all-tier
+fallback.
+Fern 02 streams only after the core mission is playable, and only at High, Ultra,
+or Extreme vegetation with a non-Low texture tier. Competitive Low does not
+request or render Fern 02, and its original 4K maps are excluded from lower
+graphics profiles.
 
 ## Asset licensing
 
@@ -203,4 +267,4 @@ prompts, and build records.
 Research links in `THIRD_PARTY_ASSETS.md` are evaluation notes only. Their models,
 textures, and audio are not bundled merely because a source URL is listed. No
 sci-fi, futuristic, fantasy, cartoon, stylized, or visibly low-detail research
-asset was accepted into the build 5.3.0 runtime.
+asset was accepted into the build 5.4.1-FOREST-FOLIAGE runtime.
