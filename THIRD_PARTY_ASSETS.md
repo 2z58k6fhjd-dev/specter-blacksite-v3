@@ -80,7 +80,7 @@ only adds placement, scale, collision, frustum culling, and rendering behavior.
 | Asset | Creation and dependency record | Runtime status |
 | --- | --- | --- |
 | SPECTER operator | Runtime adaptation of the bundled Russian Soldier rig, with project-authored black-multicam treatment and equipment geometry; same CC BY 4.0 attribution obligation | Bundled through `src/specter-operator.js`; notes in `assets/player/README.txt` |
-| Enemy role variants | Eight runtime enemies in five roles, all derived from the same bundled Russian Soldier rig with project-authored material, health, AI, and visible equipment variation: role carriers, helmets/caps, packs, radios, pouches, headsets, command kit, and breacher armor; each carries a full textured clone of the bundled AR-15 with role-specific scale, tint, and suppressor treatment | Bundled; not represented as five separate source character models; soldier CC BY 4.0 and AR-15 CC BY-NC 4.0 obligations both apply |
+| Enemy role variants | Twelve runtime enemies in five roles, all derived from the same bundled Russian Soldier rig with project-authored material, health, AI, and visible equipment variation: role carriers, helmets/caps, packs, radios, pouches, headsets, command kit, and breacher armor; each carries a full textured clone of the bundled AR-15 with role-specific scale, tint, and suppressor treatment | Bundled; not represented as five separate source character models; soldier CC BY 4.0 and AR-15 CC BY-NC 4.0 obligations both apply |
 | C5-K Compact Carbine | Full high-resolution clone of the bundled AR-15 source with project-authored compact proportions, material tint, handling data, and anchors | Bundled and player-selectable; CC BY-NC 4.0 applies through the source clone |
 | R7.62 Designated Rifle | Full high-resolution clone of the bundled AR-15 source with project-authored marksman proportions, material tint, handling data, and anchors | Bundled and player-selectable; CC BY-NC 4.0 applies through the source clone |
 | MCR-300 Suppressed | Full high-resolution clone of the bundled AR-15 source with a project-authored suppressor, material tint, handling data, and anchors | Bundled and player-selectable; CC BY-NC 4.0 applies through the source clone |
@@ -242,7 +242,7 @@ procedural fallback remains available if a clip cannot download or decode.
 
 ## Research-only audio candidates - not bundled
 
-Build 5.2.2 uses project-authored procedural Web Audio, the separately
+Build 5.2.3 uses project-authored procedural Web Audio, the separately
 documented CC BY 3.0 recorded report derivatives above, and the documented
 Kenney CC0 tactical callouts and player footsteps. The following pages remain research links only;
 no additional source master or runtime derivative from them ships in this

@@ -1,6 +1,6 @@
 # SPECTER: Blacksite
 
-Build: `5.2.2-GRASS-DETAIL`
+Build: `5.2.3-RELEASE-AUDIT`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build 5.0
 overhauls the controller, viewmodels, combat presentation, enemy behavior,
@@ -23,7 +23,7 @@ keeping the project suitable for static hosting on GitHub Pages.
   and weapon grips derived from the bundled 127-joint soldier rig.
 - Procedural equip, sprint, sway, reload, recoil, casing ejection, pistol-slide,
   hit, suppression, locomotion, and grounded death animation systems.
-- Eight hostiles across rifleman, scout, breacher, marksman, and commander role
+- Twelve hostiles across rifleman, scout, breacher, marksman, and commander role
   variants. These roles share the bundled soldier source rig and are varied with
   materials, equipment, durability, and behavior. Their weapons are full textured
   clones of the bundled AR-15 with role-specific scaling, tints, and suppressors;
@@ -67,7 +67,7 @@ keeping the project suitable for static hosting on GitHub Pages.
   spatialized, and retain a procedural fallback if a clip cannot decode.
 - Loading progress and diagnostics for models, the player rig, environment maps,
   and graphics pipeline.
-- Complete mission loop and victory state: restore power, clear all eight
+- Complete mission loop and victory state: restore power, clear all twelve
   hostiles, then reach the extraction pad.
 
 ## Mission
@@ -202,4 +202,4 @@ prompts, and build records.
 Research links in `THIRD_PARTY_ASSETS.md` are evaluation notes only. Their models,
 textures, and audio are not bundled merely because a source URL is listed. No
 sci-fi, futuristic, fantasy, cartoon, stylized, or visibly low-detail research
-asset was accepted into the build 5.2.2 runtime.
+asset was accepted into the build 5.2.3 runtime.
