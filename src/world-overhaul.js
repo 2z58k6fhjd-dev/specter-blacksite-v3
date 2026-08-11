@@ -522,16 +522,16 @@ export function buildWorldOverhaul({scene,collision,environmentTextures,facility
   }
 
   let powered=false,breakerProgress=0,breakerDoorProgress=0,outdoorBlend=0,communicationsBeaconClock=0;
-  let lightingProfile={sun:1,ambient:1,grass:true,forestDensity:'high',fog:true,shadows:true,shadowMapSize:2048};
+  let lightingProfile={sun:1,ambient:1,grass:true,forestDensity:'high',fog:true,shadows:true,shadowMapSize:2048,shadowDistance:175};
   const interiorFogColor=new THREE.Color(0x050a08),exteriorFogColor=new THREE.Color(0x637582);
   function setGraphicsQuality(quality,effectivePreset={}){
     const profiles={
-      intel:{sun:.78,ambient:.86,grass:false,forestDensity:'low',fog:true,shadows:false,shadowMapSize:0},
-      performance:{sun:.9,ambient:.92,grass:false,forestDensity:'low',fog:true,shadows:true,shadowMapSize:1024},
-      balanced:{sun:.96,ambient:.98,grass:true,forestDensity:'medium',fog:true,shadows:true,shadowMapSize:1536},
-      high:{sun:1,ambient:1,grass:true,forestDensity:'high',fog:true,shadows:true,shadowMapSize:2048},
-      ultra:{sun:1.04,ambient:1.03,grass:true,forestDensity:'ultra',fog:true,shadows:true,shadowMapSize:3072},
-      extreme:{sun:1.08,ambient:1.06,grass:true,forestDensity:'extreme',fog:true,shadows:true,shadowMapSize:4096}
+      intel:{sun:.78,ambient:.86,grass:false,forestDensity:'low',fog:true,shadows:false,shadowMapSize:0,shadowDistance:0},
+      performance:{sun:.9,ambient:.92,grass:false,forestDensity:'low',fog:true,shadows:true,shadowMapSize:1024,shadowDistance:90},
+      balanced:{sun:.96,ambient:.98,grass:true,forestDensity:'medium',fog:true,shadows:true,shadowMapSize:1536,shadowDistance:135},
+      high:{sun:1,ambient:1,grass:true,forestDensity:'high',fog:true,shadows:true,shadowMapSize:2048,shadowDistance:175},
+      ultra:{sun:1.04,ambient:1.03,grass:true,forestDensity:'ultra',fog:true,shadows:true,shadowMapSize:3072,shadowDistance:220},
+      extreme:{sun:1.08,ambient:1.06,grass:true,forestDensity:'extreme',fog:true,shadows:true,shadowMapSize:4096,shadowDistance:270}
     };
     const profile=profiles[quality]||profiles.high,preset=effectivePreset&&typeof effectivePreset==='object'?effectivePreset:{};
     const grassEnabled=typeof preset.grassEnabled==='boolean'?preset.grassEnabled:profile.grass;
@@ -539,7 +539,8 @@ export function buildWorldOverhaul({scene,collision,environmentTextures,facility
     const shadowsEnabled=typeof preset.shadows==='boolean'?preset.shadows:profile.shadows;
     const requestedShadowMapSize=Number(preset.shadowMapSize),shadowMapSize=shadowsEnabled?(Number.isFinite(requestedShadowMapSize)&&requestedShadowMapSize>0?requestedShadowMapSize:profile.shadowMapSize):0;
     const forestDensity=preset.forestDensity??profile.forestDensity,forestState=forest.setDensity(forestDensity,{photoEnabled:preset.textureTier!=='low'});
-    lightingProfile={...profile,grass:grassEnabled,forestDensity:forestState.density,fog:fogEnabled,shadows:shadowsEnabled,shadowMapSize};
+    const shadowDistance=shadowsEnabled?profile.shadowDistance:0;
+    lightingProfile={...profile,grass:grassEnabled,forestDensity:forestState.density,fog:fogEnabled,shadows:shadowsEnabled,shadowMapSize,shadowDistance};
     grass.visible=lightingProfile.grass;
     sun.castShadow=lightingProfile.shadows;
     forest.setShadows(lightingProfile.shadows);
@@ -549,7 +550,13 @@ export function buildWorldOverhaul({scene,collision,environmentTextures,facility
     }else if(shadowSize&&sun.shadow.mapSize.x!==shadowSize){
       sun.shadow.map?.dispose();sun.shadow.mapSize.set(shadowSize,shadowSize);sun.shadow.needsUpdate=true;
     }
-    return {grassEnabled:lightingProfile.grass,forestDensity:forestState.density,forestTrees:forestState.total,fogEnabled:lightingProfile.fog,shadowsEnabled:lightingProfile.shadows,shadowMapSize:shadowSize};
+    if(shadowSize){
+      const extent=THREE.MathUtils.clamp(shadowDistance*.32,30,86),camera=sun.shadow.camera;
+      if(camera.left!==-extent||camera.right!==extent||camera.top!==extent||camera.bottom!==-extent||camera.far!==shadowDistance){
+        camera.left=-extent;camera.right=extent;camera.top=extent;camera.bottom=-extent;camera.far=shadowDistance;camera.updateProjectionMatrix();sun.shadow.needsUpdate=true;
+      }
+    }
+    return {grassEnabled:lightingProfile.grass,forestDensity:forestState.density,forestTrees:forestState.total,fogEnabled:lightingProfile.fog,shadowsEnabled:lightingProfile.shadows,shadowMapSize:shadowSize,shadowDistance};
   }
   function setPowered(value){powered=!!value;exit.target=powered?1:0}
   function setExtractionGateOpen(value=true){extractionGate.target=value?1:0}

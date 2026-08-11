@@ -1,13 +1,13 @@
 # SPECTER: Blacksite
 
-Build: `5.4.2-FOREST-FOLIAGE-FIX`
+Build: `5.5.0-LOW-PAYLOAD-COMBAT`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build
-5.4.2 continues the controller, viewmodel, combat presentation, enemy behavior,
+5.5.0 continues the controller, viewmodel, combat presentation, enemy behavior,
 facility, exterior-compound, rendering, materials, audio, and mission-flow work
 while keeping the project suitable for static hosting on GitHub Pages.
 
-## Build 5.4.2 highlights
+## Build 5.5.0 highlights
 
 - Damped first-person movement, sprint transitions, camera motion, weapon bob,
   and mouse-driven sway.
@@ -21,15 +21,20 @@ while keeping the project suitable for static hosting on GitHub Pages.
   rendered magnified view through the supported rifle optic.
 - Visible full-body SPECTER operator plus first-person sleeves, hands, gloves,
   and weapon grips derived from the bundled 127-joint soldier rig.
-- Procedural equip, sprint, sway, reload, recoil, casing ejection, pistol-slide,
-  hit, suppression, locomotion, and grounded death animation systems.
+- Procedural equip, holster, inspect, sprint, jump/landing response, sway,
+  reload, recoil, casing ejection, pistol-slide, hit, suppression, locomotion,
+  and grounded death animation systems.
+- Weapon changes now visibly stow the current viewmodel before drawing the next
+  one; `I` performs a safe inspect action and Space adds a conservative jump and
+  landing response without bypassing collision or combat state.
 - Reload, equip, and chamber/bolt-check actions share marker timelines: magazine,
   action, and ready markers synchronize the ammo transition, slide/bolt motion,
   and sound cues. This is project-authored procedural choreography, not imported
   motion capture or a separately licensed weapon-animation pack.
-- Defeated enemies throw down their carried rifle and role equipment with a
-  short settling/cleanup pass. These tactical death drops are visual combat
-  dressing only; they are not a pickup, inventory, or loot system.
+- Defeated enemies complete a grounded death and brief settle hold before their
+  carried rifle and role equipment drop. A bounded reusable prop pool prevents
+  sustained combat from continually allocating new visual dressing; drops are
+  not pickups, inventory, or loot.
 - Twelve hostiles across rifleman, scout, breacher, marksman, and commander role
   variants. These roles share the bundled soldier source rig and are varied with
   materials, equipment, durability, and behavior. Their weapons are full textured
@@ -75,16 +80,28 @@ while keeping the project suitable for static hosting on GitHub Pages.
   or render it; its raw 4K maps are deliberately excluded from lower vegetation
   budgets. See `THIRD_PARTY_ASSETS.md` for source and credit details.
 - AUTO chooses a conservative graphics starting point from browser-reported
-  capabilities and a short in-game benchmark. It is an estimate rather than a
+  capabilities, then runs after entering the loaded mission (45 warm-up frames
+  followed by 120 unclamped gameplay samples). It is an estimate rather than a
   precise VRAM test; players can choose Competitive Low, Performance, Balanced,
   High, Ultra, or Extreme instead.
 - Competitive Low / Intel HD 4600 uses a direct-render path that disables
-  shadows, post-processing, ground grass, dense foliage, and costly world
-  texture sampling while retaining intentionally downsampled **512px first-person viewmodel weapon textures**. It is a clarity/performance mode,
-  not a high-detail texture setting.
+  shadows, post-processing, ground grass, and dense foliage. On a fresh
+  Competitive Low or Low-texture launch it selects a checked 68-file,
+  **512px-max / 9.84 MiB** texture derivative set before the original 2K/4K
+  model and PBR images decode, so weapons and world materials remain textured
+  instead of being replaced by blank stand-ins. It is a clarity/performance
+  mode, not a high-detail texture setting.
 - Custom graphics controls independently set render scale, texture tier,
   shadows, vegetation, grass, fog, ambient occlusion, reflections, and bloom,
-  and display an active-resource GPU-memory estimate.
+  and display an active-resource GPU-memory estimate that refreshes on setting
+  changes and browser resizing.
+- Extreme probes for a complete, manifest-verified native 4K environment pack
+  on startup or after switching into Extreme. This release does not bundle that
+  pack, so it accurately reports a 2K PBR fallback rather than upscaling or
+  labeling a partial pack as native 4K.
+- The Codex/ChatGPT embedded preview has a restricted WebGL compositor, so a
+  requested Extreme tier safely reports and applies High there rather than
+  attempting unsupported SSR. Standalone browsers keep the full Extreme preset.
 - Eight project-generated PBR v2 material families using 23 browser-ready 2K
   albedo, normal, and packed ORM maps.
 - Procedural indoor/outdoor ambience, adaptive exploration/combat music,
@@ -201,8 +218,10 @@ and that notice must stay with redistribution. Loading or decoding these layers
 is optional; if they are unavailable, the procedural weapon system remains the
 automatic fallback without blocking the mission.
 
-The release ZIP is approximately **261 MiB**. Its exact byte count and
-SHA-256 are recorded in the generated release manifest beside the archive.
+The release ZIP's exact byte count and SHA-256 are recorded in the generated
+release manifest beside the archive. The optional high-resolution texture
+payload streams after first launch, so the amount downloaded on a first visit
+can vary with the selected graphics preset.
 The high-resolution runtime payload requires a stable connection on first launch
 and can take noticeably longer on mobile networks.
 The service worker installs the small application shell first, then caches the
@@ -226,9 +245,11 @@ documented in `assets/environment/pbr-v2/README.md` and `manifest.json`.
 The default High preset enables soft shadows, screen-space ambient occlusion,
 restrained bloom, and the final output pass while capping pixel ratio for a
 desktop-browser frame budget. **Competitive Low (Intel HD 4600)** is the safe
-starting point for older integrated graphics: it uses a 0.60 render-scale cap,
+starting point for older integrated graphics: it uses a 0.65 render-scale cap,
 direct rendering, no dynamic shadows, 1x anisotropy, hides the exterior grass
-layer, and retains 512px downsampled first-person viewmodel weapon textures.
+layer, and uses the checked 512px-max low-payload derivative set for the
+viewmodel, world PBR maps, set dressing, and soldier textures on a fresh Low
+launch.
 The **Extreme (10 GB)** tier raises the render-scale cap to 2.0, enables 4096px
 sun shadows, 16x texture sampling where supported, SSAO, full-resolution SSR,
 and stronger bloom.
@@ -236,9 +257,11 @@ and stronger bloom.
 The shipped environment pack remains 23 native 2048px WebP maps. Extreme is
 **4K-ready**, not falsely labeled as a 4K environment pack: it reports a 2K PBR
 fallback until a native `assets/environment/pbr-v2-4k/` asset tier is supplied.
-High-resolution weapon source textures remain in the project payload; Competitive
-Low uses 512px copies for the first-person viewmodel rather than promising the
-full close-up texture treatment on constrained hardware.
+High-resolution source textures remain in the project payload; Competitive Low
+selects compact 512px derivatives before decode rather than promising the full
+close-up texture treatment on constrained hardware. Switching to Low during an
+already high-detail session reduces the active material budget, but a fresh Low
+launch is the full low-payload path.
 
 High vegetation can additionally show project-generated 2D photo-tree impostors
 through a shared, instanced material; they are hidden at Off, Low, and Medium
@@ -272,4 +295,4 @@ prompts, and build records.
 Research links in `THIRD_PARTY_ASSETS.md` are evaluation notes only. Their models,
 textures, and audio are not bundled merely because a source URL is listed. No
 sci-fi, futuristic, fantasy, cartoon, stylized, or visibly low-detail research
-asset was accepted into the build 5.4.2-FOREST-FOLIAGE-FIX runtime.
+asset was accepted into the build 5.5.0-LOW-PAYLOAD-COMBAT runtime.

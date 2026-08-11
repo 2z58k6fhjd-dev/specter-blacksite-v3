@@ -38,7 +38,8 @@ export const TacticalWeaponAction = Object.freeze({
   TACTICAL_RELOAD: 'tactical-reload',
   EQUIP: 'equip',
   HOLSTER: 'holster',
-  CHAMBER: 'chamber'
+  CHAMBER: 'chamber',
+  INSPECT: 'inspect'
 });
 
 const BONE_DEFINITIONS = Object.freeze({
@@ -226,7 +227,8 @@ const ACTION_TIMING_DATA = {
     },
     [TacticalWeaponAction.EQUIP]: { duration: 0.58, markers: { shoulder: 0.48, ready: 0.92 } },
     [TacticalWeaponAction.HOLSTER]: { duration: 0.5, markers: { lowered: 0.62, hidden: 0.94 } },
-    [TacticalWeaponAction.CHAMBER]: { duration: 0.72, markers: { handleBack: 0.34, chambered: 0.62, ready: 0.92 } }
+    [TacticalWeaponAction.CHAMBER]: { duration: 0.72, markers: { handleBack: 0.34, chambered: 0.62, ready: 0.92 } },
+    [TacticalWeaponAction.INSPECT]: { duration: 1.18, markers: { raise: 0.18, inspect: 0.42, return: 0.76, ready: 0.96 } }
   },
   pistol: {
     [TacticalWeaponAction.RELOAD]: {
@@ -243,7 +245,8 @@ const ACTION_TIMING_DATA = {
     },
     [TacticalWeaponAction.EQUIP]: { duration: 0.42, markers: { raised: 0.54, ready: 0.91 } },
     [TacticalWeaponAction.HOLSTER]: { duration: 0.44, markers: { lowered: 0.58, hidden: 0.93 } },
-    [TacticalWeaponAction.CHAMBER]: { duration: 0.52, markers: { slideBack: 0.3, chambered: 0.61, ready: 0.91 } }
+    [TacticalWeaponAction.CHAMBER]: { duration: 0.52, markers: { slideBack: 0.3, chambered: 0.61, ready: 0.91 } },
+    [TacticalWeaponAction.INSPECT]: { duration: 0.98, markers: { raise: 0.16, inspect: 0.38, return: 0.7, ready: 0.94 } }
   }
 };
 
@@ -435,10 +438,52 @@ export function getWeaponActionTiming(weapon = 'rifle', action = TacticalWeaponA
  * Sample reusable action curves. Pass an output object to avoid allocation.
  * Values are normalized pose/event weights rather than model-space transforms.
  */
-export function sampleWeaponAction(profile, normalizedTime, output = {}) {
+export function sampleWeaponAction(profile, normalizedTime, output = {}, action = null) {
   const t = saturate(normalizedTime);
+  const actionType = action || profile?.action || null;
   output.normalizedTime = t;
+  output.action = actionType;
   output.weight = smoothstep(0, 0.07, t) * (1 - smoothstep(0.9, 1, t));
+  output.inspect = 0;
+  output.holster = 0;
+  output.equip = 0;
+
+  // Draw and stow are intentionally handled as their own curves rather than
+  // borrowing reload motion. The viewmodel can remain visible until the
+  // `hidden` marker, then the next weapon rises from the same low-ready pose.
+  if (actionType === TacticalWeaponAction.EQUIP || actionType === TacticalWeaponAction.HOLSTER) {
+    const stow = actionType === TacticalWeaponAction.EQUIP
+      ? 1 - smootherstep(0.02, 0.86, t)
+      : smootherstep(0.08, 0.9, t);
+    output.prepare = stow;
+    output.magazineOut = 0;
+    output.magazineIn = 0;
+    output.bolt = 0;
+    output.settle = actionType === TacticalWeaponAction.EQUIP ? smoothstep(0.72, 0.98, t) : stow;
+    output.supportHand = stow * 0.34;
+    output.weaponDip = stow;
+    output[actionType] = stow;
+    output.duration = profile?.duration || 1;
+    return output;
+  }
+
+  // Inspection rolls the weapon toward the operator while preserving a small
+  // low-ready dip. It is distinct from a chamber check and carries no ammo
+  // state changes, so it is safe to interrupt only after it returns to ready.
+  if (actionType === TacticalWeaponAction.INSPECT) {
+    const inspect = windowCurve(t, 0.12, 0.36, 0.56, 0.84);
+    output.prepare = windowCurve(t, 0.06, 0.22, 0.7, 0.9);
+    output.magazineOut = 0;
+    output.magazineIn = 0;
+    output.bolt = 0;
+    output.settle = smoothstep(0.78, 0.99, t);
+    output.inspect = inspect;
+    output.supportHand = inspect * 0.58;
+    output.weaponDip = output.prepare * 0.32;
+    output.duration = profile?.duration || 1;
+    return output;
+  }
+
   output.prepare = windowCurve(t, 0, 0.12, 0.2, 0.34);
   output.magazineOut = windowCurve(t, 0.1, 0.27, 0.42, 0.61);
   output.magazineIn = windowCurve(t, 0.38, 0.57, 0.7, 0.83);
@@ -487,7 +532,7 @@ export class WeaponActionTimeline {
     this._markerCursor = 0;
     this._firedMarkers.length = 0;
     this._markers = Object.entries(this.profile.markers || {}).sort((a, b) => a[1] - b[1]);
-    sampleWeaponAction(this.profile, 0, this.sampleState);
+    sampleWeaponAction(this.profile, 0, this.sampleState, this.action);
     return this;
   }
 
@@ -503,7 +548,7 @@ export class WeaponActionTimeline {
         this._firedMarkers.push({ name, at, action: this.action, weapon: this.weapon });
       }
     }
-    sampleWeaponAction(this.profile, this.normalizedTime, this.sampleState);
+    sampleWeaponAction(this.profile, this.normalizedTime, this.sampleState, this.action);
     if (this.normalizedTime >= 1) {
       this.active = false;
       this.completed = true;
@@ -971,6 +1016,16 @@ export class TacticalAnimator {
       this._add('spineUpper', 0.045, 0, 0.025, weight);
       this._add('rightUpperArm', 0.28, 0, 0.12, weight);
       this._add('leftUpperArm', 0.22, 0, -0.1, weight);
+      return;
+    }
+    if (action === TacticalWeaponAction.INSPECT) {
+      const inspect = sample.inspect || 0;
+      this._add('spineUpper', 0.055, -0.12, 0.04, inspect);
+      this._add('rightUpperArm', -0.34, 0.12, 0.32, inspect);
+      this._add('rightForearm', -0.46, 0, 0.62, inspect);
+      this._add('leftUpperArm', -0.28, -0.1, -0.22, inspect);
+      this._add('leftForearm', -0.34, 0, -0.5, inspect);
+      this._add('head', -0.035, 0.045, 0, inspect);
       return;
     }
     if (action === TacticalWeaponAction.CHAMBER) {

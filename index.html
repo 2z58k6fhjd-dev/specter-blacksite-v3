@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#06100c">
   <title>SPECTER: Blacksite — Overhaul Foundation</title>
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./styles.css?v=5.4.2-forest-foliage-fix">
+  <link rel="stylesheet" href="./styles.css?v=5.5.0-low-payload-combat">
 </head>
 <body>
   <div id="game"></div>
@@ -20,7 +20,7 @@
       <button id="startButton" disabled>LOADING ASSETS</button>
       <button id="graphicsButton" class="secondaryButton" type="button">GRAPHICS: HIGH (6 GB)</button>
       <a id="modelPreviewLink" href="./player-model.html">VIEW SPECTER PLAYER MODEL</a>
-      <small>WASD move · Mouse look · Left click fire · Hold right click ADS (click toggles ADS in embedded mode) · Shift sprint · E use · F flashlight · R reload · C chamber check · B fire mode · G graphics · 1–5 weapons</small>
+      <small>WASD move · Mouse look · Left click fire · Hold right click ADS (click toggles ADS in embedded mode) · Shift sprint · Space jump · E use · F flashlight · R reload · C chamber check · I inspect · B fire mode · G graphics · 1–5 weapons</small>
     </div>
   </section>
   <section id="victoryPanel">
@@ -32,7 +32,7 @@
     </div>
   </section>
   <div id="extractionFade" aria-hidden="true"></div>
-  <div id="build">BUILD 5.4.2-FOREST-FOLIAGE-FIX</div>
+  <div id="build">BUILD 5.5.0-LOW-PAYLOAD-COMBAT</div>
   <button id="graphicsQuickButton" type="button" aria-expanded="false">GFX</button>
   <section id="graphicsPanel" aria-label="Graphics quality" aria-hidden="true">
     <div class="graphicsHeader"><strong>GRAPHICS QUALITY</strong><button id="graphicsCloseButton" type="button" aria-label="Close graphics settings">×</button></div>
@@ -49,7 +49,7 @@
     <div class="graphicsCustom" aria-label="Custom graphics settings">
       <div class="graphicsCustomHeader"><strong>CUSTOM TUNING</strong><button id="graphicsResetButton" type="button">RESET</button></div>
       <label>RENDER SCALE <output id="graphicsRenderScaleValue">1.25×</output><input id="graphicsRenderScale" type="range" min="0.5" max="2" step="0.05" value="1.25"></label>
-      <label>TEXTURE TIER<select id="graphicsTextureTier"><option value="low">Low · 512px weapons</option><option value="standard">Standard</option><option value="high">High</option><option value="4k-preferred">4K preferred</option></select></label>
+      <label>TEXTURE TIER<select id="graphicsTextureTier"><option value="low">Low · 512px texture pack</option><option value="standard">Standard</option><option value="high">High</option><option value="4k-preferred">4K preferred</option></select></label>
       <label>SHADOW QUALITY<select id="graphicsShadowQuality"><option value="0">Off</option><option value="1024">Low · 1024</option><option value="2048">High · 2048</option><option value="3072">Ultra · 3072</option><option value="4096">Extreme · 4096</option></select></label>
       <label>VEGETATION DENSITY<select id="graphicsVegetationDensity"><option value="off">Off · bare exterior</option><option value="low">Low · clear sightlines</option><option value="medium">Medium</option><option value="high">High · dense forest</option><option value="ultra">Ultra · very dense</option><option value="extreme">Extreme · maximum</option></select></label>
       <div class="graphicsToggles">
@@ -61,7 +61,7 @@
         <label><input id="graphicsFog" type="checkbox"> Atmospheric fog</label>
       </div>
       <div id="graphicsVramEstimate" class="graphicsVramEstimate">EST. GPU MEMORY: calculating…</div>
-      <small>*Anti-aliasing changes apply on the next reload. Low textures keep viewmodel weapons textured at 512px while simplifying world surfaces. Estimates include loaded textures, geometry, render targets, and shadows; browser APIs cannot reveal exact VRAM.</small>
+      <small>*Anti-aliasing changes apply on the next reload. A fresh Low launch uses 512px model and PBR textures; switching down mid-session simplifies the active material budget. Estimates include loaded textures, geometry, render targets, and shadows; browser APIs cannot reveal exact VRAM.</small>
     </div>
     <div class="audioTuning" aria-label="Enemy voice settings">
       <div class="graphicsCustomHeader"><strong>ENEMY COMMUNICATIONS</strong></div>
@@ -110,6 +110,6 @@
     }
   }
   </script>
-  <script type="module" src="./src/main.js?v=5.4.2-forest-foliage-fix"></script>
+  <script type="module" src="./src/main.js?v=5.5.0-low-payload-combat"></script>
 </body>
 </html>

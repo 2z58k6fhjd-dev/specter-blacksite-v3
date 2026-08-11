@@ -452,6 +452,17 @@ export async function createGraphicsPipeline({
     return getDiagnostics();
   }
 
+  function consumeComposerGlError() {
+    const gl = renderer.getContext?.();
+    if (!gl?.getError) return 0;
+    const first = gl.getError();
+    // Drain the small error queue so the direct fallback starts from a clean
+    // state. Some embedded/mobile WebGL implementations only report an
+    // unsupported post-process shader through VALIDATE_STATUS/INVALID_OPERATION.
+    for (let remaining = 12; remaining > 0 && gl.getError() !== gl.NO_ERROR; remaining--) { /* drain */ }
+    return first;
+  }
+
   function render(deltaTime) {
     const preset = activePreset();
     if (!disposed && enabled && preset.postProcessing !== false && composer && !runtimeFallback) {
@@ -461,6 +472,10 @@ export async function createGraphicsPipeline({
       renderer.getClearColor(clearColorBeforeRender);
       try {
         composer.render(deltaTime);
+        const glError = consumeComposerGlError();
+        if (glError && glError !== renderer.getContext().NO_ERROR) {
+          throw new Error(`WebGL post-processing validation failed (0x${glError.toString(16)}).`);
+        }
         return 'composer';
       } catch (error) {
         runtimeFallback = true;
@@ -469,6 +484,7 @@ export async function createGraphicsPipeline({
         renderer.setClearColor(clearColorBeforeRender, clearAlphaBeforeRender);
         renderer.setRenderTarget(null);
         scene.overrideMaterial = overrideMaterialBeforeRender;
+        releaseComposerResources();
         warnOnce('composer-render-failed', 'Post-processing failed during a frame; all later frames use renderer.render().', error);
       }
     }

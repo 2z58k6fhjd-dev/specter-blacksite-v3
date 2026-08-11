@@ -36,6 +36,7 @@ const DEPLOYABLE_PATHS = [
   'manifest.webmanifest',
   'player-model.html',
   'README.md',
+  'ASSET_CATALOG.md',
   'service-worker.js',
   'styles.css',
   'THIRD_PARTY_ASSETS.md'
@@ -335,6 +336,94 @@ async function validatePbrManifest(errors) {
   }
 }
 
+async function validateLowPayloadManifest(errors) {
+  const manifestPath = resolve(ROOT, 'assets/low-textures/manifest.json');
+  let manifest;
+  try {
+    manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+  } catch (error) {
+    errors.push(`Low-payload texture manifest is invalid: ${error.message}`);
+    return;
+  }
+  if (manifest.maxDimension !== 512 || !Array.isArray(manifest.records) || manifest.records.length === 0) {
+    errors.push('Low-payload texture manifest must declare nonempty 512px-max records');
+    return;
+  }
+  const expectedFiles = new Set();
+  let recordedBytes = 0;
+  for (const record of manifest.records) {
+    if (!record?.source || !record?.file || !Array.isArray(record.dimensions)) {
+      errors.push('Low-payload texture manifest contains an incomplete record');
+      continue;
+    }
+    const source = resolve(ROOT, record.source);
+    const file = resolve(ROOT, record.file);
+    if (!isInside(resolve(ROOT, 'assets'), source) || !(await pathExists(source))) {
+      errors.push(`Low-payload texture source is missing: ${record.source}`);
+    }
+    if (!isInside(resolve(ROOT, 'assets/low-textures'), file) || !(await pathExists(file))) {
+      errors.push(`Low-payload texture derivative is missing: ${record.file}`);
+      continue;
+    }
+    expectedFiles.add(file);
+    const metadata = await stat(file);
+    recordedBytes += metadata.size;
+    if (metadata.size !== record.bytes) errors.push(`Low-payload byte count mismatch for ${record.file}`);
+    if (record.sha256 && (await hashFile(file)) !== record.sha256) errors.push(`Low-payload SHA-256 mismatch for ${record.file}`);
+    if (record.dimensions.some((dimension) => !Number.isInteger(dimension) || dimension < 1 || dimension > 512)) {
+      errors.push(`Low-payload dimensions exceed the 512px contract for ${record.file}`);
+    }
+  }
+  if (recordedBytes !== manifest.runtimeBytes) errors.push('Low-payload texture manifest runtime byte total is incorrect');
+  const derivatives = (await listFiles(resolve(ROOT, 'assets/low-textures')))
+    .filter((file) => MEDIA_EXTENSIONS.has(extname(file).toLowerCase()));
+  for (const file of derivatives) if (!expectedFiles.has(file)) errors.push(`Low-payload tree contains an unrecorded derivative: ${relativeToRoot(file)}`);
+
+  const requiredEnvironmentMaps = [
+    'concrete-albedo.webp', 'concrete-normal.webp', 'concrete-orm.webp',
+    'painted-metal-albedo.webp', 'painted-metal-normal.webp', 'painted-metal-orm.webp',
+    'diamond-plate-albedo.webp', 'diamond-plate-normal.webp', 'diamond-plate-orm.webp',
+    'asphalt-albedo.webp', 'asphalt-normal.webp', 'asphalt-orm.webp',
+    'utility-panel-albedo.webp', 'utility-panel-normal.webp', 'utility-panel-orm.webp',
+    'vehicle-paint-albedo.webp', 'vehicle-paint-orm.webp',
+    'vehicle-rubber-albedo.webp', 'vehicle-rubber-normal.webp', 'vehicle-rubber-orm.webp',
+    'grass-soil-albedo.webp', 'grass-soil-normal.webp', 'grass-soil-orm.webp'
+  ];
+  const lowPbrRoot = resolve(ROOT, 'assets/low-textures/environment/pbr-v2');
+  for (const filename of requiredEnvironmentMaps) {
+    if (!(await pathExists(resolve(lowPbrRoot, filename)))) errors.push(`Low-payload PBR map is missing: ${filename}`);
+  }
+}
+
+async function validateOptionalNativePbrManifest(errors) {
+  const manifestPath = resolve(ROOT, 'assets/environment/pbr-v2-4k/manifest.json');
+  if (!(await pathExists(manifestPath))) return;
+  let manifest;
+  try {
+    manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+  } catch (error) {
+    errors.push(`Native 4K PBR manifest is invalid: ${error.message}`);
+    return;
+  }
+  const dimensions = manifest?.runtimeFormat?.dimensions;
+  if (!Array.isArray(dimensions) || dimensions.length < 2 || Math.min(...dimensions.map(Number)) < 4096) {
+    errors.push('Native 4K PBR manifest must declare dimensions of at least 4096px');
+    return;
+  }
+  const mapRecords = (manifest.materials ?? []).flatMap((material) => material.maps ?? []);
+  const mapNames = new Set(mapRecords.map((record) => record?.file).filter(Boolean));
+  for (const filename of [
+    'concrete-albedo.webp', 'concrete-normal.webp', 'concrete-orm.webp',
+    'painted-metal-albedo.webp', 'painted-metal-normal.webp', 'painted-metal-orm.webp',
+    'diamond-plate-albedo.webp', 'diamond-plate-normal.webp', 'diamond-plate-orm.webp',
+    'asphalt-albedo.webp', 'asphalt-normal.webp', 'asphalt-orm.webp',
+    'utility-panel-albedo.webp', 'utility-panel-normal.webp', 'utility-panel-orm.webp',
+    'vehicle-paint-albedo.webp', 'vehicle-paint-orm.webp',
+    'vehicle-rubber-albedo.webp', 'vehicle-rubber-normal.webp', 'vehicle-rubber-orm.webp',
+    'grass-soil-albedo.webp', 'grass-soil-normal.webp', 'grass-soil-orm.webp'
+  ]) if (!mapNames.has(filename)) errors.push(`Native 4K PBR manifest is missing ${filename}`);
+}
+
 async function validateForestFoliagePolicy(errors) {
   const mainPath = resolve(ROOT, 'src/main.js');
   const workerPath = resolve(ROOT, 'service-worker.js');
@@ -367,6 +456,8 @@ async function validateRelease() {
   await validateAssetProvenance(errors);
   await validateForestFoliagePolicy(errors);
   await validatePbrManifest(errors);
+  await validateLowPayloadManifest(errors);
+  await validateOptionalNativePbrManifest(errors);
   if (errors.length) {
     for (const error of errors) console.error(`ERROR: ${error}`);
     fail(`Release validation failed with ${errors.length} issue(s).`);

@@ -1,0 +1,1098 @@
+{
+  "schemaVersion": 1,
+  "assetSet": "SPECTER low-payload texture tier",
+  "generatedBy": "scripts/build-low-textures.py",
+  "maxDimension": 512,
+  "runtimeBytes": 10319122,
+  "runtimeMiB": 9.84,
+  "records": [
+    {
+      "source": "assets/ar15/textures/Base_and_Stock_0_baseColor.png",
+      "file": "assets/low-textures/ar15/textures/Base_and_Stock_0_baseColor.png",
+      "sourceBytes": 8709924,
+      "bytes": 267016,
+      "sourceSha256": "4aec7b61aa9e3635f9751d13eb1cfd6d3bb0ef322665a9cd33ff1f2ea615c748",
+      "sha256": "8b2991eeda224f2bb16c2889f7b7a87f8a8957a75f762b153acfa50b1fa90599",
+      "sourceDimensions": [
+        4096,
+        4096
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/ar15/textures/Base_and_Stock_0_metallicRoughness.png",
+      "file": "assets/low-textures/ar15/textures/Base_and_Stock_0_metallicRoughness.png",
+      "sourceBytes": 8968041,
+      "bytes": 287981,
+      "sourceSha256": "29b31a6aa27b635ce251bab653698287ede0334f21a8981d2eef0905d729f467",
+      "sha256": "76c6b4baf033a186fd6d6aaef1075c743c8d3cc0c0bbb3a42bbc801fc3933382",
+      "sourceDimensions": [
+        4096,
+        4096
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/ar15/textures/Base_and_Stock_0_normal.png",
+      "file": "assets/low-textures/ar15/textures/Base_and_Stock_0_normal.png",
+      "sourceBytes": 3718944,
+      "bytes": 236225,
+      "sourceSha256": "b47233c4b30027dbd0459effb83d80be3c6ea3f081d827f89732ad310ced6c72",
+      "sha256": "3d2eaaaa5ff8b16c57bd2860b61924e285ea938eaa0171943c004083b5acc98b",
+      "sourceDimensions": [
+        4096,
+        4096
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/ar15/textures/Base_and_Stock_baseColor.png",
+      "file": "assets/low-textures/ar15/textures/Base_and_Stock_baseColor.png",
+      "sourceBytes": 12594374,
+      "bytes": 304506,
+      "sourceSha256": "1ee1ca8c57b586139c24b43ec4373235c4ef0ddbcf77b189ad28386bb3de4510",
+      "sha256": "672ecb9877b8068736a20ba27349ff2611283b4698b4924378d45bf82413fc95",
+      "sourceDimensions": [
+        4096,
+        4096
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/ar15/textures/Base_and_Stock_metallicRoughness.png",
+      "file": "assets/low-textures/ar15/textures/Base_and_Stock_metallicRoughness.png",
+      "sourceBytes": 8612038,
+      "bytes": 248634,
+      "sourceSha256": "e6bfdf5e140fa2e085cc8948c886aca1a40af405504e8c6439149557e2361e3a",
+      "sha256": "dc1b7809ef8c5aa4fc2f4306b04ce44452252914608bc6946cca774eb1b2229e",
+      "sourceDimensions": [
+        4096,
+        4096
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/ar15/textures/Base_and_Stock_normal.png",
+      "file": "assets/low-textures/ar15/textures/Base_and_Stock_normal.png",
+      "sourceBytes": 6111479,
+      "bytes": 262317,
+      "sourceSha256": "79727a7a41820ea3ef34df5f2b90d9b1b2d3bd4a0e5d7adcb8a4b7b56103f7da",
+      "sha256": "8bdce7d29b4f2082c14e6b85373091dc5daa5043dcd72dce139b7d0d80d39c16",
+      "sourceDimensions": [
+        4096,
+        4096
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/ar15/textures/Handguard_baseColor.png",
+      "file": "assets/low-textures/ar15/textures/Handguard_baseColor.png",
+      "sourceBytes": 11489376,
+      "bytes": 352276,
+      "sourceSha256": "a61cbfe2a83d15cc20f90ed612e538fbc48bf0672ef5042cd48d8792ff1c86d1",
+      "sha256": "1449a4cb10b6002be60b2f456e2a7fdac85847e0c1c51cc668b65f65004f3db7",
+      "sourceDimensions": [
+        4096,
+        4096
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/ar15/textures/Handguard_metallicRoughness.png",
+      "file": "assets/low-textures/ar15/textures/Handguard_metallicRoughness.png",
+      "sourceBytes": 8318026,
+      "bytes": 327130,
+      "sourceSha256": "4293118200e2badbb96656b9ffefbef7c765c25c3cb35acc41018b2b6e00f696",
+      "sha256": "9731d9fba6f771164e81d7a953325a8f9b37a691fe3998b46924f6fad266ba20",
+      "sourceDimensions": [
+        4096,
+        4096
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/ar15/textures/Handguard_normal.png",
+      "file": "assets/low-textures/ar15/textures/Handguard_normal.png",
+      "sourceBytes": 6674311,
+      "bytes": 306251,
+      "sourceSha256": "6a520372e5c020293c314fd50cc12af46bfffff6da7af897939a5d0863cc953c",
+      "sha256": "fa0ee9e47bcd0f8842f84f1ec539a68e3def2d1e85d1558d497be16f21ded02f",
+      "sourceDimensions": [
+        4096,
+        4096
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/ar15/textures/Scope_Handle_Mag_baseColor.png",
+      "file": "assets/low-textures/ar15/textures/Scope_Handle_Mag_baseColor.png",
+      "sourceBytes": 9962094,
+      "bytes": 277187,
+      "sourceSha256": "8aa3445d51ba758f8930f56e2269eb5baad3a6e1bc5565bb3e8f91e4fd7b9caf",
+      "sha256": "3c5ad39f4691edba7693388674d0fb63f0bbd1e02dbafc6acaa38b46c5c59dff",
+      "sourceDimensions": [
+        4096,
+        4096
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/ar15/textures/Scope_Handle_Mag_metallicRoughness.png",
+      "file": "assets/low-textures/ar15/textures/Scope_Handle_Mag_metallicRoughness.png",
+      "sourceBytes": 9727073,
+      "bytes": 263290,
+      "sourceSha256": "6a599e7b0045cdb6c03675448abe255cb3f18a7473d99f404f9b6b9a15d86ffe",
+      "sha256": "5452f629ac7f7fac32dbbcf67b8bb51dafa2ebe1c4294e3d5e89273dbe9eec4e",
+      "sourceDimensions": [
+        4096,
+        4096
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/ar15/textures/Scope_Handle_Mag_normal.png",
+      "file": "assets/low-textures/ar15/textures/Scope_Handle_Mag_normal.png",
+      "sourceBytes": 18623332,
+      "bytes": 351501,
+      "sourceSha256": "46ec4c91946d21e368ed27c4f3673ab9815409220ef2f121c51296104ad8f0d1",
+      "sha256": "aa1e7a4bedf8d418c1176bd7bcafae6fd5aa6406383331f7e41d24f30d463e9f",
+      "sourceDimensions": [
+        4096,
+        4096
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/ar15/textures/ground_baseColor.png",
+      "file": "assets/low-textures/ar15/textures/ground_baseColor.png",
+      "sourceBytes": 353072,
+      "bytes": 75581,
+      "sourceSha256": "69d66b404d704c26f6368ceee715cff25b1194481675dd0a13d79fa5f6c2515d",
+      "sha256": "383962aaaab4b3b7c173adfe4ba1f6e14df28fd2d23fd65079bcc44f5403047c",
+      "sourceDimensions": [
+        1024,
+        1024
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/pbr-v2/asphalt-albedo.webp",
+      "file": "assets/low-textures/environment/pbr-v2/asphalt-albedo.webp",
+      "sourceBytes": 1093412,
+      "bytes": 105358,
+      "sourceSha256": "c94a42cba2bdfa1f6380a0cad7740c5de9ed6bdf0a29c638c86b772b3146f067",
+      "sha256": "bc77776963ce3d9737509a9ce325418a6bb9ecf4fcba636982830bff11dc5b75",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/pbr-v2/asphalt-normal.webp",
+      "file": "assets/low-textures/environment/pbr-v2/asphalt-normal.webp",
+      "sourceBytes": 3789210,
+      "bytes": 143654,
+      "sourceSha256": "c1d6630c7348c7fed95ead86557bc3786ea3ec8c372cc1866a26d01a9a5fdb2e",
+      "sha256": "32f6b96e84d80f3929c1579419deebc7aecc1bde86125114053ba2ca3fc5e512",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/pbr-v2/asphalt-orm.webp",
+      "file": "assets/low-textures/environment/pbr-v2/asphalt-orm.webp",
+      "sourceBytes": 1549158,
+      "bytes": 48060,
+      "sourceSha256": "8283652818d11f0810f97e99beb7b053c956131afc0ff435a56b394ae2a985d3",
+      "sha256": "7427f0efbe8e7feba964f47d9863f40d608f24eba5d223c994f488bb90a385e4",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/pbr-v2/concrete-albedo.webp",
+      "file": "assets/low-textures/environment/pbr-v2/concrete-albedo.webp",
+      "sourceBytes": 580448,
+      "bytes": 45622,
+      "sourceSha256": "6bd22995c79d853f9376c979ea751e47bbe326b270f4b43d1479acfbe609414e",
+      "sha256": "802f9629cd14e770225fe4aeef67b4fac5430692ba51d40c1e5d68233adcede9",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/pbr-v2/concrete-normal.webp",
+      "file": "assets/low-textures/environment/pbr-v2/concrete-normal.webp",
+      "sourceBytes": 3307402,
+      "bytes": 124754,
+      "sourceSha256": "70bbdd9c3eb38590b8d2b3016e0c0a0d17465aa8cf7f67ac77ba517612480ef3",
+      "sha256": "1b72080cf6032eb85d83468a370539dda8d070a30108156717b7b7775988754e",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/pbr-v2/concrete-orm.webp",
+      "file": "assets/low-textures/environment/pbr-v2/concrete-orm.webp",
+      "sourceBytes": 1161112,
+      "bytes": 18580,
+      "sourceSha256": "007c6d665911e1427b9b391dc76ded318a3986d3eb3e09ca7f04f321b4bf9c3e",
+      "sha256": "bcceec5574bf5df208b38d1aa4649727e47b190e95d70cf674550583d41fc0ec",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/pbr-v2/diamond-plate-albedo.webp",
+      "file": "assets/low-textures/environment/pbr-v2/diamond-plate-albedo.webp",
+      "sourceBytes": 72770,
+      "bytes": 11876,
+      "sourceSha256": "3925d09b89f5e9668a4ee46543b352d98a41c4cdf1f2f8bac221143378605734",
+      "sha256": "432ac6026cc4115e06c030528323465f5e79fcf5d8d53f3768bb040531ade906",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/pbr-v2/diamond-plate-normal.webp",
+      "file": "assets/low-textures/environment/pbr-v2/diamond-plate-normal.webp",
+      "sourceBytes": 615578,
+      "bytes": 65148,
+      "sourceSha256": "82c15243fcf00eba0ef0761019b9f60b2089898cba1971d1bf96553332025d63",
+      "sha256": "9ffb97229ca76136be021fee6d5985664fe55c1699c9bfa704cf244a622e390e",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/pbr-v2/diamond-plate-orm.webp",
+      "file": "assets/low-textures/environment/pbr-v2/diamond-plate-orm.webp",
+      "sourceBytes": 168072,
+      "bytes": 20672,
+      "sourceSha256": "4616094eeb1a1128401a420606672e01f5d64a870d791e796f7b0189d6f484d9",
+      "sha256": "438430fd2569e743a4bb534d512f02babe7f58fbe068e05aee5fc7ac959e24b0",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/pbr-v2/grass-soil-albedo.webp",
+      "file": "assets/low-textures/environment/pbr-v2/grass-soil-albedo.webp",
+      "sourceBytes": 1212558,
+      "bytes": 130134,
+      "sourceSha256": "d73f6db8923c877d388db95f6226bdb2907968a2f491d0b046c91762fa7a9c05",
+      "sha256": "9e37e7e9194398a9999b14fbc043cf262f810e2364080e2be54e39e5898328fa",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/pbr-v2/grass-soil-normal.webp",
+      "file": "assets/low-textures/environment/pbr-v2/grass-soil-normal.webp",
+      "sourceBytes": 3694960,
+      "bytes": 153612,
+      "sourceSha256": "9078f4eda965e679833f069ffd742ec592bf31798af69b4d92f20f0b08c741e2",
+      "sha256": "e740a35bb6a652a9c3d3f53d764b5c79b632d6fa91def5ad433f54c215a19f96",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/pbr-v2/grass-soil-orm.webp",
+      "file": "assets/low-textures/environment/pbr-v2/grass-soil-orm.webp",
+      "sourceBytes": 1403178,
+      "bytes": 57378,
+      "sourceSha256": "1204679d32c9b3531d712b83fa63387641753c2a187e030375c9a4ab7b6f8cb9",
+      "sha256": "c836841028b422028fb3aca8a44e031358d593466ef27ed8a232aa68c2cd7982",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/pbr-v2/painted-metal-albedo.webp",
+      "file": "assets/low-textures/environment/pbr-v2/painted-metal-albedo.webp",
+      "sourceBytes": 425752,
+      "bytes": 34204,
+      "sourceSha256": "f770440d22cb12c5aa222885993be0617bfbd204a9dbb7a594e024a709f1c85f",
+      "sha256": "11c66216a1da41e4793da9627f5ff1c4131dd79f26e5bc4b0dc1d9e221363d17",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/pbr-v2/painted-metal-normal.webp",
+      "file": "assets/low-textures/environment/pbr-v2/painted-metal-normal.webp",
+      "sourceBytes": 1713846,
+      "bytes": 49718,
+      "sourceSha256": "fe4f7b1cd44c6c61c37805c3280cb380c2b13b7f5f638fd38b9c840b8ace1c38",
+      "sha256": "afc5e8fd923d040ec5dfeb3dda63d0420007fe286efae118d30cba9f6a81f294",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/pbr-v2/painted-metal-orm.webp",
+      "file": "assets/low-textures/environment/pbr-v2/painted-metal-orm.webp",
+      "sourceBytes": 873912,
+      "bytes": 9088,
+      "sourceSha256": "a77bff193ffa3d2f651a0ee7e63999a4f16a1af86725703b384c524a357700c8",
+      "sha256": "1905a8d740f9b6293526c5665a4699427ac36c04fa09356fe23dd46c0a10a1d6",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/pbr-v2/utility-panel-albedo.webp",
+      "file": "assets/low-textures/environment/pbr-v2/utility-panel-albedo.webp",
+      "sourceBytes": 44816,
+      "bytes": 6862,
+      "sourceSha256": "b6fea0705e90ff519a765a4d06342fd3fed760c55fa6ccc411653ad41beb3405",
+      "sha256": "8e65fb6c39f6ce5a21187a7d285b67b40e0a0b63eb6be908d13290ba6af25784",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/pbr-v2/utility-panel-normal.webp",
+      "file": "assets/low-textures/environment/pbr-v2/utility-panel-normal.webp",
+      "sourceBytes": 194568,
+      "bytes": 12296,
+      "sourceSha256": "69924d4f718001e9d109dfef73a18ebba1caa6b937eca1c79297fb47e5568bd4",
+      "sha256": "3de48aa8a269c819ed9bb9836708b120a71132b73df02245d6ef5c4e9dd1c8a3",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/pbr-v2/utility-panel-orm.webp",
+      "file": "assets/low-textures/environment/pbr-v2/utility-panel-orm.webp",
+      "sourceBytes": 71704,
+      "bytes": 7478,
+      "sourceSha256": "9032119a2faf3749420bd6a97991ca37e0f61276eb000373d2af037ec8642141",
+      "sha256": "9d4bdf01f4cdb6ff16feae0f1e78c903dd7cf4a41ccebe0ebfa523c539a51edb",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/pbr-v2/vehicle-paint-albedo.webp",
+      "file": "assets/low-textures/environment/pbr-v2/vehicle-paint-albedo.webp",
+      "sourceBytes": 15806,
+      "bytes": 1810,
+      "sourceSha256": "550fdb81f66565d365263262678fcce22c61631d6c0d0d5023f46d538e1f66df",
+      "sha256": "30a3ff23b8744c7677ac8148b0636953dd0aa1c8c9525f0ce069389aa54abf14",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/pbr-v2/vehicle-paint-orm.webp",
+      "file": "assets/low-textures/environment/pbr-v2/vehicle-paint-orm.webp",
+      "sourceBytes": 106186,
+      "bytes": 4548,
+      "sourceSha256": "73771891d8cb9a4a1ddbcbf3a20b8ec8fa1195c1955522f37b7649eac5490a90",
+      "sha256": "556396b0d6be6ba0e9254bcba53e2a82909dff645de9d92e11a5521ea598c5fe",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/pbr-v2/vehicle-rubber-albedo.webp",
+      "file": "assets/low-textures/environment/pbr-v2/vehicle-rubber-albedo.webp",
+      "sourceBytes": 35870,
+      "bytes": 3318,
+      "sourceSha256": "de32eb0aa8c135fee2b3b5066857b6ab0e2d79c91ef3a8ab4117c6ba2f920a07",
+      "sha256": "0ee4b87cd15c2ae803dd13395459c5ca34e0eb905178249e2000c3bebfa7e474",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/pbr-v2/vehicle-rubber-normal.webp",
+      "file": "assets/low-textures/environment/pbr-v2/vehicle-rubber-normal.webp",
+      "sourceBytes": 939198,
+      "bytes": 115522,
+      "sourceSha256": "070d8d11a360c081a23198a5f57b7d6b83d8df82e5e26d2ac32c5a8f539ec599",
+      "sha256": "3b5494bae5b24c0297b678845e3c3560b21551a37d7077c630bf96c5a11741d3",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/pbr-v2/vehicle-rubber-orm.webp",
+      "file": "assets/low-textures/environment/pbr-v2/vehicle-rubber-orm.webp",
+      "sourceBytes": 261698,
+      "bytes": 11404,
+      "sourceSha256": "8f85757f00008c8379bd0ce99a6b78dc8046031c5885a6b5da5eb1db313a61d9",
+      "sha256": "fbc9f3da737c366d621688bb2edd25d50ea49cfcf9a9c7d5faa023a202268638",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/polyhaven-concrete-road-barrier-02/textures/concrete_road_barrier_02_arm_2k.jpg",
+      "file": "assets/low-textures/environment/polyhaven-concrete-road-barrier-02/textures/concrete_road_barrier_02_arm_2k.jpg",
+      "sourceBytes": 2791052,
+      "bytes": 57662,
+      "sourceSha256": "4d479e15c0ad5e02df48b999b691e17aabf4ebd55b599e571163a2b3b834379e",
+      "sha256": "8808447f404f13b7e93120ab18897d6542959a933e25d9c4a834cbcf3de267b8",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/polyhaven-concrete-road-barrier-02/textures/concrete_road_barrier_02_diff_2k.jpg",
+      "file": "assets/low-textures/environment/polyhaven-concrete-road-barrier-02/textures/concrete_road_barrier_02_diff_2k.jpg",
+      "sourceBytes": 2974035,
+      "bytes": 73688,
+      "sourceSha256": "ca2e3ea67558887b80d113d6b5414f12a37967d4a868600ab23b118acaff11ba",
+      "sha256": "6dc44a22d4bedcc42714ceac494d3099e9dbd3ee7801febb2db3e354bf4e5f7c",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/polyhaven-concrete-road-barrier-02/textures/concrete_road_barrier_02_nor_gl_2k.jpg",
+      "file": "assets/low-textures/environment/polyhaven-concrete-road-barrier-02/textures/concrete_road_barrier_02_nor_gl_2k.jpg",
+      "sourceBytes": 3521614,
+      "bytes": 81184,
+      "sourceSha256": "57a9d9448612f0e904964e7c9e01681adb2c3565cf3e47ed60cc152ab7df3b2b",
+      "sha256": "c053367e6eefb1af8cebfc85d16bff96a81d846923d5b9e63b141352cfbbb47a",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/polyhaven-plastic-container/textures/plastic_container_arm_2k.jpg",
+      "file": "assets/low-textures/environment/polyhaven-plastic-container/textures/plastic_container_arm_2k.jpg",
+      "sourceBytes": 1429369,
+      "bytes": 56398,
+      "sourceSha256": "fe2fb43c6cef7a478e760451ef773a1dbfd22c031f4b8e43a737bd8ba6b8d065",
+      "sha256": "ef1f21f32fde52166a93c737a6cdd859ddb441c3afc39e8a4aa89fac11c44d28",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/polyhaven-plastic-container/textures/plastic_container_diff_2k.jpg",
+      "file": "assets/low-textures/environment/polyhaven-plastic-container/textures/plastic_container_diff_2k.jpg",
+      "sourceBytes": 1192199,
+      "bytes": 40075,
+      "sourceSha256": "78aaa58c14cff2f2784c25889908d374c3d8f8f145ead27b3eeef88ec5a49308",
+      "sha256": "1b728ac9fd86264350b35a55c51d6f0ab920c37af92a298754a39587743f2eca",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/polyhaven-plastic-container/textures/plastic_container_nor_gl_2k.jpg",
+      "file": "assets/low-textures/environment/polyhaven-plastic-container/textures/plastic_container_nor_gl_2k.jpg",
+      "sourceBytes": 1242854,
+      "bytes": 51437,
+      "sourceSha256": "d86a55fdfc7574f932b65efa1b80189701fbfb0e3ae65d2631b8241bc2bf69b5",
+      "sha256": "9969b084510a23f9f8985faac9f337cb26005a7882886a0d930438b2970c56a2",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/polyhaven-power-box-01/textures/power_box_01_arm_2k.jpg",
+      "file": "assets/low-textures/environment/polyhaven-power-box-01/textures/power_box_01_arm_2k.jpg",
+      "sourceBytes": 3011906,
+      "bytes": 73437,
+      "sourceSha256": "792a1e04f9ab4740cbde8a70c1b720f4e411afc42d1359b24ab6602ef52d1c33",
+      "sha256": "eebd6cdb80c6e24aa3152c0c9448059795d88cec81584f2ba68b545c1ef9bcd9",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/polyhaven-power-box-01/textures/power_box_01_diff_2k.jpg",
+      "file": "assets/low-textures/environment/polyhaven-power-box-01/textures/power_box_01_diff_2k.jpg",
+      "sourceBytes": 1883678,
+      "bytes": 46212,
+      "sourceSha256": "045f04100a6a95bf6d43ea0989545b52008c84dd1d1d238ad0d7fa89789f8d0b",
+      "sha256": "a0ae028717dd2f354cd44f6885cbcabefa3b0c3cf195e046399b946dc76373ce",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/polyhaven-power-box-01/textures/power_box_01_nor_gl_2k.jpg",
+      "file": "assets/low-textures/environment/polyhaven-power-box-01/textures/power_box_01_nor_gl_2k.jpg",
+      "sourceBytes": 2733825,
+      "bytes": 50052,
+      "sourceSha256": "fff3e5b9037375226c10e7625b2d7735029cdae4d926ddc90567e02de61420e0",
+      "sha256": "3c85526c8fb7435509681a254d8d52a0bdacb95d7879aaa8ceb4b279d607e1dc",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/polyhaven-steel-frame-shelves-01/textures/steel_frame_shelves_01_arm_2k.jpg",
+      "file": "assets/low-textures/environment/polyhaven-steel-frame-shelves-01/textures/steel_frame_shelves_01_arm_2k.jpg",
+      "sourceBytes": 2393901,
+      "bytes": 64963,
+      "sourceSha256": "6aeca77df7c022bec768212cba95011ce4fc67555c5e039e22542db171492a4f",
+      "sha256": "d0263f0bb79e4c3102bdd2830449968c35ef8df04e73f1f1ffe8fb49a1cadb73",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/polyhaven-steel-frame-shelves-01/textures/steel_frame_shelves_01_diff_2k.jpg",
+      "file": "assets/low-textures/environment/polyhaven-steel-frame-shelves-01/textures/steel_frame_shelves_01_diff_2k.jpg",
+      "sourceBytes": 1679686,
+      "bytes": 50023,
+      "sourceSha256": "f13b689662757c99dce62503fa98baa54d5c8aec1597fce1ab7c5b8d5a77f721",
+      "sha256": "cdb72a469d1355db078db395384972b5de702d906d2a4267cebae25e42e8148b",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/environment/polyhaven-steel-frame-shelves-01/textures/steel_frame_shelves_01_nor_gl_2k.jpg",
+      "file": "assets/low-textures/environment/polyhaven-steel-frame-shelves-01/textures/steel_frame_shelves_01_nor_gl_2k.jpg",
+      "sourceBytes": 1350248,
+      "bytes": 13625,
+      "sourceSha256": "bb5db1bdc40938b7f949d773ffdf4c7d2d8319b285ab291173676114ddb91c7b",
+      "sha256": "92ffd2bf73b3e7059a1756bd9674119516eee8b3440fe9d87befcb0bd259a025",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/m9/textures/Mat_Black_baseColor.png",
+      "file": "assets/low-textures/m9/textures/Mat_Black_baseColor.png",
+      "sourceBytes": 2762672,
+      "bytes": 86888,
+      "sourceSha256": "eb069041bb2d325d626321e500fd33a2290d973b4bcab27c159b00de6f7cf58a",
+      "sha256": "fbb4712f48410c241d809d46f3cefb30d60bc3448208d9e3ee38d4c86da0fa3f",
+      "sourceDimensions": [
+        4096,
+        4096
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/m9/textures/Mat_Black_metallicRoughness.png",
+      "file": "assets/low-textures/m9/textures/Mat_Black_metallicRoughness.png",
+      "sourceBytes": 6793115,
+      "bytes": 184318,
+      "sourceSha256": "6b7247cc5f3794ff6a72ba2a1a8d76eec61c57695a1e803930c19708c27b28de",
+      "sha256": "3bf0d926542099ee909998d0d7011f8a568d44489b85d511e442f9f8a37c55f4",
+      "sourceDimensions": [
+        4096,
+        4096
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/m9/textures/Mat_Gold_baseColor.png",
+      "file": "assets/low-textures/m9/textures/Mat_Gold_baseColor.png",
+      "sourceBytes": 12598810,
+      "bytes": 292782,
+      "sourceSha256": "2383a3d535e624a5c7e4c886032dd6796695d6edcb2b8002de4330b7cba64094",
+      "sha256": "aa6851438a8232b1edcc22f5d3f32f23b59425c9c6295558f526cd5949680a32",
+      "sourceDimensions": [
+        4096,
+        4096
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/m9/textures/Mat_Gold_metallicRoughness.png",
+      "file": "assets/low-textures/m9/textures/Mat_Gold_metallicRoughness.png",
+      "sourceBytes": 8009622,
+      "bytes": 194596,
+      "sourceSha256": "5b8f3c378e72f27b75dcb83d5fe32efc1aad474478a6a0925b27d835027cf4b2",
+      "sha256": "3c853f46d7bbccc67be88ea8f5913fcfbb627f239b3d0d86ea150d9f11645e62",
+      "sourceDimensions": [
+        4096,
+        4096
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/m9/textures/Mat_Gold_normal.png",
+      "file": "assets/low-textures/m9/textures/Mat_Gold_normal.png",
+      "sourceBytes": 17286772,
+      "bytes": 269980,
+      "sourceSha256": "9ed5e1eb7c85db1860b7206ae3139c0cd95b2646a1d30f2bf7c9c783b604985f",
+      "sha256": "a315930aaddb05d6abe88106c15a322373a81f6403017bffb1bea2fd33869c24",
+      "sourceDimensions": [
+        4096,
+        4096
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/soldier/textures/5_Russian_Soldier.Material73_0_0_0_baseColor.png",
+      "file": "assets/low-textures/soldier/textures/5_Russian_Soldier.Material73_0_0_0_baseColor.png",
+      "sourceBytes": 1570794,
+      "bytes": 365533,
+      "sourceSha256": "3be5a29d4f32b5467afa229e69709f1b1525ce098769042479d9de1430d269c6",
+      "sha256": "0b7246cf7acdbeaf99bf4ee6398df117059aadce0482dcd4a26484e3567d0a2c",
+      "sourceDimensions": [
+        1024,
+        1024
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/soldier/textures/5_Russian_Soldier.Material74_0_0_0_baseColor.png",
+      "file": "assets/low-textures/soldier/textures/5_Russian_Soldier.Material74_0_0_0_baseColor.png",
+      "sourceBytes": 3407671,
+      "bytes": 359096,
+      "sourceSha256": "c5fd48a0c6939975f7da082ba57055924b39ae06d390ad0d3da6e5bc0f8a384d",
+      "sha256": "88429b5cf7a476ef8bf45936c4cbdf0cb78012973e7dac7fb7f7bde007a9d817",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/soldier/textures/5_Russian_Soldier.Material75_0_0_0_baseColor.png",
+      "file": "assets/low-textures/soldier/textures/5_Russian_Soldier.Material75_0_0_0_baseColor.png",
+      "sourceBytes": 2850007,
+      "bytes": 217482,
+      "sourceSha256": "5b2d32c0cf05164c51fb0f7ab2d7e5962008e46c5b06c667d195c741fdd044d5",
+      "sha256": "419a7cbadb3439ce6b078635506bea9fd02521d7c6be78d8988d4f2187d70bb7",
+      "sourceDimensions": [
+        2048,
+        1024
+      ],
+      "dimensions": [
+        512,
+        256
+      ]
+    },
+    {
+      "source": "assets/soldier/textures/5_Russian_Soldier.Material76_0_0_0_baseColor.png",
+      "file": "assets/low-textures/soldier/textures/5_Russian_Soldier.Material76_0_0_0_baseColor.png",
+      "sourceBytes": 1703243,
+      "bytes": 423104,
+      "sourceSha256": "206f462db9e3b1a51546cb7f9a807156ece3909687dc8d31aacf7991d0cd09d9",
+      "sha256": "7bb077426e91f3fbf69fc36c123c3a21371130cb957115bc379ada670cb42518",
+      "sourceDimensions": [
+        1024,
+        1024
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/soldier/textures/5_Russian_Soldier.Material77_0_0_0_baseColor.png",
+      "file": "assets/low-textures/soldier/textures/5_Russian_Soldier.Material77_0_0_0_baseColor.png",
+      "sourceBytes": 353555,
+      "bytes": 353529,
+      "sourceSha256": "6de4d5c000064d148fadeaad0435f1dc85e1ca7dcc1b9aa6e784483797024fe8",
+      "sha256": "afc70a037903f1e9fc1538cf3dc8bf01d320cb0a862295609ab2e98c45aae600",
+      "sourceDimensions": [
+        512,
+        512
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/soldier/textures/5_Russian_Soldier.Material78_0_0_0_baseColor.png",
+      "file": "assets/low-textures/soldier/textures/5_Russian_Soldier.Material78_0_0_0_baseColor.png",
+      "sourceBytes": 3063092,
+      "bytes": 288485,
+      "sourceSha256": "c6ed5ac7b845842e89c2383e574e0385cc25850eddd67f5551dfc1d6b93bc2d7",
+      "sha256": "dbbb2033e0efd6a06b71e7fa607e5b66380a1a5d4ef8cba11626a42702aa41a6",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/soldier/textures/5_Russian_Soldier.Material79_0_0_0_baseColor.png",
+      "file": "assets/low-textures/soldier/textures/5_Russian_Soldier.Material79_0_0_0_baseColor.png",
+      "sourceBytes": 2843365,
+      "bytes": 280005,
+      "sourceSha256": "1a3e382b76822cf55b89f60fe4b8f12c3b83474bf19b049f00a176eee799ed03",
+      "sha256": "78e8c9060b79159da131a29b5247c17d00bc44a6b2f8f793a9c1d9b1faf6faa7",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/soldier/textures/5_Russian_Soldier.Material81_0_0_0_baseColor.png",
+      "file": "assets/low-textures/soldier/textures/5_Russian_Soldier.Material81_0_0_0_baseColor.png",
+      "sourceBytes": 2371903,
+      "bytes": 194698,
+      "sourceSha256": "57a4515d9ce2c01d0b0a11306c5243e1921b2a55ab1aef743aee3f49d33cb988",
+      "sha256": "d1e0abb94f4d2c26ee503d36a7ea6fa1abef381d324c71f1fd1724a26d960510",
+      "sourceDimensions": [
+        2048,
+        1024
+      ],
+      "dimensions": [
+        512,
+        256
+      ]
+    },
+    {
+      "source": "assets/soldier/textures/5_Russian_Soldier.Material82_0_0_0_baseColor.png",
+      "file": "assets/low-textures/soldier/textures/5_Russian_Soldier.Material82_0_0_0_baseColor.png",
+      "sourceBytes": 1166471,
+      "bytes": 335699,
+      "sourceSha256": "feb2b7bed7d1851d409775ef5e6e2be31ba964af63b3de13686d6ff2e3895191",
+      "sha256": "0dc62e528ada3da0150bb7864c5991f3cb6e682687258d49bd6c8574c8eb2b8a",
+      "sourceDimensions": [
+        1024,
+        1024
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/soldier/textures/5_Russian_Soldier.Material83_0_0_0_baseColor.png",
+      "file": "assets/low-textures/soldier/textures/5_Russian_Soldier.Material83_0_0_0_baseColor.png",
+      "sourceBytes": 1106210,
+      "bytes": 312821,
+      "sourceSha256": "b34073c2ace24e992241335383d66f9604377782232df559ee0440e7222d6ab9",
+      "sha256": "20dcadbc88d04d5ba2d14d385017490c88f10dba4c3a9c69446a6974302cbd5e",
+      "sourceDimensions": [
+        1024,
+        1024
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/soldier/textures/5_Russian_Soldier.Russian_Head.Goggles_5.Material36_1_0_0_baseColor.png",
+      "file": "assets/low-textures/soldier/textures/5_Russian_Soldier.Russian_Head.Goggles_5.Material36_1_0_0_baseColor.png",
+      "sourceBytes": 117701,
+      "bytes": 117239,
+      "sourceSha256": "8a4e1a126eaca9b862132ef7dde85ae97bc3736694aceeadc1ea4734eb2499c1",
+      "sha256": "bab719e1c261306dea928c79063e2b98e6932905681dc758a6e4885c09f27239",
+      "sourceDimensions": [
+        512,
+        256
+      ],
+      "dimensions": [
+        512,
+        256
+      ]
+    },
+    {
+      "source": "assets/soldier/textures/5_Russian_Soldier.Russian_Head.RSA05h.RSA05h_0_0_0_baseColor.png",
+      "file": "assets/low-textures/soldier/textures/5_Russian_Soldier.Russian_Head.RSA05h.RSA05h_0_0_0_baseColor.png",
+      "sourceBytes": 3721907,
+      "bytes": 397459,
+      "sourceSha256": "38725dd6cf3aa87a5347017661736f75a6e5eae0c847d57bef6a17802e37b6e3",
+      "sha256": "74abb13f46ae4b83f59a2d31ca773af4b51e8610f8e14a3d9b2e3f2cf1df3156",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    },
+    {
+      "source": "assets/soldier/textures/5_Russian_Soldier.Russian_Head.eye.eye_0_0_0_baseColor.png",
+      "file": "assets/low-textures/soldier/textures/5_Russian_Soldier.Russian_Head.eye.eye_0_0_0_baseColor.png",
+      "sourceBytes": 11967,
+      "bytes": 11928,
+      "sourceSha256": "920bbb72f762b8548b41d7caaf52994e97f09b1e3f488fff44bebe7fe388e172",
+      "sha256": "232f1f3a1c3a873c2dec137cf11ada62848749e3fbe11f49912c7906b7b4e9af",
+      "sourceDimensions": [
+        128,
+        128
+      ],
+      "dimensions": [
+        128,
+        128
+      ]
+    },
+    {
+      "source": "assets/soldier/textures/5_Russian_Soldier.Russian_Head.gogglel.gogglel_0_0_0_baseColor.png",
+      "file": "assets/low-textures/soldier/textures/5_Russian_Soldier.Russian_Head.gogglel.gogglel_0_0_0_baseColor.png",
+      "sourceBytes": 114388,
+      "bytes": 113785,
+      "sourceSha256": "171fa2a7ed2aab6746353e290e41c66103b91877ce4d433350ab6d30baf9cafd",
+      "sha256": "22e9f7ae1404e2eeb8e3e6dde22b51bd14f71ac4b97394c80186268983239cdb",
+      "sourceDimensions": [
+        512,
+        256
+      ],
+      "dimensions": [
+        512,
+        256
+      ]
+    },
+    {
+      "source": "assets/soldier/textures/5_Russian_Soldier.Russian_Head.mask.mask_0_0_0_baseColor.png",
+      "file": "assets/low-textures/soldier/textures/5_Russian_Soldier.Russian_Head.mask.mask_0_0_0_baseColor.png",
+      "sourceBytes": 121309,
+      "bytes": 119948,
+      "sourceSha256": "c461f68ac5fbbd890bf1c8185e9f58a945ba10bc1cb97418474d262b3d955796",
+      "sha256": "c6eae553a93ddddcddb0fc6fb699faeb12b612e1fc0db2ef605fee6347c4ab5c",
+      "sourceDimensions": [
+        512,
+        512
+      ],
+      "dimensions": [
+        512,
+        512
+      ]
+    }
+  ]
+}

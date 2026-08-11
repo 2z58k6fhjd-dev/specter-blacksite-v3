@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'specter-blacksite-overhaul-foundation-';
-const CACHE_VERSION = 'v542-forest-foliage-fix';
+const CACHE_VERSION = 'v550-low-payload-auto';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 
 // The application shell is deliberately small and atomic: if any of these files
@@ -167,6 +167,7 @@ const OPTIONAL_PRECACHE_URLS = [
   './assets/audio/cc0-kenney-rpg-footsteps/footstep09.ogg',
 
   './README.md',
+  './ASSET_CATALOG.md',
   './THIRD_PARTY_ASSETS.md',
   './assets/player/README.txt',
   './assets/environment/README.txt',
@@ -175,6 +176,14 @@ const OPTIONAL_PRECACHE_URLS = [
 ];
 
 const OPTIONAL_PRECACHE_CONCURRENCY = 3;
+// High-resolution models, PBR maps, and set dressing are demand-cached after
+// the current preset selects them. Installing a worker must never silently
+// download the full high-detail payload on an Intel/Low startup path.
+function isDemandLoadedRuntimeAsset(url) {
+  return /^\.\/assets\/(?:ar15|m9|soldier)\//.test(url) ||
+    /^\.\/assets\/environment\/(?:pbr-v2\/|generated\/fir-tree-billboard-v1\.png$|polyhaven-(?:steel-frame-shelves-01|power-box-01|plastic-container|concrete-road-barrier-02)\/)/.test(url);
+}
+const OPTIONAL_INSTALL_URLS = OPTIONAL_PRECACHE_URLS.filter((url) => !isDemandLoadedRuntimeAsset(url));
 
 function isHttpGet(request) {
   if (request.method !== 'GET') return false;
@@ -236,11 +245,11 @@ async function networkFirst(request, event) {
 async function precacheOptionalPayload(cache) {
   let nextIndex = 0;
   const failures = [];
-  const workerCount = Math.min(OPTIONAL_PRECACHE_CONCURRENCY, OPTIONAL_PRECACHE_URLS.length);
+  const workerCount = Math.min(OPTIONAL_PRECACHE_CONCURRENCY, OPTIONAL_INSTALL_URLS.length);
 
   async function cacheNext() {
-    while (nextIndex < OPTIONAL_PRECACHE_URLS.length) {
-      const url = OPTIONAL_PRECACHE_URLS[nextIndex++];
+    while (nextIndex < OPTIONAL_INSTALL_URLS.length) {
+      const url = OPTIONAL_INSTALL_URLS[nextIndex++];
       try {
         await cache.add(url);
       } catch (error) {

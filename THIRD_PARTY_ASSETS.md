@@ -1,6 +1,6 @@
 # SPECTER: Blacksite - Asset Provenance and License Manifest
 
-This manifest distinguishes assets that ship with build `5.4.2-FOREST-FOLIAGE-FIX` from links retained
+This manifest distinguishes assets that ship with build `5.5.0-LOW-PAYLOAD-COMBAT` from links retained
 only for research. A source appearing in a research table does not mean its
 files were downloaded, integrated, or redistributed.
 
@@ -121,7 +121,7 @@ every enemy weapon clone.
 
 `src/modern-arsenal.js` is preserved as an optional project-authored prototype
 module. It contains compact-carbine, marksman-rifle, and procedural T12 tactical
-autoloader factories plus metadata and animation anchors. Build 5.4.2-FOREST-FOLIAGE-FIX does not
+autoloader factories plus metadata and animation anchors. Build 5.5.0-LOW-PAYLOAD-COMBAT does not
 import, execute, or precache this module, and no runtime weapon slot selects it.
 In particular, the procedural T12 failed the final close-up art-quality gate and
 has no selectable slot; slot 5 is the full-source MCR-300 suppressed rifle
@@ -158,12 +158,21 @@ domain. Their distribution and use remain subject to the project owner's rights
 and applicable OpenAI terms. Keep the folder README and manifest with source
 redistributions.
 
+### Low-payload derivatives
+
+`assets/low-textures/` is a reproducible, project-generated 512px-max derivative
+of the bundled runtime texture files. `scripts/build-low-textures.py` records
+the source and derivative hashes, dimensions, and byte counts in its local
+manifest. It is a quality/performance derivative only: it adds no new model,
+texture, or audio license and does not replace the attribution requirements of
+the original source folders.
+
 ### Preserved legacy generated materials
 
 The original `concrete-wall.webp`, `metal-floor.webp`, `utility-panels.webp`, and
 `grass-field-v1.webp` files were generated specifically for this project with
 OpenAI image generation on 2026-08-08. They are preserved with their records in
-`assets/environment/README.txt`, but build 5.4.2-FOREST-FOLIAGE-FIX uses the PBR v2 set for its main
+`assets/environment/README.txt`, but build 5.5.0-LOW-PAYLOAD-COMBAT uses the PBR v2 set for its main
 runtime materials.
 
 ## Bundled recorded weapon reports
@@ -179,8 +188,12 @@ Sevedge / Tabasco and the CC BY 3.0 notice must remain with redistributions.
 
 ## Research-only 3D candidates - not bundled
 
+For a license-screened, non-runtime candidate list with model, animation, sound,
+and browser-budget acceptance gates, see [`ASSET_CATALOG.md`](ASSET_CATALOG.md).
+It does not alter the attributions or local license records in this manifest.
+
 The following links are retained for future evaluation. None of these candidate
-archives or models should be described as included in build 5.4.2-FOREST-FOLIAGE-FIX unless a future
+archives or models should be described as included in build 5.5.0-LOW-PAYLOAD-COMBAT unless a future
 commit adds the source files, local license receipt, author, conversion notes,
 optimization record, and runtime integration.
 
@@ -238,7 +251,7 @@ links only and are not bundled:
 
 The [Ural 4320](https://sketchfab.com/3d-models/ural-4320-f953c51a5dbc4a15949f4dcc0905c4e8)
 by Brout was identified as a CC BY 4.0 present-day military truck candidate. It
-is not bundled; build 5.4.2-FOREST-FOLIAGE-FIX uses project-authored procedural vehicle geometry.
+is not bundled; build 5.5.0-LOW-PAYLOAD-COMBAT uses project-authored procedural vehicle geometry.
 
 ## Bundled tactical voice callouts
 
@@ -269,7 +282,7 @@ procedural fallback remains available if a clip cannot download or decode.
 
 ## Research-only audio candidates - not bundled
 
-Build 5.4.2-FOREST-FOLIAGE-FIX uses project-authored procedural Web Audio, the separately
+Build 5.5.0-LOW-PAYLOAD-COMBAT uses project-authored procedural Web Audio, the separately
 documented CC BY 3.0 recorded report derivatives above, and the documented
 Kenney CC0 tactical callouts and player footsteps. The following pages remain research links only;
 no additional source master or runtime derivative from them ships in this
@@ -293,7 +306,7 @@ author, exact license receipt, source URL, editing notes, and runtime derivative
 
 ## Explicitly rejected and excluded content
 
-Build 5.4.2-FOREST-FOLIAGE-FIX does not integrate sci-fi, futuristic, fantasy, anachronistic,
+Build 5.5.0-LOW-PAYLOAD-COMBAT does not integrate sci-fi, futuristic, fantasy, anachronistic,
 cartoon, stylized, or visibly low-detail research assets. Small or stylized
 soldier and vehicle downloads used during research were rejected as final art
 and are not part of the runtime repository. Earlier rejected experimental
@@ -328,10 +341,12 @@ license does not override the visual-quality, technical, or provenance review.
 - AUTO uses browser-reported capabilities plus a short runtime benchmark only;
   it is a conservative starting estimate, not a precise measure of available
   VRAM. Manual profiles and custom settings remain available to the player.
-- Competitive Low retains 512px downsampled first-person viewmodel weapon
-  textures while deliberately reducing world texture sampling, grass, dense
-  foliage, shadows, and post-processing. It must not be advertised as the
-  high-detail close-up texture mode.
+- Competitive Low selects a project-generated 512px-max derivative of bundled
+  weapon, soldier, set-dressing, and PBR texture files before decode on a fresh
+  Low launch, while deliberately reducing grass, dense foliage, shadows, and
+  post-processing. It introduces no new third-party license or provenance;
+  source attribution remains with the original asset folders. It must not be
+  advertised as the high-detail close-up texture mode.
 - Keep the current perimeter forest outside the collision boundary. It is a
   project-authored, texture-free LOD backdrop at its baseline and not an
   authored high-detail foliage pack or an explorable forest map.

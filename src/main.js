@@ -3,11 +3,11 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.0.0-release';
-import { buildWorldOverhaul } from './world-overhaul.js?v=5.4.2-forest-foliage-fix';
+import { buildWorldOverhaul } from './world-overhaul.js?v=5.5.0-low-payload-combat';
 import { EnemyAISystem } from './enemy-ai.js?v=5.0.0-release';
-import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS } from './graphics-pipeline.js?v=5.4.2-forest-foliage-fix';
-import { createAudioDirector } from './audio-overhaul.js?v=5.4.2-forest-foliage-fix';
-import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.4.2-forest-foliage-fix';
+import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS } from './graphics-pipeline.js?v=5.5.0-low-payload-combat';
+import { createAudioDirector } from './audio-overhaul.js?v=5.5.0-low-payload-combat';
+import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.5.0-low-payload-combat';
 
 const graphicsCustomStorageKey='specter-custom-graphics';
 const voiceSettingsStorageKey='specter-voice-settings';
@@ -51,6 +51,11 @@ const pointerLockPolicy=document.permissionsPolicy||document.featurePolicy;
 const pointerLockAllowedByPolicy=!pointerLockPolicy||typeof pointerLockPolicy.allowsFeature!=='function'||pointerLockPolicy.allowsFeature('pointer-lock');
 const pointerLockSupported=!embeddedDocument&&!embeddedDesktopRuntime&&pointerLockAllowedByPolicy&&typeof renderer.domElement.requestPointerLock==='function'&&'pointerLockElement' in document;
 let embeddedMouseLook=!pointerLockSupported;
+// The desktop in-app preview has a restricted WebGL compositor. It can render
+// the game cleanly at High, but its SSR shader validation is not dependable.
+// Keep a requested Extreme tier honest by showing the applied safe fallback;
+// ordinary standalone browsers still receive the full 10 GB Extreme preset.
+function runtimeGraphicsQuality(quality){return embeddedDesktopRuntime&&quality==='extreme'?'high':quality}
 
 scene.add(new THREE.HemisphereLight(0x8ebda8,0x101512,.38));
 const emergency=new THREE.PointLight(0xff2a13,7,18,2);
@@ -72,6 +77,7 @@ let worldOverhaul=null;
 let missionAssetsReady=false;
 let forestFernsRoot=null,forestFernLoadPromise=null,forestFernLoadAttempted=false;
 let graphicsTextureStatus='2K PBR';
+let missionHasStarted=false;
 const materialTextureSlots=['map','alphaMap','aoMap','bumpMap','displacementMap','emissiveMap','metalnessMap','normalMap','roughnessMap','clearcoatMap','clearcoatNormalMap','clearcoatRoughnessMap','iridescenceMap','iridescenceThicknessMap','sheenColorMap','sheenRoughnessMap','specularColorMap','specularIntensityMap','transmissionMap','thicknessMap','lightMap'];
 const materialTextureBackups=new WeakMap();
 const lowWeaponTextureCache=new WeakMap();
@@ -115,6 +121,31 @@ let startupRememberedQuality='';
 try{startupRememberedQuality=localStorage.getItem(startupQualityKey)||''}catch{ /* Storage is optional in embedded previews. */ }
 const startupGraphicsPreference=isGraphicsQualityChoice(startupQualityQuery)?startupQualityQuery:(isGraphicsQualityChoice(startupRememberedQuality)?startupRememberedQuality:AUTO_GRAPHICS_QUALITY);
 const startupGraphicsQuality=startupGraphicsPreference===AUTO_GRAPHICS_QUALITY?recommendedGraphicsQuality(startupGraphicsCapabilities):startupGraphicsPreference;
+// Low is a true payload choice on a fresh load, not just a late material
+// downgrade. Keep the compact source images in use before GLTFLoader or the
+// environment texture loader gets a chance to decode their 2K/4K originals.
+const startupLowPayloadMode=startupGraphicsQuality==='intel'||bootGraphicsCustomSettings.textureTier==='low';
+const environmentPbrEntries=Object.freeze([
+  ['concreteAlbedo','concrete-albedo.webp'],['concreteNormal','concrete-normal.webp'],['concreteOrm','concrete-orm.webp'],
+  ['paintedMetalAlbedo','painted-metal-albedo.webp'],['paintedMetalNormal','painted-metal-normal.webp'],['paintedMetalOrm','painted-metal-orm.webp'],
+  ['diamondPlateAlbedo','diamond-plate-albedo.webp'],['diamondPlateNormal','diamond-plate-normal.webp'],['diamondPlateOrm','diamond-plate-orm.webp'],
+  ['asphaltAlbedo','asphalt-albedo.webp'],['asphaltNormal','asphalt-normal.webp'],['asphaltOrm','asphalt-orm.webp'],
+  ['utilityPanelAlbedo','utility-panel-albedo.webp'],['utilityPanelNormal','utility-panel-normal.webp'],['utilityPanelOrm','utility-panel-orm.webp'],
+  ['vehiclePaintAlbedo','vehicle-paint-albedo.webp'],['vehiclePaintOrm','vehicle-paint-orm.webp'],
+  ['vehicleRubberAlbedo','vehicle-rubber-albedo.webp'],['vehicleRubberNormal','vehicle-rubber-normal.webp'],['vehicleRubberOrm','vehicle-rubber-orm.webp'],
+  ['grassSoilAlbedo','grass-soil-albedo.webp'],['grassSoilNormal','grass-soil-normal.webp'],['grassSoilOrm','grass-soil-orm.webp']
+]);
+let nativeEnvironment4KLoaded=false,nativeEnvironment4KManifestPromise=null,nativeEnvironment4KLoadPromise=null;
+function lowPayloadModelTextureUrl(url){
+  if(!startupLowPayloadMode)return url;
+  try{
+    const absolute=new URL(url,location.href),path=decodeURIComponent(absolute.pathname);
+    const match=path.match(/\/(assets\/(?:ar15|m9|soldier)\/textures\/[^?#]+|assets\/environment\/polyhaven-(?:concrete-road-barrier-02|plastic-container|power-box-01|steel-frame-shelves-01)\/textures\/[^?#]+)$/);
+    if(!match)return url;
+    return new URL(`./assets/low-textures/${match[1].slice('assets/'.length)}`,location.href).href;
+  }catch{return url}
+}
+loader.manager.setURLModifier(lowPayloadModelTextureUrl);
 function updateLoading(){
   const values=Object.values(assetProgress),value=values.reduce((a,b)=>a+b,0)/values.length;
   const pct=Math.round(value*100);
@@ -143,46 +174,85 @@ async function loadAsset(name,url){
 async function loadEnvironmentAssets(){
   status('environment','LOADING');
   const textureLoader=new THREE.TextureLoader();
-  let pbrRoot='./assets/environment/pbr-v2',nativeEnvironment4K=false;
+  let pbrRoot=startupLowPayloadMode?'./assets/low-textures/environment/pbr-v2':'./assets/environment/pbr-v2';
   // A real 4K pack is optional rather than an upscaled copy of the 2K runtime
   // maps. Extreme selects it at startup when a matching manifest is bundled.
-  if(startupGraphicsQuality==='extreme'){
-    try{
-      const response=await fetch('./assets/environment/pbr-v2-4k/manifest.json',{cache:'no-store'});
-      if(response.ok){pbrRoot='./assets/environment/pbr-v2-4k';nativeEnvironment4K=true}
-    }catch{ /* Offline and older builds simply retain the verified 2K pack. */ }
+  if(!startupLowPayloadMode&&startupGraphicsQuality==='extreme'&&await getNativeEnvironment4KManifest()){
+    pbrRoot='./assets/environment/pbr-v2-4k';nativeEnvironment4KLoaded=true;
   }
-  const entries=[
-    ['concreteAlbedo',`${pbrRoot}/concrete-albedo.webp`],['concreteNormal',`${pbrRoot}/concrete-normal.webp`],['concreteOrm',`${pbrRoot}/concrete-orm.webp`],
-    ['paintedMetalAlbedo',`${pbrRoot}/painted-metal-albedo.webp`],['paintedMetalNormal',`${pbrRoot}/painted-metal-normal.webp`],['paintedMetalOrm',`${pbrRoot}/painted-metal-orm.webp`],
-    ['diamondPlateAlbedo',`${pbrRoot}/diamond-plate-albedo.webp`],['diamondPlateNormal',`${pbrRoot}/diamond-plate-normal.webp`],['diamondPlateOrm',`${pbrRoot}/diamond-plate-orm.webp`],
-    ['asphaltAlbedo',`${pbrRoot}/asphalt-albedo.webp`],['asphaltNormal',`${pbrRoot}/asphalt-normal.webp`],['asphaltOrm',`${pbrRoot}/asphalt-orm.webp`],
-    ['utilityPanelAlbedo',`${pbrRoot}/utility-panel-albedo.webp`],['utilityPanelNormal',`${pbrRoot}/utility-panel-normal.webp`],['utilityPanelOrm',`${pbrRoot}/utility-panel-orm.webp`],
-    ['vehiclePaintAlbedo',`${pbrRoot}/vehicle-paint-albedo.webp`],['vehiclePaintOrm',`${pbrRoot}/vehicle-paint-orm.webp`],
-    ['vehicleRubberAlbedo',`${pbrRoot}/vehicle-rubber-albedo.webp`],['vehicleRubberNormal',`${pbrRoot}/vehicle-rubber-normal.webp`],['vehicleRubberOrm',`${pbrRoot}/vehicle-rubber-orm.webp`],
-    ['grassSoilAlbedo',`${pbrRoot}/grass-soil-albedo.webp`],['grassSoilNormal',`${pbrRoot}/grass-soil-normal.webp`],['grassSoilOrm',`${pbrRoot}/grass-soil-orm.webp`]
-  ];
+  const entries=environmentPbrEntries.map(([name,file])=>[name,`${pbrRoot}/${file}`]);
   let completed=0;
   try{
     await Promise.all(entries.map(([name,url])=>new Promise((resolve,reject)=>textureLoader.load(url,texture=>{
-      texture.colorSpace=name.endsWith('Albedo')?THREE.SRGBColorSpace:THREE.NoColorSpace;texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
-      texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());environmentTextures[name]=texture;
+      prepareEnvironmentTexture(name,texture);environmentTextures[name]=texture;
       completed++;assetProgress.environment=completed/entries.length;updateLoading();resolve();
     },undefined,reject))));
     // This generated tree card is non-critical. A transient foliage fetch must
     // never block the map or turn the low-end preset into an asset failure.
-    try{
+    if(!startupLowPayloadMode)try{
       const firBillboard=await new Promise((resolve,reject)=>textureLoader.load('./assets/environment/generated/fir-tree-billboard-v1.png',resolve,undefined,reject));
       firBillboard.colorSpace=THREE.SRGBColorSpace;firBillboard.wrapS=firBillboard.wrapT=THREE.ClampToEdgeWrapping;
       firBillboard.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());firBillboard.needsUpdate=true;
       environmentTextures.firBillboard=firBillboard;
     }catch(error){console.info('Optional high-tier fir billboard unavailable; using the procedural distant forest.',error)}
-    environmentTextures.native4K=nativeEnvironment4K;
-    status('environment','LOADED',nativeEnvironment4K?'8 PBR families · native 4K maps':'8 PBR families · 23 maps');
+    environmentTextures.native4K=nativeEnvironment4KLoaded;
+    status('environment','LOADED',nativeEnvironment4KLoaded?'8 PBR families · native 4K maps':startupLowPayloadMode?'8 PBR families · 512px low payload':'8 PBR families · 23 maps');
   }catch(error){
     console.error(error);requiredAssetFailure=true;assetProgress.environment=1;updateLoading();status('environment','FAILED',error.message);
   }
 }
+function prepareEnvironmentTexture(name,texture){
+  texture.colorSpace=name.endsWith('Albedo')?THREE.SRGBColorSpace:THREE.NoColorSpace;
+  texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+  texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+  texture.userData.specterEnvironmentKey=name;texture.needsUpdate=true;
+  return texture;
+}
+function nativeEnvironmentManifestIsComplete(manifest){
+  const dimensions=manifest?.runtimeFormat?.dimensions;
+  if(!Array.isArray(dimensions)||dimensions.length<2||Math.min(Number(dimensions[0])||0,Number(dimensions[1])||0)<4096)return false;
+  const files=new Set((manifest.materials||[]).flatMap(material=>(material.maps||[]).map(map=>map?.file)).filter(Boolean));
+  return environmentPbrEntries.every(([,file])=>files.has(file));
+}
+async function getNativeEnvironment4KManifest(){
+  if(!nativeEnvironment4KManifestPromise)nativeEnvironment4KManifestPromise=(async()=>{
+    try{
+      const response=await fetch('./assets/environment/pbr-v2-4k/manifest.json',{cache:'no-store'});
+      if(!response.ok)return null;
+      const manifest=await response.json();
+      return nativeEnvironmentManifestIsComplete(manifest)?manifest:null;
+    }catch{return null}
+  })();
+  return nativeEnvironment4KManifestPromise;
+}
+function replaceEnvironmentTextureSource(name,source){
+  const target=environmentTextures[name];
+  if(!target){environmentTextures[name]=source;return}
+  target.image=source.image;target.needsUpdate=true;
+  scene.traverse(object=>{
+    if(!object.isMesh)return;
+    for(const material of (Array.isArray(object.material)?object.material:[object.material]))for(const slot of materialTextureSlots){
+      const texture=material?.[slot];
+      if(texture?.userData?.specterEnvironmentKey===name){texture.image=source.image;texture.needsUpdate=true}
+    }
+  });
+}
+async function ensureNativeEnvironment4K(){
+  if(nativeEnvironment4KLoaded)return true;
+  if(!nativeEnvironment4KLoadPromise)nativeEnvironment4KLoadPromise=(async()=>{
+    if(!await getNativeEnvironment4KManifest())return false;
+    try{
+      const textureLoader=new THREE.TextureLoader();
+      const loaded=await Promise.all(environmentPbrEntries.map(([name,file])=>new Promise((resolve,reject)=>textureLoader.load(`./assets/environment/pbr-v2-4k/${file}`,texture=>resolve([name,prepareEnvironmentTexture(name,texture)]),undefined,reject))));
+      for(const [name,texture] of loaded)replaceEnvironmentTextureSource(name,texture);
+      nativeEnvironment4KLoaded=true;environmentTextures.native4K=true;
+      status('environment','LOADED','8 PBR families · native 4K maps');
+      return true;
+    }catch(error){console.info('Native 4K environment pack could not be loaded; retaining the verified lower-resolution pack.',error);return false}
+  })();
+  return nativeEnvironment4KLoadPromise;
+}
+
 async function loadAudioAssets(){
   status('audio','LOADING');
   const entries=[
@@ -383,24 +453,31 @@ function applyGraphicsHardwareBudget(quality,effectivePreset=null){
   const maxAnisotropy=renderer.capabilities.getMaxAnisotropy?.()||1;
   const anisotropy=Math.min(maxAnisotropy,preset.textureAnisotropy||1);
   const releasedTextures=preset.textureTier==='low'?new Set():null;
+  const keepLowPayloadTextures=startupLowPayloadMode&&preset.textureTier==='low';
   renderer.shadowMap.enabled=Boolean(preset.shadows);
   renderer.shadowMap.type=!preset.shadows||quality==='performance'||quality==='intel'?THREE.BasicShadowMap:THREE.PCFSoftShadowMap;
   for(const texture of Object.values(environmentTextures))applyTextureSampling(texture,anisotropy);
   scene.traverse(object=>{
     if(!object.isMesh)return;
     const materials=Array.isArray(object.material)?object.material:[object.material];
-    for(const material of materials)applyMaterialTextureTier(material,preset.textureTier,anisotropy,Boolean(object.userData.specterViewmodel),releasedTextures);
+    for(const material of materials)applyMaterialTextureTier(material,preset.textureTier,anisotropy,Boolean(object.userData.specterViewmodel)||keepLowPayloadTextures,releasedTextures);
   });
-  const environmentIs4K=Object.values(environmentTextures).some(texture=>Math.max(texture?.image?.width||0,texture?.image?.height||0)>=4096);
-  graphicsTextureStatus=preset.textureTier==='4k-preferred'?(environmentIs4K?'NATIVE 4K PBR':'2K PBR FALLBACK'):(preset.textureTier==='low'?'LOW-SAMPLING PBR':'2K PBR');
+  const environmentIs4K=environmentPbrEntries.every(([name])=>Math.max(environmentTextures[name]?.image?.width||0,environmentTextures[name]?.image?.height||0)>=4096);
+  graphicsTextureStatus=preset.textureTier==='4k-preferred'?(environmentIs4K?'NATIVE 4K PBR':'2K PBR FALLBACK'):(preset.textureTier==='low'?(startupLowPayloadMode?'LOW-PAYLOAD 512 PBR':'LOW-SAMPLING PBR'):'2K PBR');
   worldOverhaul?.setGraphicsQuality(quality,preset);
   updateForestFernsForGraphics(preset);
   renderGraphicsMemoryEstimate(preset);
+  if(preset.textureTier==='4k-preferred'&&!environmentIs4K)void ensureNativeEnvironment4K().then(loaded=>{
+    if(!loaded)return;
+    const current=graphics?.getDiagnostics?.();
+    if(!current||current.preset.textureTier!=='4k-preferred')return;
+    applyGraphicsHardwareBudget(current.quality,current.preset);renderGraphicsControls(current);
+  });
   return {anisotropy,textureStatus:graphicsTextureStatus};
 }
 
 const qualityStorageKey='specter-graphics-quality';
-const requestedGraphicsQuality=startupGraphicsQuality;
+const requestedGraphicsQuality=runtimeGraphicsQuality(startupGraphicsQuality);
 const graphics=await createGraphicsPipeline({renderer,scene,camera,quality:requestedGraphicsQuality,width:innerWidth,height:innerHeight,pixelRatio:devicePixelRatio});
 let activeGraphicsPreference=startupGraphicsPreference;
 const savedRuntimeCustomSettings=Object.fromEntries(Object.entries(bootGraphicsCustomSettings).filter(([key])=>key!=='antialiasing'));
@@ -411,7 +488,7 @@ status('graphics','LOADED',`${graphicsDiagnostics.preset.label} · ${graphicsDia
 
 function graphicsSummary(diagnostics=graphics.getDiagnostics()){
   const preset=diagnostics.preset;
-  const mode=activeGraphicsPreference===AUTO_GRAPHICS_QUALITY?`AUTO → ${preset.label.toUpperCase()}`:preset.label.toUpperCase();
+  const mode=activeGraphicsPreference===AUTO_GRAPHICS_QUALITY?`AUTO → ${preset.label.toUpperCase()}`:activeGraphicsPreference!==diagnostics.quality?`${activeGraphicsPreference.toUpperCase()} SAFE FALLBACK → ${preset.label.toUpperCase()}`:preset.label.toUpperCase();
   return `${mode} · ${diagnostics.ambientOcclusionEnabled?'SSAO':'DIRECT'}${diagnostics.screenSpaceReflectionsEnabled?' + SSR':''}${diagnostics.bloomEnabled?' + BLOOM':''} · ${graphicsTextureStatus}`;
 }
 function graphicsCustomDraft(){
@@ -449,29 +526,35 @@ function refreshGraphicsDiagnostics(){
   const current=graphicsDiagnostics;
   if(!current||latest.mode!==current.mode||latest.ambientOcclusionEnabled!==current.ambientOcclusionEnabled||latest.screenSpaceReflectionsEnabled!==current.screenSpaceReflectionsEnabled||latest.bloomEnabled!==current.bloomEnabled||latest.fallback!==current.fallback)renderGraphicsControls(latest);
 }
-const autoBenchmark={active:false,samples:[],minimumFrames:90};
-function cancelAutoGraphicsBenchmark(){autoBenchmark.active=false;autoBenchmark.samples.length=0}
+const autoBenchmark={active:false,pending:false,samples:[],warmupFrames:45,warmup:0,minimumFrames:120};
+function cancelAutoGraphicsBenchmark(){autoBenchmark.active=false;autoBenchmark.pending=false;autoBenchmark.samples.length=0;autoBenchmark.warmup=0}
 function beginAutoGraphicsBenchmark(){
-  autoBenchmark.active=true;autoBenchmark.samples.length=0;
-  graphicsHint.textContent='AUTO BENCHMARK — measuring the loaded game…';
+  autoBenchmark.active=false;autoBenchmark.samples.length=0;autoBenchmark.warmup=autoBenchmark.warmupFrames;
+  if(!missionHasStarted){
+    autoBenchmark.pending=true;graphicsHint.textContent='AUTO BENCHMARK — begins after entering the mission.';
+    return;
+  }
+  autoBenchmark.pending=false;autoBenchmark.active=true;
+  graphicsHint.textContent='AUTO BENCHMARK — measuring active gameplay…';
 }
 function finishAutoGraphicsBenchmark(){
   if(!autoBenchmark.active||activeGraphicsPreference!==AUTO_GRAPHICS_QUALITY||autoBenchmark.samples.length<autoBenchmark.minimumFrames)return;
   autoBenchmark.active=false;const sorted=[...autoBenchmark.samples].sort((a,b)=>a-b),p90=sorted[Math.floor(sorted.length*.9)];
-  const selected=recommendedGraphicsQuality(startupGraphicsCapabilities,p90),diagnostics=graphics.setQuality(selected);
-  applyGraphicsHardwareBudget(selected,diagnostics.preset);renderGraphicsControls(diagnostics);
-  toast(`AUTO GRAPHICS → ${selected.toUpperCase()} (${Math.round(p90)} MS P90)`);
+  const selected=recommendedGraphicsQuality(startupGraphicsCapabilities,p90),runtimeSelected=runtimeGraphicsQuality(selected),diagnostics=graphics.setQuality(runtimeSelected);
+  applyGraphicsHardwareBudget(runtimeSelected,diagnostics.preset);renderGraphicsControls(diagnostics);
+  toast(`AUTO GRAPHICS → ${runtimeSelected.toUpperCase()} (${Math.round(p90)} MS P90)`);
 }
 function sampleAutoGraphicsBenchmark(deltaSeconds){
-  if(!autoBenchmark.active||!Number.isFinite(deltaSeconds)||deltaSeconds<=0||deltaSeconds>.12)return;
+  if(!autoBenchmark.active||!Number.isFinite(deltaSeconds)||deltaSeconds<=0||deltaSeconds>.35)return;
+  if(autoBenchmark.warmup>0){autoBenchmark.warmup--;return}
   autoBenchmark.samples.push(deltaSeconds*1000);finishAutoGraphicsBenchmark();
 }
 function setGraphicsQuality(quality,{persist=true}={}){
   if(!isGraphicsQualityChoice(quality))return;
-  const isAuto=quality===AUTO_GRAPHICS_QUALITY,selected=isAuto?recommendedGraphicsQuality(startupGraphicsCapabilities):quality;
-  if(!isAuto)cancelAutoGraphicsBenchmark();activeGraphicsPreference=quality;
-  const diagnostics=graphics.setQuality(selected);
-  applyGraphicsHardwareBudget(selected,diagnostics.preset);
+  const isAuto=quality===AUTO_GRAPHICS_QUALITY,selected=isAuto?recommendedGraphicsQuality(startupGraphicsCapabilities):quality,runtimeSelected=runtimeGraphicsQuality(selected);
+  cancelAutoGraphicsBenchmark();activeGraphicsPreference=quality;
+  const diagnostics=graphics.setQuality(runtimeSelected);
+  applyGraphicsHardwareBudget(runtimeSelected,diagnostics.preset);
   if(isAuto)beginAutoGraphicsBenchmark();
   if(persist){try{localStorage.setItem(qualityStorageKey,quality);localStorage.removeItem(graphicsCustomStorageKey)}catch{ /* Embedded previews can reject persistent storage. */ }}
   renderGraphicsControls(diagnostics);
@@ -506,7 +589,9 @@ if(activeGraphicsPreference===AUTO_GRAPHICS_QUALITY)beginAutoGraphicsBenchmark()
 
 function tiledTexture(source,x,y,color=true){
   if(!source)return null;const texture=source.clone();texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
-  texture.repeat.set(x,y);texture.colorSpace=color?THREE.SRGBColorSpace:THREE.NoColorSpace;texture.needsUpdate=true;return texture;
+  texture.repeat.set(x,y);texture.colorSpace=color?THREE.SRGBColorSpace:THREE.NoColorSpace;
+  if(source.userData?.specterEnvironmentKey)texture.userData.specterEnvironmentKey=source.userData.specterEnvironmentKey;
+  texture.needsUpdate=true;return texture;
 }
 function pbrTextureSet(prefix,x,y){
   const map=tiledTexture(environmentTextures[`${prefix}Albedo`],x,y,true),normalMap=tiledTexture(environmentTextures[`${prefix}Normal`],x,y,false),orm=tiledTexture(environmentTextures[`${prefix}Orm`],x,y,false);
@@ -810,7 +895,7 @@ let reloading=false,lastShot=0,recoil=0,recoilPitch=0,aiming=false,aimBlend=0,sp
 let swayX=0,swayY=0;
 let reloadAnimationTime=0,reloadAnimationDuration=1,equipAnimationTime=0;
 const viewmodelActionTimeline=new WeaponActionTimeline({weapon:'rifle'});
-let viewmodelActionKind=null,pendingReload=null;
+let viewmodelActionKind=null,pendingReload=null,pendingWeaponSwitch=null;
 
 function markViewmodelMeshes(root){
   root.traverse(object=>{if(object.isMesh)object.userData.specterViewmodel=true});
@@ -914,7 +999,7 @@ function installRifleVariants(){
     const stockBox=boundsInSpace(model.getObjectByName('Stock')||model.getObjectByName('stock')||model,holder);
     if(stockBox){const stockSeat=new THREE.Vector3((stockBox.min.x+stockBox.max.x)*.5,(stockBox.min.y+stockBox.max.y)*.5,stockBox.max.z);rig.hip.copy(new THREE.Vector3(.2,-.25,-.07).sub(stockSeat))}
   }
-  status('arsenal','LOADED',`3 high-resolution rifle variants · ${visibleMeshes} meshes · ${Math.round(visibleTriangles/1000)}K tris`);
+  status('arsenal','LOADED',`3 bundled rifle variants · ${visibleMeshes} meshes · ${Math.round(visibleTriangles/1000)}K tris`);
 }
 function attachFlashlightToWeapon(kind){
   const mount=weaponRig[kind]?.lightMount;if(!mount)return;mount.add(flashlight,flashlight.target);flashlight.position.set(0,0,0);flashlight.target.position.set(0,-.03,-8);flashlight.target.updateMatrixWorld();
@@ -954,14 +1039,40 @@ function installPlayerArms(){
 const enemies=[];
 const enemiesByAIId=new Map();
 const droppedCombatProps=[];
-const dropVelocity=new THREE.Vector3(),dropAngularVelocity=new THREE.Vector3();
+const droppedCombatPropPool=new Map();
+const DROP_ACTIVE_LIMIT=72,DROP_POOL_LIMIT=72,DROP_POOL_PER_KEY_LIMIT=12,DROP_LIFETIME=42,ENEMY_DEATH_SETTLE_HOLD=.12;
+let droppedCombatPropPoolSize=0;
+const dropVelocity=new THREE.Vector3(),dropAngularVelocity=new THREE.Vector3(),dropWorldPosition=new THREE.Vector3(),dropWorldScale=new THREE.Vector3(),dropWorldQuaternion=new THREE.Quaternion();
 function dropGroundHeight(){return .018}
-function beginDroppedCombatProp(object,velocity,spin){
-  if(!object)return;
-  object.updateWorldMatrix(true,true);scene.attach(object);
+function configureDroppedCombatProp(object){
   object.traverse(mesh=>{if(mesh.isMesh){mesh.castShadow=true;mesh.receiveShadow=true;mesh.frustumCulled=true}});
-  droppedCombatProps.push({object,velocity:velocity.clone(),spin:spin.clone(),settled:false,age:0});
-  if(droppedCombatProps.length>72){const stale=droppedCombatProps.shift();removeSceneObject(stale?.object)}
+}
+function acquireDroppedCombatProp(source,poolKey){
+  if(!source?.parent)return null;
+  source.updateWorldMatrix(true,false);
+  source.getWorldPosition(dropWorldPosition);source.getWorldQuaternion(dropWorldQuaternion);source.getWorldScale(dropWorldScale);
+  const bucket=droppedCombatPropPool.get(poolKey);
+  const pooledObject=bucket?.pop();
+  const object=pooledObject||source.clone(true);
+  if(pooledObject&&droppedCombatPropPoolSize>0)droppedCombatPropPoolSize--;
+  if(!object)return null;
+  object.position.copy(dropWorldPosition);object.quaternion.copy(dropWorldQuaternion);object.scale.copy(dropWorldScale);object.visible=true;object.matrixAutoUpdate=true;
+  scene.add(object);configureDroppedCombatProp(object);
+  return object;
+}
+function releaseDroppedCombatProp(prop){
+  const object=prop?.object;if(!object)return;
+  removeSceneObject(object);object.visible=false;
+  const bucket=droppedCombatPropPool.get(prop.poolKey)||[];
+  if(bucket.length<DROP_POOL_PER_KEY_LIMIT&&droppedCombatPropPoolSize<DROP_POOL_LIMIT){
+    bucket.push(object);droppedCombatPropPool.set(prop.poolKey,bucket);droppedCombatPropPoolSize++;
+  }
+}
+function beginDroppedCombatProp(source,velocity,spin,poolKey){
+  const object=acquireDroppedCombatProp(source,poolKey);if(!object)return null;
+  droppedCombatProps.push({object,poolKey,velocity:velocity.clone(),spin:spin.clone(),settled:false,age:0});
+  if(droppedCombatProps.length>DROP_ACTIVE_LIMIT)releaseDroppedCombatProp(droppedCombatProps.shift());
+  return object;
 }
 function beginEnemyEquipmentDrop(enemy,direction){
   const data=enemy.userData;if(data.dropStarted)return;data.dropStarted=true;
@@ -972,12 +1083,19 @@ function beginEnemyEquipmentDrop(enemy,direction){
   const spin=(side)=>dropAngularVelocity.set(4.5+seed*2,side*5.2,2.8-side*1.8);
   if(data.weapon){
     if(data.weaponDetail)data.weaponDetail.visible=true;if(data.weaponProxy)data.weaponProxy.visible=false;
-    beginDroppedCombatProp(data.weapon,launch(.22,.22),spin(.34));data.weapon=null;
+    beginDroppedCombatProp(data.weapon,launch(.22,.22),spin(.34),`weapon:${data.role||'rifleman'}`);data.weapon.visible=false;
   }
   for(const [index,gear] of (data.droppableGear||[]).entries()){
     if(!gear?.parent)continue;
-    beginDroppedCombatProp(gear,launch((index%2?1:-1)*(.13+index*.025),.08+index*.03),spin((index%2?1:-1)*.26));
+    beginDroppedCombatProp(gear,launch((index%2?1:-1)*(.13+index*.025),.08+index*.03),spin((index%2?1:-1)*.26),`gear:${gear.name||index}`);gear.visible=false;
   }
+}
+function beginEnemyDeath(enemy,direction,{duration=1.35}={}){
+  const data=enemy?.userData;if(!data||data.dead)return false;
+  const fallDuration=Math.max(.65,Number.isFinite(duration)?duration:1.35);
+  data.dead=true;data.deathProgress=0;data.deathElapsed=0;data.deathSettleDuration=fallDuration;data.deathDirection=direction;data.dropQueued=true;data.dropStarted=false;
+  data.animator?.triggerDeath({variant:'auto',direction,duration:fallDuration});
+  return true;
 }
 function updateDroppedCombatProps(dt){
   for(let index=droppedCombatProps.length-1;index>=0;index--){
@@ -988,7 +1106,7 @@ function updateDroppedCombatProps(dt){
         prop.object.position.y=dropGroundHeight();prop.velocity.set(0,0,0);prop.spin.multiplyScalar(.16);prop.settled=true;
       }
     }
-    if(prop.age>42){removeSceneObject(prop.object);droppedCombatProps.splice(index,1)}
+    if(prop.age>DROP_LIFETIME){releaseDroppedCombatProp(prop);droppedCombatProps.splice(index,1)}
   }
 }
 const enemyAISystem=new EnemyAISystem({
@@ -1198,7 +1316,7 @@ function spawnEnemy(x,z,role='rifleman'){
   const heavy=role==='breacher'||role==='commander',maxHealth=role==='commander'?190:heavy?165:role==='marksman'?120:100;
   const root=new THREE.Group();root.position.set(x,0,z);
   const aiId=`hostile-${String(++enemySequence).padStart(2,'0')}`;
-  root.userData={aiId,role,squadId:z>-45?'interior':'perimeter',maxHealth,health:maxHealth,dead:false,phase:Math.random()*6,heavy,hit:0,recoil:0,deathProgress:0,intent:null,voiceNextAt:-Infinity,lastVoiceState:null};
+  root.userData={aiId,role,squadId:z>-45?'interior':'perimeter',maxHealth,health:maxHealth,dead:false,phase:Math.random()*6,heavy,hit:0,recoil:0,deathProgress:0,deathElapsed:0,deathSettleDuration:0,deathDirection:null,dropQueued:false,dropStarted:false,intent:null,voiceNextAt:-Infinity,lastVoiceState:null};
   const model=cloneAsset('soldier',true);
   if(model){
     const height=role==='scout'?1.9:role==='commander'?2.14:heavy?2.08:1.98;
@@ -1240,7 +1358,7 @@ function damagePlayer(amount){
   // fire remains audible and visible, but cannot reset the camera mid-run.
   if(extractionSequence)return;
   const absorbed=Math.min(armor,Math.ceil(amount*.65));armor-=absorbed;hp=Math.max(0,hp-(amount-absorbed));hud();
-  if(hp<=0){toast('OPERATOR DOWN');hp=100;armor=50;camera.position.set(0,1.72,7);hud()}
+  if(hp<=0){toast('OPERATOR DOWN');hp=100;armor=50;playerVerticalVelocity=0;playerGrounded=true;landingResponse=0;camera.position.set(0,playerEyeHeight,7);hud()}
 }
 function enemyFire(enemy,distance,request=null){
   const data=enemy.userData,suppressed=data.role==='marksman'||data.role==='scout';data.recoil=1;data.animator?.triggerRecoil({strength:.86});spawnMuzzleBurst(data.muzzle,'rifle',suppressed?.28:.72,suppressed?4:7);ejectCasing('rifle',data.eject);
@@ -1342,13 +1460,24 @@ function updateEnemies(dt,t){
   });
   for(const enemy of enemies){
     const data=enemy.userData,distance=enemy.position.distanceTo(camera.position),showDetailedWeapon=distance<18;
-    if(data.weaponDetail)data.weaponDetail.visible=showDetailedWeapon;
-    if(data.weaponProxy)data.weaponProxy.visible=!showDetailedWeapon;
+    if(data.dropStarted){
+      if(data.weapon)data.weapon.visible=false;
+      for(const gear of data.droppableGear||[])gear.visible=false;
+    }else{
+      if(data.weaponDetail)data.weaponDetail.visible=showDetailedWeapon;
+      if(data.weaponProxy)data.weaponProxy.visible=!showDetailedWeapon;
+    }
     updateEnemyShadows(enemy,distance<18&&!data.dead);
     if(data.dead){
+      data.deathElapsed=(data.deathElapsed||0)+dt;
       const animation=data.animator?.update(dt,{locomotion:'idle',weapon:'rifle',weaponReady:false});
       data.deathProgress=animation?.deathProgress??Math.min(1,data.deathProgress+dt*1.25);
       animateEnemyWeapon(enemy,dt,t,false,data.deathProgress);
+      // The tactical animator holds a permanent grounded pose at progress 1.
+      // A short extra hold lets its final bone blend settle before the weapon
+      // and kit visibly leave the completed body.
+      const grounded=data.deathElapsed>=data.deathSettleDuration+ENEMY_DEATH_SETTLE_HOLD&&(data.animator?data.deathProgress>=1:true);
+      if(data.dropQueued&&!data.dropStarted&&grounded)beginEnemyEquipmentDrop(enemy,data.deathDirection);
       continue;
     }
     const intent=intents.get(data.aiId);data.intent=intent;
@@ -1490,7 +1619,7 @@ function updatePistolSlide(dt){
 }
 function shoot(){
   const profile=weaponProfiles[currentWeapon],now=performance.now(),delay=60000/profile.rpm;
-  if(extractionSequence||reloading||now-lastShot<delay)return;
+  if(extractionSequence||reloading||pendingWeaponSwitch||viewmodelActionTimeline.active||now-lastShot<delay)return;
   if(ammo[currentWeapon]<=0){lastShot=now;audio.playWeaponMechanism(profile.family,'dryFire');return}
   lastShot=now;ammo[currentWeapon]--;recoil=Math.min(.2,recoil+profile.recoil);
   triggerFireAnimation(currentWeapon);gunshot(currentWeapon);muzzleFlash();ejectCasing(currentWeapon);
@@ -1508,7 +1637,7 @@ function shoot(){
       e.userData.animator?.triggerHit({direction:enemyReactionDirection(e),strength:profile.family==='pistol'?.78:1,height:hit.point.y-e.position.y>1.55?'head':'torso'});
       e.userData.ai?.applyDamage(damage,{health:e.userData.health,maxHealth:e.userData.maxHealth,attackerPosition:camera.position});
       if(e.userData.health<=0){
-        const deathDirection=enemyReactionDirection(e);e.userData.dead=true;beginEnemyEquipmentDrop(e,deathDirection);e.userData.animator?.triggerDeath({variant:'auto',direction:deathDirection,duration:1.18+Math.random()*.34});kills++;toast('HOSTILE NEUTRALIZED');
+        const deathDirection=enemyReactionDirection(e);beginEnemyDeath(e,deathDirection,{duration:1.18+Math.random()*.34});kills++;toast('HOSTILE NEUTRALIZED');
         enemyAISystem.broadcastSquadAlert({type:'squadmate-down',sourceId:e.userData.aiId,squadId:e.userData.ai?.squadId||'perimeter',faction:'hostile',position:e.position,certainty:1});
         requestSquadmateDownCall(e);
         if(kills>=enemies.length)objective.textContent='OBJECTIVE: EXTERIOR SECURED — REACH EXTRACTION';
@@ -1523,21 +1652,38 @@ function shoot(){
   hud();
 }
 function reload(){
-  if(extractionSequence||reloading)return;const profile=weaponProfiles[currentWeapon],cap=profile.capacity;if(ammo[currentWeapon]>=cap||reserve[currentWeapon]<=0)return;
+  if(!started||extractionSequence||reloading||pendingWeaponSwitch||viewmodelActionTimeline.active)return;const profile=weaponProfiles[currentWeapon],cap=profile.capacity;if(ammo[currentWeapon]>=cap||reserve[currentWeapon]<=0)return;
   const kind=currentWeapon,empty=ammo[kind]===0,action=empty?TacticalWeaponAction.RELOAD_EMPTY:TacticalWeaponAction.TACTICAL_RELOAD;
   viewmodelActionTimeline.start(action,{weapon:profile.family,duration:profile.reloadSeconds});
   viewmodelActionKind='reload';pendingReload={kind,cap,empty,loaded:false};reloadAnimationDuration=viewmodelActionTimeline.duration;reloadAnimationTime=0;reloading=true;
   toast(empty?'EMPTY RELOAD':'TACTICAL RELOAD');
 }
 function chamberCheck(){
-  if(extractionSequence||reloading||viewmodelActionTimeline.active)return;
+  if(!started||extractionSequence||reloading||pendingWeaponSwitch||viewmodelActionTimeline.active)return;
   const profile=weaponProfiles[currentWeapon];
   viewmodelActionTimeline.start(TacticalWeaponAction.CHAMBER,{weapon:profile.family});viewmodelActionKind='chamber';
   toast(profile.family==='pistol'?'CHAMBER CHECK':'BOLT CHECK');
 }
+function inspectWeapon(){
+  if(!started||extractionSequence||reloading||pendingWeaponSwitch||viewmodelActionTimeline.active)return;
+  const profile=weaponProfiles[currentWeapon];
+  fireHeld=false;setAim(false);
+  viewmodelActionTimeline.start(TacticalWeaponAction.INSPECT,{weapon:profile.family});viewmodelActionKind='inspect';
+  toast(`${profile.uiName} INSPECTION`);
+}
 function finishPendingReload(){
   const pending=pendingReload;if(!pending||pending.loaded)return;
   const n=Math.min(pending.cap-ammo[pending.kind],reserve[pending.kind]);ammo[pending.kind]+=n;reserve[pending.kind]-=n;pending.loaded=true;
+}
+function completeWeaponSwitch(){
+  const pending=pendingWeaponSwitch;
+  if(!pending||!weaponHolders[pending.kind]){pendingWeaponSwitch=null;viewmodelActionKind=null;return}
+  currentWeapon=pending.kind;fireMode=weaponModes[currentWeapon];pendingWeaponSwitch=null;
+  for(const [weapon,holder] of Object.entries(weaponHolders))holder.visible=weapon===currentWeapon;
+  attachFlashlightToWeapon(currentWeapon);equipAnimationTime=0;
+  const profile=weaponProfiles[currentWeapon];
+  viewmodelActionTimeline.start(TacticalWeaponAction.EQUIP,{weapon:profile.family});viewmodelActionKind='equip';
+  audio.playWeaponMechanism(profile.family,'equip',{gain:.56});hud();
 }
 function updateViewmodelAction(dt){
   const sample=viewmodelActionTimeline.update(dt),markers=viewmodelActionTimeline.consumeMarkers([]),profile=weaponProfiles[currentWeapon];
@@ -1554,19 +1700,30 @@ function updateViewmodelAction(dt){
       if(marker.name==='handleBack'||marker.name==='slideBack')audio.playWeaponMechanism(profile.family,profile.family==='pistol'?'slide':'charge');
       if(marker.name==='chambered'&&profile.family==='pistol'){pistolSlideLocked=false;pistolSlideTime=.055}
       if(marker.name==='ready')viewmodelActionKind=null;
+    }else if(viewmodelActionKind==='holster'){
+      if(marker.name==='lowered')audio.playWeaponMechanism(profile.family,'equip',{gain:.28});
+      if(marker.name==='hidden')completeWeaponSwitch();
+    }else if(viewmodelActionKind==='inspect'&&marker.name==='ready'){
+      viewmodelActionKind=null;
     }else if(viewmodelActionKind==='equip'&&marker.name==='ready')viewmodelActionKind=null;
   }
   if(viewmodelActionKind==='reload'){
     reloadAnimationTime=viewmodelActionTimeline.time;
     if(!viewmodelActionTimeline.active){finishPendingReload();reloading=false;pendingReload=null;viewmodelActionKind=null;hud()}
-  }else if(viewmodelActionKind&& !viewmodelActionTimeline.active)viewmodelActionKind=null;
+  }else if(viewmodelActionKind&& !viewmodelActionTimeline.active){
+    if(viewmodelActionKind==='holster'&&pendingWeaponSwitch)completeWeaponSwitch();
+    else viewmodelActionKind=null;
+  }
   return sample;
 }
 function switchWeapon(kind){
-  if(extractionSequence||reloading||kind===currentWeapon||!weaponHolders[kind])return;currentWeapon=kind;fireMode=weaponModes[kind];audio.playWeaponMechanism(weaponProfiles[kind].family,'equip');viewmodelActionTimeline.start(TacticalWeaponAction.EQUIP,{weapon:weaponProfiles[kind].family});viewmodelActionKind='equip';for(const [weapon,holder] of Object.entries(weaponHolders))holder.visible=weapon===kind;attachFlashlightToWeapon(kind);equipAnimationTime=0;setAim(false);hud();
+  if(!started||extractionSequence||reloading||pendingWeaponSwitch||viewmodelActionTimeline.active||kind===currentWeapon||!weaponHolders[kind])return;
+  fireHeld=false;setAim(false);pendingWeaponSwitch={kind,from:currentWeapon};
+  viewmodelActionTimeline.start(TacticalWeaponAction.HOLSTER,{weapon:weaponProfiles[currentWeapon].family});viewmodelActionKind='holster';equipAnimationTime=0;
+  toast(`STOWING ${weaponProfiles[currentWeapon].uiName}`);
 }
 function setAim(value){
-  aiming=value&&!sprinting;
+  aiming=value&&!sprinting&&!pendingWeaponSwitch&&!viewmodelActionTimeline.active;
 }
 function toggleMode(){if(extractionSequence)return;const profile=weaponProfiles[currentWeapon];if(profile.fireModes.length<2)return;const index=profile.fireModes.indexOf(fireMode);fireMode=profile.fireModes[(index+1)%profile.fireModes.length];weaponModes[currentWeapon]=fireMode;audio.playWeaponMechanism(profile.family,'selector');toast(`FIRE MODE · ${fireMode.toUpperCase()}`);hud()}
 function updateWeapon(dt,t){
@@ -1594,12 +1751,19 @@ function updateWeapon(dt,t){
   const equipDrop=1-THREE.MathUtils.smoothstep(equipAnimationTime,0,.42);
   const reloadProgress=reloading?THREE.MathUtils.clamp(reloadAnimationTime/reloadAnimationDuration,0,1):0;
   const actionActive=viewmodelActionTimeline.active||viewmodelActionKind!==null;
-  const actionDip=actionActive?(actionSample?.weaponDip||0):0,actionSupport=actionActive?(actionSample?.supportHand||0):0;
+  const actionDip=actionActive?(actionSample?.weaponDip||0):0,actionSupport=actionActive?(actionSample?.supportHand||0):0,inspectWeight=actionActive?(actionSample?.inspect||0):0;
   const reloadWave=reloading?Math.max(Math.sin(reloadProgress*Math.PI),actionDip):actionDip;
   const twoHanded=profile.family!=='pistol';
   target.x+=reloadWave*(twoHanded?.16:.12);
   target.y-=reloadWave*(twoHanded?.25:.2)+equipDrop*.3;
   target.z+=reloadWave*.045;
+  // An inspect holds the weapon closer and rolls it inward. The action curve
+  // returns to zero before the timeline's ready marker, so it cannot leave the
+  // viewmodel stranded if the player immediately transitions back to combat.
+  target.x+=inspectWeight*(twoHanded?.075:.052);
+  target.y+=inspectWeight*(twoHanded?.022:.015);
+  target.z+=inspectWeight*(twoHanded?.09:.06);
+  target.y-=landingResponse*.18;target.z+=landingResponse*.025;
   target.x+=actionDip*(twoHanded?.035:.024);target.y-=actionDip*(twoHanded?.055:.04);target.z+=actionDip*.018;
   const bob=moving?(sprinting?.018:.008):.0015;
   const adsSteady=1-aimBlend*.82;
@@ -1608,13 +1772,14 @@ function updateWeapon(dt,t){
   target.z+=recoil;
   weaponRoot.position.lerp(target,1-Math.pow(.001,dt));recoil=Math.max(0,recoil-dt*.35);
   swayX=THREE.MathUtils.damp(swayX,0,9,dt);swayY=THREE.MathUtils.damp(swayY,0,9,dt);
-  const rx=(sprinting?.42:0)+recoilPitch+reloadWave*.18+actionDip*.08+equipDrop*.1;
-  const ry=sprinting?.22:THREE.MathUtils.lerp(-.05,0,aimBlend);
-  const rz=(sprinting?-.32:0)+reloadWave*(twoHanded?.68:.5)+actionSupport*(twoHanded?.12:.08)+equipDrop*.24;
+  const rx=(sprinting?.42:0)+recoilPitch+reloadWave*.18+actionDip*.08+equipDrop*.1-inspectWeight*(twoHanded?.34:.24)+landingResponse*.28;
+  const ry=(sprinting?.22:THREE.MathUtils.lerp(-.05,0,aimBlend))+inspectWeight*(twoHanded?.94:.74);
+  const rz=(sprinting?-.32:0)+reloadWave*(twoHanded?.68:.5)+actionSupport*(twoHanded?.12:.08)+equipDrop*.24+inspectWeight*(twoHanded?.14:.1)-landingResponse*.08;
   weaponRoot.rotation.x+=(rx-weaponRoot.rotation.x)*(1-Math.exp(-8*dt));
   weaponRoot.rotation.y+=(ry-weaponRoot.rotation.y)*(1-Math.exp(-8*dt));
   weaponRoot.rotation.z+=(rz-weaponRoot.rotation.z)*(1-Math.exp(-7*dt));
   recoilPitch=Math.max(0,recoilPitch-dt*.42);
+  landingResponse=Math.max(0,landingResponse-dt*.58);
   updatePlayerArms(dt,t,reloadWave,equipDrop,actionActive?actionSample:null);
 }
 
@@ -1631,6 +1796,8 @@ function renderScopeView(dt){
 
 let started=false,powerOn=false,lightOn=true,hp=100,armor=50,kills=0,exteriorEntered=false,missionWon=false,footstepNoiseTimer=0;
 let extractionSequence=null;
+const playerEyeHeight=1.72,playerJumpVelocity=4.15,playerGravity=13.5;
+let playerVerticalVelocity=0,playerGrounded=true,landingResponse=0;
 const keys={},clock=new THREE.Clock(),moveVelocity=new THREE.Vector3(),audioForward=new THREE.Vector3(),extractionPoint=new THREE.Vector3(0,1.72,-172),extractionRunTarget=new THREE.Vector3(0,1.72,-204);
 const extractionPursuitAnchors=[
   new THREE.Object3D(),new THREE.Object3D(),new THREE.Object3D(),new THREE.Object3D()
@@ -1659,6 +1826,22 @@ function canMove(next){
   let index=0;for(const collider of dynamicColliders){if(dynamicColliderBounds[index++].setFromObject(collider).expandByScalar(.3).containsPoint(collisionPoint))return false}
   return true;
 }
+function tryPlayerJump(){
+  if(!started||extractionSequence||!playerGrounded||pendingWeaponSwitch)return;
+  playerGrounded=false;playerVerticalVelocity=playerJumpVelocity;fireHeld=false;setAim(false);
+}
+function updatePlayerVerticalMotion(dt){
+  if(playerGrounded){camera.position.y=playerEyeHeight;return}
+  playerVerticalVelocity-=playerGravity*dt;camera.position.y+=playerVerticalVelocity*dt;
+  if(camera.position.y>playerEyeHeight)return;
+  const impactSpeed=Math.max(0,-playerVerticalVelocity);
+  camera.position.y=playerEyeHeight;playerVerticalVelocity=0;playerGrounded=true;
+  if(impactSpeed<1.2)return;
+  landingResponse=THREE.MathUtils.clamp(impactSpeed*.012,.025,.09);
+  const surface=worldOverhaul.outdoorBlend>.52?'grass':'hard';
+  audio.playFootstep(surface,{sprinting});
+  enemyAISystem.emitNoise({position:camera.position,type:'landing',loudness:.5,radius:7.5,sourceId:'specter-player',sourceFaction:'specter'});
+}
 function move(dt){
   if(extractionSequence)return;
   const f=(keys.KeyW?1:0)-(keys.KeyS?1:0),s=(keys.KeyD?1:0)-(keys.KeyA?1:0);
@@ -1678,7 +1861,7 @@ function move(dt){
     if(canMove(moveAxisZ)){camera.position.z=moveAxisZ.z;moveVelocity.x=0;slid=true}
     if(!slid)moveVelocity.set(0,0,0);
   }
-  camera.position.y=1.72;
+  updatePlayerVerticalMotion(dt);
   footstepNoiseTimer-=dt;if(moving&&footstepNoiseTimer<=0){footstepNoiseTimer=sprinting?.34:.55;audio.playFootstep(worldOverhaul.outdoorBlend>.52?'grass':'hard',{sprinting});enemyAISystem.emitNoise({position:camera.position,type:'footsteps',loudness:sprinting?.8:.42,radius:sprinting?15:8,sourceId:'specter-player',sourceFaction:'specter'})}
 }
 function restorePower(){
@@ -1692,7 +1875,7 @@ function interact(){raycaster.setFromCamera(new THREE.Vector2(),camera);const h=
 const objective=document.getElementById('objective');
 function startExtractionSequence(){
   if(missionWon||extractionSequence)return;
-  ensureAudio();fireHeld=false;setAim(false);moveVelocity.set(0,0,0);for(const code of Object.keys(keys))keys[code]=false;controls.unlock?.();
+  ensureAudio();fireHeld=false;setAim(false);moveVelocity.set(0,0,0);playerVerticalVelocity=0;playerGrounded=true;landingResponse=0;camera.position.y=playerEyeHeight;for(const code of Object.keys(keys))keys[code]=false;controls.unlock?.();
   extractionSequence={time:0,startZ:camera.position.z,nextShotAt:clock.elapsedTime+1.38,nextCallAt:clock.elapsedTime+1.7,nextFootstepAt:clock.elapsedTime+1.08,shotIndex:0,called:false};
   worldOverhaul.setExtractionGateOpen(true);
   const gatePosition=worldOverhaul.extractionGate.group.getWorldPosition(new THREE.Vector3());
@@ -1742,7 +1925,7 @@ function completeMission(){
   document.getElementById('victoryPanel').classList.add('active');
 }
 
-addEventListener('keydown',e=>{if(extractionSequence){e.preventDefault();return}if(e.code==='KeyG'&&!e.repeat){e.preventDefault();toggleGraphicsPanel();return}keys[e.code]=true;if(e.code==='KeyE')interact();if(e.code==='KeyF'){lightOn=!lightOn;flashlight.visible=lightOn;hud()}if(e.code==='KeyR')reload();if(e.code==='KeyC'&&!e.repeat)chamberCheck();if(e.code==='KeyB'&&!e.repeat)toggleMode();if(e.code==='Digit1')switchWeapon('rifle');if(e.code==='Digit2')switchWeapon('pistol');if(e.code==='Digit3')switchWeapon('compact');if(e.code==='Digit4')switchWeapon('marksman');if(e.code==='Digit5')switchWeapon('suppressed')});
+addEventListener('keydown',e=>{if(extractionSequence){e.preventDefault();return}if(e.code==='KeyG'&&!e.repeat){e.preventDefault();toggleGraphicsPanel();return}if(e.code==='Space'){e.preventDefault();if(!e.repeat)tryPlayerJump();return}keys[e.code]=true;if(e.code==='KeyE')interact();if(e.code==='KeyF'){lightOn=!lightOn;flashlight.visible=lightOn;hud()}if(e.code==='KeyR')reload();if(e.code==='KeyC'&&!e.repeat)chamberCheck();if(e.code==='KeyI'&&!e.repeat)inspectWeapon();if(e.code==='KeyB'&&!e.repeat)toggleMode();if(e.code==='Digit1')switchWeapon('rifle');if(e.code==='Digit2')switchWeapon('pistol');if(e.code==='Digit3')switchWeapon('compact');if(e.code==='Digit4')switchWeapon('marksman');if(e.code==='Digit5')switchWeapon('suppressed')});
 addEventListener('keyup',e=>keys[e.code]=false);
 addEventListener('mousedown',e=>{if(e.target.closest?.('#graphicsPanel,#graphicsQuickButton'))return;if(!started||extractionSequence)return;ensureAudio();if(e.button===0){fireHeld=true;shoot()}if(e.button===2)setAim(embeddedMouseLook?!aiming:true)});
 addEventListener('mouseup',e=>{if(e.button===0)fireHeld=false;if(e.button===2&&!embeddedMouseLook)setAim(false)});
@@ -1787,11 +1970,11 @@ function applyLocalQA(){
   if(localQAMode==='storage'){restorePower();camera.position.set(-5.95,1.72,-98);camera.rotation.set(0,Math.PI/2,0);previousAIPlayerPosition.copy(camera.position)}
   if(localQAMode==='utility'){restorePower();camera.position.set(0,1.72,-166);camera.rotation.set(0,0,0);previousAIPlayerPosition.copy(camera.position)}
   if(localQAMode==='victory'){
-    restorePower();for(const enemy of enemies){if(!enemy.userData.dead){const deathDirection=enemyReactionDirection(enemy);enemy.userData.dead=true;enemy.userData.health=0;enemy.userData.ai?.setHealth(0);beginEnemyEquipmentDrop(enemy,deathDirection);enemy.userData.animator?.triggerDeath({variant:'auto',direction:deathDirection,duration:1.18});kills++}}
+    restorePower();for(const enemy of enemies){if(!enemy.userData.dead){const deathDirection=enemyReactionDirection(enemy);enemy.userData.health=0;enemy.userData.ai?.setHealth(0);beginEnemyDeath(enemy,deathDirection,{duration:1.18});kills++}}
     camera.position.copy(extractionPoint);previousAIPlayerPosition.copy(camera.position);hud();
   }
 }
-startButton.onclick=()=>{started=true;startPanel.style.display='none';ensureAudio();applyLocalQA();beginMouseLook()};
+startButton.onclick=()=>{started=true;missionHasStarted=true;startPanel.style.display='none';ensureAudio();applyLocalQA();if(activeGraphicsPreference===AUTO_GRAPHICS_QUALITY||autoBenchmark.pending)beginAutoGraphicsBenchmark();beginMouseLook()};
 renderer.domElement.onclick=()=>{if(started&&!extractionSequence&&!controls.isLocked&&!embeddedMouseLook)beginMouseLook()};
 document.getElementById('restartButton').onclick=()=>location.reload();
 
@@ -1808,12 +1991,12 @@ await Promise.all([
 if(requiredAssetFailure){
   startButton.disabled=true;startButton.textContent='ASSET CHECK FAILED';loadMessage.textContent='A required model or texture failed to load. Check the diagnostics above.';
 }else{
-  installRifle();installPistol();installRifleVariants();installPlayerModel();installPlayerArms();installIndustrialShelving();installPowerBox();const exteriorContainerCount=installPlasticContainers(),roadBarrierCount=installRoadBarriers();const propSummary=[assetMap.has('steelShelves')?'3 industrial shelves':'',assetMap.has('powerBox')?'animated power box':'',exteriorContainerCount?`${exteriorContainerCount} exterior containers`:'',roadBarrierCount?`${roadBarrierCount} road barriers`:'',worldOverhaul.utilityYard?'expanded utility yard':'',worldOverhaul.grass?'6.8K grass clumps':'' ].filter(Boolean).join(' · ');status('props','LOADED',propSummary||'procedural prop fallback');attachFlashlightToWeapon(currentWeapon);
+  installRifle();installPistol();installRifleVariants();installPlayerModel();installPlayerArms();installIndustrialShelving();installPowerBox();const exteriorContainerCount=installPlasticContainers(),roadBarrierCount=installRoadBarriers(),activePreset=graphics.getDiagnostics().preset;const propSummary=[assetMap.has('steelShelves')?'3 industrial shelves':'',assetMap.has('powerBox')?'animated power box':'',exteriorContainerCount?`${exteriorContainerCount} exterior containers`:'',roadBarrierCount?`${roadBarrierCount} road barriers`:'',worldOverhaul.utilityYard?'expanded utility yard':'',worldOverhaul.grass&&activePreset.grassEnabled?'6.8K grass clumps':worldOverhaul.grass?'grass disabled by preset':'' ].filter(Boolean).join(' · ');status('props','LOADED',propSummary||'procedural prop fallback');attachFlashlightToWeapon(currentWeapon);
   spawnEnemy(-2.5,-8,'rifleman');spawnEnemy(2.9,-18,'scout');spawnEnemy(-1.2,-27,'breacher');
   spawnEnemy(3.8,-54,'rifleman');spawnEnemy(-7.2,-68,'scout');spawnEnemy(8.5,-88,'breacher');spawnEnemy(-5.4,-108,'marksman');spawnEnemy(12,-122,'commander');
   spawnEnemy(12.5,-145,'scout');spawnEnemy(-14,-151,'breacher');spawnEnemy(6,-165,'marksman');spawnEnemy(-9,-170,'rifleman');
   applyGraphicsHardwareBudget(graphics.getDiagnostics().quality,graphics.getDiagnostics().preset);renderGraphicsControls();
-  status('soldier','LOADED',`${enemies.length} tactical hostiles · 5 role kits · full-detail rifles`);hud();
+  status('soldier','LOADED',`${enemies.length} tactical hostiles · 5 role kits · full-detail rifle geometry`);hud();
   missionAssetsReady=true;
   startButton.disabled=false;startButton.textContent='ENTER BLACKSITE';loadMessage.textContent='Assets verified. Mission ready.';
   updateForestFernsForGraphics(graphics.getDiagnostics().preset);
@@ -1821,7 +2004,7 @@ if(requiredAssetFailure){
 
 function animate(){
   requestAnimationFrame(animate);
-  const dt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;
+  const rawDt=clock.getDelta(),dt=Math.min(rawDt,.05),t=clock.elapsedTime;
   if(started){
     if(extractionSequence)updateExtractionSequence(dt,t);else move(dt);worldOverhaul.update(dt,camera.position.z);renderer.toneMappingExposure=THREE.MathUtils.lerp(1.02,.8,worldOverhaul.outdoorBlend);weaponFill.intensity=THREE.MathUtils.lerp(4.8,1.45,worldOverhaul.outdoorBlend);
     if(!exteriorEntered&&camera.position.z<-47){exteriorEntered=true;objective.textContent='OBJECTIVE: CLEAR THE CHECKPOINT AND PERIMETER';toast('EXTERIOR COMBAT ZONE ENTERED')}
@@ -1832,10 +2015,11 @@ function animate(){
     if(!extractionSequence&&powerOn&&kills>=enemies.length&&camera.position.distanceTo(extractionPoint)<6.6)startExtractionSequence();
     raycaster.setFromCamera(new THREE.Vector2(),camera);const h=raycaster.intersectObject(switchGroup,true)[0];
     promptEl.textContent=h&&h.distance<2.7&&!powerOn?'PRESS E — FLIP MAIN BREAKER':'';
+    if(!extractionSequence)sampleAutoGraphicsBenchmark(rawDt);
   }
-  renderScopeView(dt);graphics.render(dt);refreshGraphicsDiagnostics();sampleAutoGraphicsBenchmark(dt);
+  renderScopeView(dt);graphics.render(dt);refreshGraphicsDiagnostics();
 }
 animate();
 
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./service-worker.js').catch(console.warn);
-addEventListener('resize',()=>graphics.resize(innerWidth,innerHeight,devicePixelRatio));
+addEventListener('resize',()=>{graphics.resize(innerWidth,innerHeight,devicePixelRatio);renderGraphicsMemoryEstimate(graphics.getDiagnostics().preset)});
