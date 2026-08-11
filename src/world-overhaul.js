@@ -106,7 +106,11 @@ function createConiferCardGeometry(){
     point(-.5,0);point(.5,0);point(.5,1);point(-.5,1);
     uvs.push(0,0,1,0,1,1,0,1);indices.push(start,start+1,start+2,start,start+2,start+3);
   }
-  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geometry.setIndex(indices);geometry.computeBoundingSphere();return geometry;
+  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geometry.setIndex(indices);
+  // The optional Douglas-fir card has normal/roughness maps. Give each crossed
+  // face a real normal basis so its PBR response survives the distance LOD
+  // rather than falling back to unlit-looking cutouts.
+  geometry.computeVertexNormals();geometry.computeBoundingSphere();return geometry;
 }
 
 function addForestBackdrop(scene,groundMaterial,firCards=[]){
@@ -114,7 +118,14 @@ function addForestBackdrop(scene,groundMaterial,firCards=[]){
   // layer. The compact cone/cylinder forest remains a no-download fallback for
   // low settings and fills the far perimeter beyond the detail cards.
   const forest=new THREE.Group();forest.name='pnw-perimeter-forest';
-  const forestFloor=new THREE.Mesh(new THREE.PlaneGeometry(460,440),groundMaterial);forestFloor.name='pnw-forest-floor';forestFloor.rotation.x=-Math.PI/2;forestFloor.position.set(0,-.16,-244);forestFloor.receiveShadow=true;forest.add(forestFloor);
+  // Reuse the already-loaded grass/soil PBR set, but scale this geometry's UVs
+  // independently. The exterior's close-detail texel density therefore carries
+  // into the much larger non-explorable forest floor without cloning texture
+  // resources or adding another download/GPU allocation.
+  const forestFloorGeometry=new THREE.PlaneGeometry(460,440),forestFloorUv=forestFloorGeometry.getAttribute('uv');
+  for(let index=0;index<forestFloorUv.count;index++)forestFloorUv.setXY(index,forestFloorUv.getX(index)*5,forestFloorUv.getY(index)*4);
+  forestFloorUv.needsUpdate=true;forestFloorGeometry.computeBoundingSphere();
+  const forestFloor=new THREE.Mesh(forestFloorGeometry,groundMaterial);forestFloor.name='pnw-forest-floor-pbr';forestFloor.rotation.x=-Math.PI/2;forestFloor.position.set(0,-.16,-244);forestFloor.receiveShadow=true;forest.add(forestFloor);
   const trunkMaterial=new THREE.MeshStandardMaterial({color:0x5b422a,emissive:0x120b06,emissiveIntensity:.24,roughness:.98,metalness:0,flatShading:false});
   const lowerNeedleMaterial=new THREE.MeshStandardMaterial({color:0x2e7139,emissive:0x0b2110,emissiveIntensity:.3,roughness:.97,metalness:0,flatShading:false});
   const upperNeedleMaterial=lowerNeedleMaterial.clone();upperNeedleMaterial.color.setHex(0x3d8145);upperNeedleMaterial.emissive.setHex(0x102912);
@@ -159,13 +170,20 @@ function addForestBackdrop(scene,groundMaterial,firCards=[]){
   // Low/medium settings retain the compact procedural layers above.
   const coniferCards=(Array.isArray(firCards)?firCards:[]).filter(card=>card?.map?.isTexture);
   const photoTreeLayers=[],photoTrees=[],photoRandom=mulberry32(59371);
-  const addPhotoTree=(x,z)=>photoTrees.push({x,z,height:10+photoRandom()*12,width:5.6+photoRandom()*4.8,rotation:photoRandom()*Math.PI*2,variant:photoTrees.length%Math.max(1,coniferCards.length)});
+  const addPhotoTree=(x,z)=>photoTrees.push({
+    x,z,height:10+photoRandom()*12,width:5.6+photoRandom()*4.8,rotation:photoRandom()*Math.PI*2,
+    // A restrained per-instance multiplier breaks up the repeated card source
+    // while preserving its natural tree albedo. It is intentionally subtle:
+    // these remain 2D impostors, not a claim of unique full 3D tree assets.
+    tint:.82+photoRandom()*.18,
+    variant:photoTrees.length%Math.max(1,coniferCards.length)
+  });
   // Keep these scenic cards just outside the perimeter and clear of the
   // extraction gate's sightline. They are never inserted into collision.
-  for(let index=0;index<92;index++){
+  for(let index=0;index<184;index++){
     const side=index%2?-1:1;addPhotoTree(side*(46+photoRandom()*10),-54-photoRandom()*120);
   }
-  for(let index=0;index<52;index++){
+  for(let index=0;index<136;index++){
     let x=0;do{x=(photoRandom()-.5)*152}while(Math.abs(x)<8);addPhotoTree(x,-188-photoRandom()*42);
   }
   if(coniferCards.length){
@@ -178,15 +196,16 @@ function addForestBackdrop(scene,groundMaterial,firCards=[]){
         // threshold removes chroma-edge sparkle at distance without turning the
         // PBR card into an opaque rectangular billboard.
         color:0xffffff,roughness:.88,metalness:0,transparent:true,alphaTest:.18,
-        side:THREE.DoubleSide,depthWrite:true,fog:true
+        side:THREE.DoubleSide,depthWrite:true,fog:true,vertexColors:true,dithering:true
       });
       const layer=new THREE.InstancedMesh(photoTreeGeometry,material,variantTrees.length);
       layer.name=`forest-high-tier-${card.id||`conifer-${variant+1}`}-cards`;layer.instanceMatrix.setUsage(THREE.StaticDrawUsage);layer.userData.maxInstances=variantTrees.length;layer.userData.forestLod='photo';layer.userData.highTierOnly=true;layer.userData.variant=card.id||String(variant);
-      const matrix=new THREE.Matrix4(),position=new THREE.Vector3(),scale=new THREE.Vector3(),quaternion=new THREE.Quaternion();
+      const matrix=new THREE.Matrix4(),position=new THREE.Vector3(),scale=new THREE.Vector3(),quaternion=new THREE.Quaternion(),color=new THREE.Color();
       for(const [index,tree] of variantTrees.entries()){
         position.set(tree.x,-.14,tree.z);scale.set(tree.width,tree.height,tree.width);quaternion.setFromAxisAngle(up,tree.rotation);matrix.compose(position,quaternion,scale);layer.setMatrixAt(index,matrix);
+        color.setRGB(tree.tint*.93,tree.tint,tree.tint*.91);layer.setColorAt(index,color);
       }
-      layer.instanceMatrix.needsUpdate=true;layer.computeBoundingSphere();layer.castShadow=false;layer.receiveShadow=true;layer.visible=false;forest.add(layer);photoTreeLayers.push(layer);
+      layer.instanceMatrix.needsUpdate=true;if(layer.instanceColor)layer.instanceColor.needsUpdate=true;layer.computeBoundingSphere();layer.castShadow=false;layer.receiveShadow=true;layer.visible=false;forest.add(layer);photoTreeLayers.push(layer);
     }
   }
   scene.add(forest);

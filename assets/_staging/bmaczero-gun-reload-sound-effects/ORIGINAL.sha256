@@ -1,0 +1,9 @@
+# ORIGINAL BINARY HASH STATUS
+
+STATUS: NO ORIGINAL BINARY OR DERIVATIVE IS STORED IN THIS DIRECTORY.
+source_files: NOT ACQUIRED (clipload1.wav, clipload2.wav, singlebullet1.wav)
+source_sha256: NOT AVAILABLE
+reviewed_on: 2026-08-11
+
+Record one SHA-256 per untouched source file.  Do not use a hash of a trimmed,
+normalized, resampled, transcoded, or concatenated derivative in this record.

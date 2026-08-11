@@ -1,0 +1,11 @@
+# ORIGINAL BINARY HASH STATUS
+
+STATUS: NO ORIGINAL BINARY OR DERIVATIVE IS STORED IN THIS DIRECTORY.
+source_archive_or_root_filename: NOT ACQUIRED
+source_archive_or_root_sha256: NOT AVAILABLE
+official_1k_gltf_root: https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/fir_sapling/fir_sapling_1k.gltf
+reviewed_on: 2026-08-11
+
+Hash the untouched downloaded package or its complete original root/dependency
+set before extraction, optimization, LOD work, Meshopt compression, or texture
+transcoding.  A hash of an exported runtime GLB is not a source hash.

@@ -1,13 +1,13 @@
 # SPECTER: Blacksite
 
-Build: `5.6.0-FOUNDATION-POLISH`
+Build: `5.7.0-FOREST-ANIMATION`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build
-5.6.0 continues the controller, viewmodel, combat presentation, enemy behavior,
+5.7.0 continues the controller, viewmodel, combat presentation, enemy behavior,
 facility, exterior-compound, rendering, materials, audio, and mission-flow work
 while keeping the project suitable for static hosting on GitHub Pages.
 
-## Build 5.6.0 highlights
+## Build 5.7.0 highlights
 
 - Damped first-person movement, sprint transitions, camera motion, weapon bob,
   and mouse-driven sway.
@@ -35,6 +35,10 @@ while keeping the project suitable for static hosting on GitHub Pages.
   stow, hand-off, and reseat markers; the M9 retains its separate slide, casing,
   muzzle, and ejection choreography. Unverified AR parts are deliberately not
   mislabeled as a bolt or charging handle.
+- Tactical and empty reloads now use distinct marker behavior and per-weapon
+  timing. The tan M9's authored magazine hierarchy moves through its own reload
+  markers, and its physical slide follows a dedicated chamber-check curve.
+  Inspect/equip foley now fires from action markers rather than input time.
 - Defeated enemies complete a grounded death and brief settle hold before their
   carried rifle and role equipment drop. A bounded reusable prop pool prevents
   sustained combat from continually allocating new visual dressing; drops are
@@ -78,6 +82,10 @@ while keeping the project suitable for static hosting on GitHub Pages.
   materials. The cards have no collision and stay absent if optional textures
   are unavailable; they are not represented as full 3D, photogrammetric, or AAA
   tree geometry.
+- The high-tier card layer now has a correct normal basis, PBR forest-floor UV
+  density, 320 varied instanced fir cards across two shared draw calls, and
+  distance-safe dithering. It remains an honest 2D impostor enhancement rather
+  than a claim of full 3D scanned trees.
 - The raw 4K **Fern 02** CC0 source set streams only after the core mission is
   playable, when vegetation density is **High**, **Ultra**, or **Extreme** and
   the texture tier is not Low. It uses the official `fern_02_alpha_4k.png` mask
@@ -305,4 +313,4 @@ prompts, and build records.
 Research links in `THIRD_PARTY_ASSETS.md` are evaluation notes only. Their models,
 textures, and audio are not bundled merely because a source URL is listed. No
 sci-fi, futuristic, fantasy, cartoon, stylized, or visibly low-detail research
-asset was accepted into the build 5.6.0-FOUNDATION-POLISH runtime.
+asset was accepted into the build 5.7.0-FOREST-ANIMATION runtime.

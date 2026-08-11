@@ -1,0 +1,10 @@
+# ORIGINAL BINARY HASH STATUS
+
+STATUS: NO ORIGINAL BINARY OR DERIVATIVE IS STORED IN THIS DIRECTORY.
+source_archive_filename: NOT ACQUIRED
+source_archive_sha256: NOT AVAILABLE
+upstream_pistol_dependency: NOT AUDITED
+reviewed_on: 2026-08-11
+
+The eventual hash must be calculated from the exact original archive before any
+extraction, texture processing, animation export, retargeting, or compression.

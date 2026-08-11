@@ -44,6 +44,17 @@ const DEPLOYABLE_PATHS = [
 const MEDIA_EXTENSIONS = new Set([
   '.bin', '.glb', '.gltf', '.jpeg', '.jpg', '.ktx2', '.mp3', '.ogg', '.png', '.wav', '.webp'
 ]);
+const STAGING_BINARY_EXTENSIONS = new Set([
+  '.7z', '.bin', '.blend', '.fbx', '.glb', '.gltf', '.gz', '.jpeg', '.jpg', '.ktx2',
+  '.mp3', '.ogg', '.png', '.rar', '.tar', '.wav', '.webp', '.zip'
+]);
+const STAGING_REQUIRED_RECORDS = [
+  'SOURCE.md',
+  'LICENSE.txt',
+  'ORIGINAL.sha256',
+  'conversion.md',
+  'qa.md'
+];
 const JAVASCRIPT_EXTENSIONS = new Set(['.cjs', '.js', '.mjs']);
 const SKIPPED_DIRECTORIES = new Set(['.git', '.github', '.release', 'node_modules']);
 const REQUIRED_LICENSE_RECORDS = [
@@ -330,6 +341,52 @@ async function validateAssetProvenance(errors) {
   }
 }
 
+async function validateNonRuntimeStaging(errors) {
+  const stagingRoot = resolve(ROOT, 'assets/_staging');
+  if (!(await pathExists(stagingRoot))) return;
+  const entries = await readdir(stagingRoot, { withFileTypes: true });
+  const candidates = entries.filter(entry => entry.isDirectory());
+  for (const entry of candidates) {
+    const candidateRoot = resolve(stagingRoot, entry.name);
+    for (const record of STAGING_REQUIRED_RECORDS) {
+      const recordPath = resolve(candidateRoot, record);
+      if (!(await pathExists(recordPath)) || !(await stat(recordPath)).isFile() || (await stat(recordPath)).size === 0) {
+        errors.push(`Staging candidate ${entry.name} is missing a nonempty ${record} record`);
+      }
+    }
+    const hashRecord = resolve(candidateRoot, 'ORIGINAL.sha256');
+    if (await pathExists(hashRecord)) {
+      const status = await readFile(hashRecord, 'utf8');
+      const hasNoBinaryState = status.includes('STATUS: NO ORIGINAL BINARY OR DERIVATIVE IS STORED IN THIS DIRECTORY.');
+      const hasSourceHash = /source(?:_archive(?:_or_root)?)?_sha256\s*:\s*[a-f0-9]{64}\b/i.test(status);
+      if (!hasNoBinaryState && !hasSourceHash) {
+        errors.push(`Staging candidate ${entry.name} must explicitly record its no-binary state or an original source SHA-256`);
+      }
+    }
+    const files = await listFiles(candidateRoot);
+    for (const file of files) {
+      if (STAGING_BINARY_EXTENSIONS.has(extname(file).toLowerCase())) {
+        errors.push(`Non-runtime staging may not contain binary/media/archive files: ${relativeToRoot(file)}`);
+      }
+    }
+  }
+
+  // These are the only files which may be loaded by the live static page.  The
+  // source catalogue and release checker may mention staging records; runtime
+  // code may not import, fetch, or precache them.
+  const runtimeFiles = [
+    resolve(ROOT, 'index.html'),
+    resolve(ROOT, 'service-worker.js'),
+    ...await listFiles(resolve(ROOT, 'src'))
+  ];
+  for (const file of runtimeFiles) {
+    if (!['.html', '.js'].includes(extname(file).toLowerCase())) continue;
+    if ((await readFile(file, 'utf8')).includes('assets/_staging/')) {
+      errors.push(`Runtime file may not reference non-runtime staging: ${relativeToRoot(file)}`);
+    }
+  }
+}
+
 async function validatePbrManifest(errors) {
   const manifestPath = resolve(ROOT, 'assets/environment/pbr-v2/manifest.json');
   let manifest;
@@ -524,6 +581,7 @@ async function validateRelease() {
   await validateServiceWorkerReferences(errors);
   await validateGltfClosure(errors);
   await validateAssetProvenance(errors);
+  await validateNonRuntimeStaging(errors);
   await validateForestFoliagePolicy(errors);
   await validatePbrManifest(errors);
   await validateLowPayloadManifest(errors);
@@ -532,7 +590,7 @@ async function validateRelease() {
     for (const error of errors) console.error(`ERROR: ${error}`);
     fail(`Release validation failed with ${errors.length} issue(s).`);
   }
-  console.log(`Release validation passed: ${javascriptCount} JavaScript file(s), local references, glTF closure, licenses, forest foliage policy, and PBR manifest verified.`);
+  console.log(`Release validation passed: ${javascriptCount} JavaScript file(s), local references, glTF closure, licenses, non-runtime staging policy, forest foliage policy, and PBR manifest verified.`);
 }
 
 function valueForArgument(name) {

@@ -2,12 +2,12 @@ import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.0.0-release';
-import { buildWorldOverhaul } from './world-overhaul.js?v=5.6.0-foundation-polish';
-import { EnemyAISystem } from './enemy-ai.js?v=5.0.0-release';
-import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS } from './graphics-pipeline.js?v=5.6.0-foundation-polish';
-import { createAudioDirector } from './audio-overhaul.js?v=5.6.0-foundation-polish';
-import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.6.0-foundation-polish';
+import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.7.0-forest-animation';
+import { buildWorldOverhaul } from './world-overhaul.js?v=5.7.0-forest-animation';
+import { EnemyAISystem } from './enemy-ai.js?v=5.7.0-forest-animation';
+import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS } from './graphics-pipeline.js?v=5.7.0-forest-animation';
+import { createAudioDirector } from './audio-overhaul.js?v=5.7.0-forest-animation';
+import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.7.0-forest-animation';
 
 const graphicsCustomStorageKey='specter-custom-graphics';
 const voiceSettingsStorageKey='specter-voice-settings';
@@ -936,11 +936,11 @@ const weaponRig={
   suppressed:{holder:suppressedHolder,muzzle:null,eject:null,lightMount:null,hip:new THREE.Vector3(.24,-.245,-.49),ads:new THREE.Vector3(0,-.215,-.27)}
 };
 const weaponProfiles={
-  rifle:{uiName:'HK416',family:'rifle',capacity:30,startReserve:120,fireModes:['semi','auto'],defaultMode:'auto',rpm:652,damage:38,adsFov:31,trueScope:true,reloadSeconds:1.45,recoil:.05,recoilPitch:.055,sprint:new THREE.Vector3(.40,-.43,-.39)},
-  pistol:{uiName:'M9A4',family:'pistol',capacity:15,startReserve:60,fireModes:['semi'],defaultMode:'semi',rpm:261,damage:28,adsFov:52,trueScope:false,reloadSeconds:1.05,recoil:.08,recoilPitch:.12,sprint:new THREE.Vector3(.36,-.38,-.36)},
-  compact:{uiName:'C5-K',family:'rifle',capacity:30,startReserve:150,fireModes:['semi','auto'],defaultMode:'auto',rpm:780,damage:34,adsFov:40,trueScope:true,reloadSeconds:1.82,recoil:.047,recoilPitch:.052,sprint:new THREE.Vector3(.39,-.42,-.38)},
-  marksman:{uiName:'R7.62',family:'rifle',capacity:20,startReserve:80,fireModes:['semi'],defaultMode:'semi',rpm:420,damage:68,adsFov:24,trueScope:true,reloadSeconds:2.24,recoil:.086,recoilPitch:.092,sprint:new THREE.Vector3(.43,-.45,-.36)},
-  suppressed:{uiName:'MCR-300',family:'rifle',capacity:30,startReserve:120,fireModes:['semi','auto'],defaultMode:'semi',rpm:700,damage:45,adsFov:40,trueScope:true,suppressed:true,reloadSeconds:1.9,recoil:.055,recoilPitch:.06,sprint:new THREE.Vector3(.41,-.44,-.38)}
+  rifle:{uiName:'HK416',family:'rifle',capacity:30,startReserve:120,fireModes:['semi','auto'],defaultMode:'auto',rpm:652,damage:38,adsFov:31,trueScope:true,reloadSeconds:{tactical:1.45,empty:1.86},recoil:.05,recoilPitch:.055,recoilRecovery:.38,recoilPitchRecovery:.46,bobMultiplier:1,landingMultiplier:1,sprint:new THREE.Vector3(.40,-.43,-.39)},
+  pistol:{uiName:'M9A4',family:'pistol',capacity:15,startReserve:60,fireModes:['semi'],defaultMode:'semi',rpm:261,damage:28,adsFov:52,trueScope:false,reloadSeconds:{tactical:1.05,empty:1.38},recoil:.08,recoilPitch:.12,recoilRecovery:.54,recoilPitchRecovery:.7,bobMultiplier:.86,landingMultiplier:.88,sprint:new THREE.Vector3(.36,-.38,-.36)},
+  compact:{uiName:'C5-K',family:'rifle',capacity:30,startReserve:150,fireModes:['semi','auto'],defaultMode:'auto',rpm:780,damage:34,adsFov:40,trueScope:true,reloadSeconds:{tactical:1.82,empty:2.18},recoil:.047,recoilPitch:.052,recoilRecovery:.42,recoilPitchRecovery:.5,bobMultiplier:1.07,landingMultiplier:.96,sprint:new THREE.Vector3(.39,-.42,-.38)},
+  marksman:{uiName:'R7.62',family:'rifle',capacity:20,startReserve:80,fireModes:['semi'],defaultMode:'semi',rpm:420,damage:68,adsFov:24,trueScope:true,reloadSeconds:{tactical:2.24,empty:2.68},recoil:.086,recoilPitch:.092,recoilRecovery:.28,recoilPitchRecovery:.34,bobMultiplier:.74,landingMultiplier:1.14,sprint:new THREE.Vector3(.43,-.45,-.36)},
+  suppressed:{uiName:'MCR-300',family:'rifle',capacity:30,startReserve:120,fireModes:['semi','auto'],defaultMode:'semi',rpm:700,damage:45,adsFov:40,trueScope:true,suppressed:true,reloadSeconds:{tactical:1.9,empty:2.28},recoil:.055,recoilPitch:.06,recoilRecovery:.36,recoilPitchRecovery:.44,bobMultiplier:.9,landingMultiplier:1.03,sprint:new THREE.Vector3(.41,-.44,-.38)}
 };
 const weaponModes=Object.fromEntries(Object.entries(weaponProfiles).map(([kind,profile])=>[kind,profile.defaultMode]));
 let pistolSlide=null,pistolSlideTime=-1,pistolSlideLocked=false;
@@ -1003,6 +1003,17 @@ function captureRifleReloadParts(model,holder,rig){
   const parentOrigin=magazine.parent.worldToLocal(holderOrigin),parentOut=magazine.parent.worldToLocal(holderOut);
   rig.reloadMechanics={magazine,basePosition:magazine.position.clone(),outOffset:parentOut.sub(parentOrigin),hidden:false};
 }
+function capturePistolReloadParts(model,holder,rig){
+  // The tan M9 source names the inserted magazine `Clip_lp.001`. It is the
+  // visible gold hierarchy; the black duplicate is already hidden during
+  // installation. Capture that authored mesh rather than creating a stand-in.
+  const magazine=model.getObjectByName('Clip_lp.001');
+  if(!magazine?.parent)return;
+  model.updateWorldMatrix(true,true);holder.updateWorldMatrix(true,false);
+  const holderOrigin=holder.localToWorld(new THREE.Vector3()),holderOut=holder.localToWorld(new THREE.Vector3(.006,-.155,.025));
+  const parentOrigin=magazine.parent.worldToLocal(holderOrigin),parentOut=magazine.parent.worldToLocal(holderOut);
+  rig.reloadMechanics={magazine,basePosition:magazine.position.clone(),outOffset:parentOut.sub(parentOrigin),hidden:false};
+}
 function updateRifleReloadMechanics(kind,normalizedTime=0,active=false){
   const mechanics=weaponRig[kind]?.reloadMechanics;if(!mechanics)return;
   const {magazine,basePosition,outOffset}=mechanics;
@@ -1017,6 +1028,27 @@ function updateRifleReloadMechanics(kind,normalizedTime=0,active=false){
     magazine.visible=false;mechanics.hidden=true;
   }else if(p<.69){
     magazine.visible=true;magazine.position.copy(basePosition).addScaledVector(outOffset,1-THREE.MathUtils.smoothstep(p,.46,.69));mechanics.hidden=false;
+  }else{magazine.visible=true;magazine.position.copy(basePosition);mechanics.hidden=false}
+}
+function updatePistolReloadMechanics(kind,normalizedTime=0,active=false,timing=null){
+  const mechanics=weaponRig[kind]?.reloadMechanics;if(!mechanics)return;
+  const {magazine,basePosition,outOffset}=mechanics;
+  if(!active){magazine.visible=true;magazine.position.copy(basePosition);mechanics.hidden=false;return}
+  const markers=timing?.markers||{};
+  const release=Number.isFinite(markers.magRelease)?markers.magRelease:.1;
+  const out=Number.isFinite(markers.magOut)?markers.magOut:.23;
+  const fresh=Number.isFinite(markers.freshMag)?markers.freshMag:.41;
+  const seated=Number.isFinite(markers.seated)?markers.seated:.68;
+  const p=THREE.MathUtils.clamp(normalizedTime,0,1);
+  // Use the same authored markers as audio/ammo. The magazine remains hidden
+  // only in the deliberate hand-covered transfer window, then returns from
+  // below into the existing magwell.
+  if(p<out){
+    magazine.visible=true;magazine.position.copy(basePosition).addScaledVector(outOffset,THREE.MathUtils.smoothstep(p,release,out));mechanics.hidden=false;
+  }else if(p<fresh){
+    magazine.visible=false;mechanics.hidden=true;
+  }else if(p<seated){
+    magazine.visible=true;magazine.position.copy(basePosition).addScaledVector(outOffset,1-THREE.MathUtils.smoothstep(p,fresh,seated));mechanics.hidden=false;
   }else{magazine.visible=true;magazine.position.copy(basePosition);mechanics.hidden=false}
 }
 
@@ -1063,6 +1095,7 @@ function installPistol(){
   weaponRig.pistol.visuals=[model];
   const barrel=model.getObjectByName('Barrel_lp.001');
   pistolSlide=model.getObjectByName('Shutter_lp.001');
+  capturePistolReloadParts(model,pistolHolder,weaponRig.pistol);
   const barrelBox=boundsInSpace(barrel||model,pistolHolder);
   const slideBox=boundsInSpace(pistolSlide||model,pistolHolder);
   const rearSight=sourcePointInSpace(model,m9RearSightSource,pistolHolder);weaponRig.pistol.ads.set(-rearSight.x,-rearSight.y,-.66);
@@ -1734,8 +1767,18 @@ function triggerFireAnimation(kind){
     pistolSlideLocked=ammo.pistol===0;
   }
 }
-function updatePistolSlide(dt){
+function updatePistolSlide(dt,actionSample=null){
   if(!pistolSlide)return;
+  // A manual M9 chamber check has a captured slide mesh, so it can follow the
+  // timeline's physical mechanism curve. Empty-reload lockback/release still
+  // uses the dedicated lock state below; there is no conflicting fake rifle
+  // bolt animation elsewhere in the viewmodel.
+  const chamberCheck=viewmodelActionKind==='chamber'&&viewmodelActionTimeline.active&&!pistolSlideLocked&&(actionSample?.chamber||0)>.001;
+  if(chamberCheck){
+    const amount=THREE.MathUtils.clamp(actionSample.chamber,0,1);
+    pistolSlide.position.copy(pistolSlideBase).addScaledVector(pistolSlideTravel,amount);
+    return;
+  }
   if(pistolSlideTime<0){
     const amount=pistolSlideLocked?1:0;
     pistolSlide.position.copy(pistolSlideBase).addScaledVector(pistolSlideTravel,amount);return;
@@ -1785,13 +1828,17 @@ function shoot(){
 function reload(){
   if(!started||extractionSequence||reloading||pendingWeaponSwitch||viewmodelActionTimeline.active)return;const profile=weaponProfiles[currentWeapon],cap=profile.capacity;if(ammo[currentWeapon]>=cap||reserve[currentWeapon]<=0)return;
   const kind=currentWeapon,empty=ammo[kind]===0,action=empty?TacticalWeaponAction.RELOAD_EMPTY:TacticalWeaponAction.TACTICAL_RELOAD;
-  viewmodelActionTimeline.start(action,{weapon:profile.family,duration:profile.reloadSeconds});
+  fireHeld=false;setAim(false);
+  const reloadDuration=profile.reloadSeconds?.[empty?'empty':'tactical']??profile.reloadSeconds;
+  viewmodelActionTimeline.start(action,{weapon:profile.family,duration:reloadDuration});
   viewmodelActionKind='reload';pendingReload={kind,cap,empty,loaded:false};reloadAnimationDuration=viewmodelActionTimeline.duration;reloadAnimationTime=0;reloading=true;
   toast(empty?'EMPTY RELOAD':'TACTICAL RELOAD');
 }
 function chamberCheck(){
   if(!started||extractionSequence||reloading||pendingWeaponSwitch||viewmodelActionTimeline.active)return;
   const profile=weaponProfiles[currentWeapon];
+  if(profile.family==='pistol'&&pistolSlideLocked&&ammo.pistol<=0){ensureAudio();audio.playWeaponMechanism('pistol','dryFire',{gain:.48});toast('SLIDE LOCKED - RELOAD REQUIRED');return}
+  fireHeld=false;setAim(false);
   viewmodelActionTimeline.start(TacticalWeaponAction.CHAMBER,{weapon:profile.family});viewmodelActionKind='chamber';
   toast(profile.family==='pistol'?'CHAMBER CHECK':'BOLT CHECK');
 }
@@ -1813,12 +1860,12 @@ function completeWeaponSwitch(){
   for(const [weapon,holder] of Object.entries(weaponHolders))holder.visible=weapon===currentWeapon;
   attachFlashlightToWeapon(currentWeapon);equipAnimationTime=0;
   const profile=weaponProfiles[currentWeapon];
-  viewmodelActionTimeline.start(TacticalWeaponAction.EQUIP,{weapon:profile.family});viewmodelActionKind='equip';
-  audio.playWeaponMechanism(profile.family,'equip',{gain:.56});hud();
+  viewmodelActionTimeline.start(TacticalWeaponAction.EQUIP,{weapon:profile.family});viewmodelActionKind='equip';hud();
 }
 function updateViewmodelAction(dt){
   const sample=viewmodelActionTimeline.update(dt),markers=viewmodelActionTimeline.consumeMarkers([]),profile=weaponProfiles[currentWeapon];
   updateRifleReloadMechanics(currentWeapon,viewmodelActionTimeline.normalizedTime,viewmodelActionKind==='reload'&&profile.family==='rifle');
+  updatePistolReloadMechanics(currentWeapon,viewmodelActionTimeline.normalizedTime,viewmodelActionKind==='reload'&&profile.family==='pistol',viewmodelActionTimeline.profile);
   for(const marker of markers){
     if(viewmodelActionKind==='reload'){
       if(marker.name==='magOut')audio.playWeaponMechanism(profile.family,'magOut');
@@ -1830,14 +1877,18 @@ function updateViewmodelAction(dt){
       if(marker.name==='ready'){finishPendingReload();reloading=false;pendingReload=null;viewmodelActionKind=null;hud()}
     }else if(viewmodelActionKind==='chamber'){
       if(marker.name==='handleBack'||marker.name==='slideBack')audio.playWeaponMechanism(profile.family,profile.family==='pistol'?'slide':'charge');
-      if(marker.name==='chambered'&&profile.family==='pistol'){pistolSlideLocked=false;pistolSlideTime=.055}
+      if(marker.name==='chambered'&&profile.family==='pistol'){pistolSlideLocked=false;pistolSlideTime=-1}
       if(marker.name==='ready')viewmodelActionKind=null;
     }else if(viewmodelActionKind==='holster'){
       if(marker.name==='lowered')audio.playWeaponMechanism(profile.family,'equip',{gain:.28});
       if(marker.name==='hidden')completeWeaponSwitch();
-    }else if(viewmodelActionKind==='inspect'&&marker.name==='ready'){
-      viewmodelActionKind=null;
-    }else if(viewmodelActionKind==='equip'&&marker.name==='ready')viewmodelActionKind=null;
+    }else if(viewmodelActionKind==='inspect'){
+      if(marker.name==='raise')audio.playWeaponMechanism(profile.family,'equip',{gain:profile.family==='pistol'?.19:.24});
+      if(marker.name==='ready')viewmodelActionKind=null;
+    }else if(viewmodelActionKind==='equip'){
+      if(marker.name==='shoulder'||marker.name==='raised')audio.playWeaponMechanism(profile.family,'equip',{gain:.56});
+      if(marker.name==='ready')viewmodelActionKind=null;
+    }
   }
   if(viewmodelActionKind==='reload'){
     reloadAnimationTime=viewmodelActionTimeline.time;
@@ -1859,9 +1910,9 @@ function setAim(value){
 }
 function toggleMode(){if(extractionSequence)return;const profile=weaponProfiles[currentWeapon];if(profile.fireModes.length<2)return;const index=profile.fireModes.indexOf(fireMode);fireMode=profile.fireModes[(index+1)%profile.fireModes.length];weaponModes[currentWeapon]=fireMode;audio.playWeaponMechanism(profile.family,'selector');toast(`FIRE MODE · ${fireMode.toUpperCase()}`);hud()}
 function updateWeapon(dt,t){
-  updatePistolSlide(dt);
   equipAnimationTime=Math.min(.5,equipAnimationTime+dt);
   const actionSample=updateViewmodelAction(dt);
+  updatePistolSlide(dt,actionSample);
   const profile=weaponProfiles[currentWeapon];
   aimBlend=THREE.MathUtils.damp(aimBlend,aiming&&!sprinting?1:0,14,dt);
   const wantedFov=THREE.MathUtils.lerp(sprinting?78:72,profile.adsFov,aimBlend);
@@ -1895,22 +1946,23 @@ function updateWeapon(dt,t){
   target.x+=inspectWeight*(twoHanded?.075:.052);
   target.y+=inspectWeight*(twoHanded?.022:.015);
   target.z+=inspectWeight*(twoHanded?.09:.06);
-  target.y-=landingResponse*.18;target.z+=landingResponse*.025;
+  const landingMultiplier=profile.landingMultiplier??1;
+  target.y-=landingResponse*.18*landingMultiplier;target.z+=landingResponse*.025*landingMultiplier;
   target.x+=actionDip*(twoHanded?.035:.024);target.y-=actionDip*(twoHanded?.055:.04);target.z+=actionDip*.018;
-  const bob=moving?(sprinting?.018:.008):.0015;
+  const bob=(moving?(sprinting?.018:.008):.0015)*(profile.bobMultiplier??1);
   const adsSteady=1-aimBlend*.82;
   target.x+=(Math.sin(t*(sprinting?10:7))*bob+swayX*.00012)*adsSteady;
   target.y-=(Math.abs(Math.cos(t*(sprinting?10:7)))*bob*.7+swayY*.0001)*adsSteady;
   target.z+=recoil;
-  weaponRoot.position.lerp(target,1-Math.pow(.001,dt));recoil=Math.max(0,recoil-dt*.35);
+  weaponRoot.position.lerp(target,1-Math.pow(.001,dt));recoil=Math.max(0,recoil-dt*(profile.recoilRecovery??.35));
   swayX=THREE.MathUtils.damp(swayX,0,9,dt);swayY=THREE.MathUtils.damp(swayY,0,9,dt);
-  const rx=(sprinting?.42:0)+recoilPitch+reloadWave*.18+actionDip*.08+equipDrop*.1-inspectWeight*(twoHanded?.34:.24)+landingResponse*.28;
+  const rx=(sprinting?.42:0)+recoilPitch+reloadWave*.18+actionDip*.08+equipDrop*.1-inspectWeight*(twoHanded?.34:.24)+landingResponse*.28*landingMultiplier;
   const ry=(sprinting?.22:THREE.MathUtils.lerp(-.05,0,aimBlend))+inspectWeight*(twoHanded?.94:.74);
   const rz=(sprinting?-.32:0)+reloadWave*(twoHanded?.68:.5)+actionSupport*(twoHanded?.12:.08)+equipDrop*.24+inspectWeight*(twoHanded?.14:.1)-landingResponse*.08;
   weaponRoot.rotation.x+=(rx-weaponRoot.rotation.x)*(1-Math.exp(-8*dt));
   weaponRoot.rotation.y+=(ry-weaponRoot.rotation.y)*(1-Math.exp(-8*dt));
   weaponRoot.rotation.z+=(rz-weaponRoot.rotation.z)*(1-Math.exp(-7*dt));
-  recoilPitch=Math.max(0,recoilPitch-dt*.42);
+  recoilPitch=Math.max(0,recoilPitch-dt*(profile.recoilPitchRecovery??.42));
   landingResponse=Math.max(0,landingResponse-dt*.58);
   updatePlayerArms(dt,t,reloadWave,equipDrop,actionActive?actionSample:null);
 }

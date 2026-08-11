@@ -1,0 +1,13 @@
+HANDGUN RELOAD SOUND EFFECT BY ZER0_SOL - METADATA-ONLY LICENSE RECORD
+
+Status: NO ORIGINAL BINARY OR DERIVATIVE IS STORED IN THIS DIRECTORY.
+
+Source page reviewed: https://opengameart.org/content/handgun-reload-sound-effect
+Page-reported license: CC0 1.0 Universal.
+Canonical CC0 legal-code page: https://creativecommons.org/publicdomain/zero/1.0/
+Source-page author: zer0_sol.
+Source-page attribution note: no attribution required; optional credit welcomed.
+
+This is not a license file extracted from `reload.wav`; no such file has been
+downloaded.  Retain the original source page/license evidence and the untouched
+file hash if this candidate moves past review.

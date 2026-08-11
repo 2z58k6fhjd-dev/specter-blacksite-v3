@@ -164,13 +164,26 @@ await test('reload timeline drives a captured physical rifle magazine', () => {
   check(/captureRifleReloadParts\(model,rifleHolder,weaponRig\.rifle\)/.test(installRifle), 'Primary rifle must wire its captured magazine to the reload system.');
   check(/captureRifleReloadParts\(model,holder,rig\)/.test(installVariants), 'Rifle variants must wire their captured magazines to the reload system.');
 
+  const capturePistol = functionBody(main, 'capturePistolReloadParts');
+  check(/model\.getObjectByName\('Clip_lp\.001'\)/.test(capturePistol), 'M9 reload must capture the authored inserted magazine hierarchy rather than create a stand-in.');
+  check(/outOffset:parentOut\.sub\(parentOrigin\)/.test(capturePistol), 'M9 reload must retain a physical magazine removal offset.');
+  const pistolMechanics = functionBody(main, 'updatePistolReloadMechanics');
+  check(/markers\.magRelease/.test(pistolMechanics) && /markers\.magOut/.test(pistolMechanics) && /markers\.freshMag/.test(pistolMechanics) && /markers\.seated/.test(pistolMechanics), 'M9 magazine motion must follow the authored reload marker sequence.');
+  check(/magazine\.visible=false/.test(pistolMechanics) && /magazine\.position\.copy\(basePosition\)\.addScaledVector/.test(pistolMechanics), 'M9 reload must animate the authored magazine through out, transfer, and reseat phases.');
+
   const reload = functionBody(main, 'reload');
   check(/TacticalWeaponAction\.RELOAD_EMPTY/.test(reload) && /TacticalWeaponAction\.TACTICAL_RELOAD/.test(reload), 'Reload entry point must select empty and tactical timeline variants.');
   check(/viewmodelActionTimeline\.start\(action/.test(reload) && /viewmodelActionKind='reload'/.test(reload), 'Reload entry point must start the authored viewmodel timeline.');
+  check(/profile\.reloadSeconds\?\.\[empty\?'empty':'tactical'\]/.test(reload), 'Weapon profiles must retain distinct tactical and empty reload durations.');
   const updateAction = functionBody(main, 'updateViewmodelAction');
   check(/updateRifleReloadMechanics\(currentWeapon,viewmodelActionTimeline\.normalizedTime/.test(updateAction), 'Reload mechanics must sample the same timeline used for player animation.');
   check(/marker\.name==='magOut'/.test(updateAction) && /marker\.name==='freshMag'/.test(updateAction), 'Reload markers must drive magazine removal and insertion feedback.');
   check(/finishPendingReload\(\)/.test(updateAction), 'Ammo transfer must remain tied to reload timeline completion.');
+  check(/updatePistolReloadMechanics\(currentWeapon/.test(updateAction), 'Pistol reload must update its captured authored magazine from the same action timeline.');
+
+  check(/output\.magazineOut = 0/.test(tactical), 'Each action sample must reset magazine motion before choosing its curve.');
+  check(/if \(actionType === TacticalWeaponAction\.CHAMBER\)[\s\S]*?output\.chamber = chamber/.test(tactical), 'Chamber checks must use a dedicated mechanism curve rather than reload motion.');
+  check(/output\.bolt = output\.emptyReload \?/.test(tactical), 'Tactical reloads must not perform the empty-reload release phase.');
 });
 
 await test('M9 slide, casing, muzzle, and under-barrel light use weapon anchors', () => {
@@ -184,6 +197,7 @@ await test('M9 slide, casing, muzzle, and under-barrel light use weapon anchors'
   const updateSlide = functionBody(main, 'updatePistolSlide');
   check(/pistolSlideLocked/.test(updateSlide) && /pistolSlideTime/.test(updateSlide), 'M9 slide must support both shot cycling and empty lockback.');
   check(/pistolSlide\.position\.copy\(pistolSlideBase\)\.addScaledVector\(pistolSlideTravel,amount\)/.test(updateSlide), 'M9 slide update must move the captured physical slide.');
+  check(/viewmodelActionKind==='chamber'/.test(updateSlide) && /actionSample\?\.chamber/.test(updateSlide), 'M9 chamber checks must drive the captured physical slide from the dedicated timeline curve.');
   const trigger = functionBody(main, 'triggerFireAnimation');
   check(/if\(kind==='pistol'\)\{[\s\S]*pistolSlideTime=0;[\s\S]*pistolSlideLocked=ammo\.pistol===0/.test(trigger), 'M9 firing must reset slide motion and lock after an empty shot.');
 

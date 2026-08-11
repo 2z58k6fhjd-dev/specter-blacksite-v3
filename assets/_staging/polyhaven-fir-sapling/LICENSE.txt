@@ -1,0 +1,14 @@
+POLY HAVEN FIR SAPLING - METADATA-ONLY LICENSE RECORD
+
+Status: NO ORIGINAL BINARY OR DERIVATIVE IS STORED IN THIS DIRECTORY.
+
+Asset page: https://polyhaven.com/a/fir_sapling
+File metadata API: https://api.polyhaven.com/files/fir_sapling
+Page-reported license: CC0 1.0 Universal.
+Canonical CC0 legal-code page: https://creativecommons.org/publicdomain/zero/1.0/
+Reported contributors: Rico Cilliers (modeling), Rob Tuytel (photography).
+
+This is a source-page metadata record, not a downloaded Poly Haven license or
+credits file.  Before promotion, retain the exact source package's accompanying
+license/provenance material and hashes.  CC0 permits reuse, but performance,
+LOD, conversion, and visual-quality acceptance are separate requirements.

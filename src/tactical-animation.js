@@ -444,9 +444,22 @@ export function sampleWeaponAction(profile, normalizedTime, output = {}, action 
   output.normalizedTime = t;
   output.action = actionType;
   output.weight = smoothstep(0, 0.07, t) * (1 - smoothstep(0.9, 1, t));
+  // Reset every branch-owned value. The same sample object is intentionally
+  // reused every frame, so a chamber/empty-reload mechanism must never leak
+  // into the next inspect, holster, or tactical reload pose.
+  output.prepare = 0;
   output.inspect = 0;
   output.holster = 0;
   output.equip = 0;
+  output.magazineOut = 0;
+  output.magazineIn = 0;
+  output.bolt = 0;
+  output.chamber = 0;
+  output.supportHand = 0;
+  output.weaponDip = 0;
+  output.settle = 0;
+  output.emptyReload = false;
+  output.tacticalReload = false;
 
   // Draw and stow are intentionally handled as their own curves rather than
   // borrowing reload motion. The viewmodel can remain visible until the
@@ -484,10 +497,34 @@ export function sampleWeaponAction(profile, normalizedTime, output = {}, action 
     return output;
   }
 
+  // A chamber check is a short, support-hand mechanism check, not a reload.
+  // In particular it must not borrow magazine-out/in curves: the bundled
+  // rifle has no verified moving charging-handle/bolt mesh, while the M9's
+  // captured slide can safely follow this normalized movement in the game
+  // layer. `bolt` is therefore a pose/event weight, never a claim about a
+  // physically animated rifle bolt.
+  if (actionType === TacticalWeaponAction.CHAMBER) {
+    const chamber = windowCurve(t, 0.08, 0.26, 0.56, 0.84);
+    output.prepare = windowCurve(t, 0.03, 0.17, 0.67, 0.9);
+    output.bolt = chamber;
+    output.chamber = chamber;
+    output.supportHand = chamber * 0.86;
+    output.weaponDip = output.prepare * 0.48;
+    output.settle = smoothstep(0.76, 0.99, t);
+    output.duration = profile?.duration || 1;
+    return output;
+  }
+
   output.prepare = windowCurve(t, 0, 0.12, 0.2, 0.34);
   output.magazineOut = windowCurve(t, 0.1, 0.27, 0.42, 0.61);
   output.magazineIn = windowCurve(t, 0.38, 0.57, 0.7, 0.83);
-  output.bolt = windowCurve(t, 0.7, 0.79, 0.86, 0.94);
+  // Tactical reloads retain a round in the chamber; only an empty reload has
+  // a release/check phase after seating the magazine. Keeping this explicit
+  // prevents the support hand from performing a phantom bolt action during a
+  // tactical reload and gives model-specific slide handling one honest cue.
+  output.emptyReload = actionType === TacticalWeaponAction.RELOAD_EMPTY;
+  output.tacticalReload = actionType === TacticalWeaponAction.TACTICAL_RELOAD;
+  output.bolt = output.emptyReload ? windowCurve(t, 0.7, 0.79, 0.86, 0.94) : 0;
   output.settle = smoothstep(0.79, 0.98, t);
   output.supportHand = Math.max(output.magazineOut, output.magazineIn, output.bolt);
   output.weaponDip = Math.max(output.prepare * 0.6, output.magazineOut * 0.85, output.magazineIn * 0.65);

@@ -1,0 +1,13 @@
+EQUIPMENT CLICKS III BY LFA - METADATA-ONLY LICENSE RECORD
+
+Status: NO ORIGINAL BINARY OR DERIVATIVE IS STORED IN THIS DIRECTORY.
+
+Source page reviewed: https://opengameart.org/content/equipment-clicks-iii
+Page-reported license: CC0 1.0 Universal.
+Canonical CC0 legal-code page: https://creativecommons.org/publicdomain/zero/1.0/
+Source-page author: LFA.
+
+The source listing is the evidence for this candidate's CC0 research status.
+No original file or accompanying upstream archive license text has been saved
+here.  Preserve those materials and the unmodified source hash before any
+future promotion, even though CC0 does not require attribution.

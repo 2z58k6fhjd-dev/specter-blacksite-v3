@@ -1,0 +1,19 @@
+BERETTA PISTOL FPS ANIMATION - METADATA-ONLY LICENSE RECORD
+
+Status: NO ORIGINAL BINARY OR DERIVATIVE IS STORED IN THIS DIRECTORY.
+
+Source page: https://sketchfab.com/3d-models/beretta-pistol-fps-animation-0313ab1888994c14abeaf444d7af3217
+Observed source-page label: Creative Commons Attribution / CC BY.
+Observed creator label: BURNER (@Alexander_Ovelar).
+
+The direct source page could not be fetched during this review, and no archive
+or embedded license notice has been preserved locally.  Therefore this record
+does not assert an exact CC BY version or a complete permission chain.  It is
+only a source-page metadata record for a candidate that must pass dependency
+review.
+
+Before promotion, preserve the exact upstream license notice that accompanies
+the downloaded archive, verify its version and attribution requirements, and
+audit the linked upstream pistol named on the listing.  If the listing's claimed
+license and the archive/dependency record disagree, reject the candidate rather
+than substituting this note as a license.

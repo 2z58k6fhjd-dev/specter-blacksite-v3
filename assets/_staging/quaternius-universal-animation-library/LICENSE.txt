@@ -1,0 +1,16 @@
+QUATERNIUS UNIVERSAL ANIMATION LIBRARY - METADATA-ONLY LICENSE RECORD
+
+Status: NO ORIGINAL BINARY OR DERIVATIVE IS STORED IN THIS DIRECTORY.
+
+Source page reviewed: https://quaternius.com/packs/universalanimationlibrary.html
+Page-reported license: CC0 1.0 Universal.
+Canonical CC0 legal-code page: https://creativecommons.org/publicdomain/zero/1.0/
+
+The source page states that the pack is free for personal, educational, and
+commercial projects under CC0.  This text records that observed page metadata;
+it is not a copied upstream archive license and is not a substitute for one.
+
+Before promotion, retain the exact license/credits material supplied with the
+downloaded archive alongside the archive hash, and verify that the particular
+clips selected are part of that package.  No attribution is required by CC0,
+but the project will retain an accurate creator/source record for traceability.

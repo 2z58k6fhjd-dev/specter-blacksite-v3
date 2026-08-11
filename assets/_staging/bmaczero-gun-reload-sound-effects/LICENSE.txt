@@ -1,0 +1,14 @@
+GUN RELOAD SOUND EFFECTS BY BMACZERO - METADATA-ONLY LICENSE RECORD
+
+Status: NO ORIGINAL BINARY OR DERIVATIVE IS STORED IN THIS DIRECTORY.
+
+Source page reviewed: https://opengameart.org/content/gun-reload-sound-effects
+Page-reported license: CC0 1.0 Universal.
+Canonical CC0 legal-code page: https://creativecommons.org/publicdomain/zero/1.0/
+Source-page author: BMacZero.
+Source-page attribution note: crediting Brian MacIntosh is optional.
+
+This is a review record, not a downloaded upstream license file.  Before any
+file is promoted, retain the page/archived license evidence and hash the exact
+unmodified original.  The future attribution record should preserve the source
+name and creator even though CC0 does not require attribution.
