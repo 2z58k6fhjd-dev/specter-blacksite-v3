@@ -252,10 +252,13 @@ and that notice must stay with redistribution. Loading or decoding these layers
 is optional; if they are unavailable, the procedural weapon system remains the
 automatic fallback without blocking the mission.
 
-The release ZIP's exact byte count and SHA-256 are recorded in the generated
-release manifest beside the archive. The optional high-resolution texture
-payload streams after first launch, so the amount downloaded on a first visit
-can vary with the selected graphics preset.
+Every verified replacement ZIP is published through the repository's **Latest
+GitHub Release** rather than bundled into the Pages site. This keeps the game
+deployment lightweight while providing a stable direct download for the
+complete repository-root archive; its exact byte count and SHA-256 are recorded
+in the generated release manifest. The optional high-resolution texture payload
+streams after first launch, so the amount downloaded on a first visit can vary
+with the selected graphics preset.
 The high-resolution runtime payload requires a stable connection on first launch
 and can take noticeably longer on mobile networks.
 The service worker installs the small application shell first, then caches the

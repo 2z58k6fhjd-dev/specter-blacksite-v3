@@ -17,7 +17,7 @@ jobs:
     name: Validate and package release
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       pages: write
     steps:
       - name: Check out the verified main revision
@@ -45,21 +45,25 @@ jobs:
         run: npm run package:release
 
       - name: Test release ZIP integrity
-        run: unzip -t .release/pages/releases/*.zip
+        run: unzip -t .release/artifacts/*.zip
 
       - name: Verify Pages package and release ZIP
         run: npm run verify:release
 
-      - name: Retain the verified release files
-        uses: actions/upload-artifact@v4
-        with:
-          name: specter-blacksite-release-${{ github.sha }}
-          path: |
-            .release/pages/releases/*.zip
-            .release/pages/releases/*.md
-            .release/pages/releases/release-manifest.json
-          if-no-files-found: error
-          retention-days: 30
+      - name: Publish the verified replacement ZIP
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: build-${{ github.sha }}
+          RELEASE_TITLE: SPECTER: Blacksite build ${{ github.sha }}
+          RELEASE_ARCHIVE: .release/artifacts/specter-blacksite-latest.zip
+          RELEASE_NOTES: .release/artifacts/specter-blacksite-main-${{ github.sha }}-release-notes.md
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "$RELEASE_ARCHIVE" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$RELEASE_TAG" "$RELEASE_ARCHIVE" --target "$GITHUB_SHA" --title "$RELEASE_TITLE" --notes-file "$RELEASE_NOTES" --latest --repo "$GITHUB_REPOSITORY"
+          fi
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

@@ -28,7 +28,8 @@ import { spawn } from 'node:child_process';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const RELEASE_ROOT = resolve(ROOT, '.release');
 const PAGES_ROOT = resolve(RELEASE_ROOT, 'pages');
-const RELEASES_ROOT = resolve(PAGES_ROOT, 'releases');
+const ARTIFACTS_ROOT = resolve(RELEASE_ROOT, 'artifacts');
+const DOWNLOAD_ROOT = resolve(PAGES_ROOT, 'download');
 const DEPLOYABLE_PATHS = [
   'assets',
   'src',
@@ -665,7 +666,7 @@ function safeReleaseVersion() {
 
 async function copyDeployableTree() {
   await rm(PAGES_ROOT, { recursive: true, force: true });
-  await mkdir(RELEASES_ROOT, { recursive: true });
+  await mkdir(DOWNLOAD_ROOT, { recursive: true });
   for (const path of DEPLOYABLE_PATHS) {
     const source = resolve(ROOT, path);
     if (!(await pathExists(source))) fail(`Cannot package missing deployable path ${path}`);
@@ -679,6 +680,22 @@ async function gitMetadata() {
   return { commit, committedAt };
 }
 
+async function githubRepositoryUrl() {
+  const repository = process.env.GITHUB_REPOSITORY;
+  if (repository && /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) {
+    const server = process.env.GITHUB_SERVER_URL?.replace(/\/$/, '') || 'https://github.com';
+    return `${server}/${repository}`;
+  }
+  try {
+    const origin = await git('remote', 'get-url', 'origin');
+    const match = origin.match(/github\.com[:/]([^/]+\/[^/.]+?)(?:\.git)?$/i);
+    if (match) return `https://github.com/${match[1]}`;
+  } catch {
+    // Local package checks can still describe the verified archive without a remote.
+  }
+  return null;
+}
+
 function escapeHtml(value) {
   return value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 }
@@ -686,22 +703,29 @@ function escapeHtml(value) {
 async function packageRelease() {
   const version = safeReleaseVersion();
   const { commit, committedAt } = await gitMetadata();
-  const stem = `specter-blacksite-${version}`;
-  const archiveName = `${stem}.zip`;
-  const notesName = `${stem}-release-notes.md`;
-  const archivePath = resolve(RELEASES_ROOT, archiveName);
-  const notesPath = resolve(RELEASES_ROOT, notesName);
+  const archiveName = 'specter-blacksite-latest.zip';
+  const notesName = `specter-blacksite-${version}-release-notes.md`;
+  const archivePath = resolve(ARTIFACTS_ROOT, archiveName);
+  const notesPath = resolve(ARTIFACTS_ROOT, notesName);
 
+  await rm(ARTIFACTS_ROOT, { recursive: true, force: true });
+  await mkdir(ARTIFACTS_ROOT, { recursive: true });
   await copyDeployableTree();
   await git('archive', '--format=zip', `--output=${archivePath}`, 'HEAD');
   const archiveSha256 = await hashFile(archivePath);
+  const repositoryUrl = await githubRepositoryUrl();
+  const releaseTag = `build-${commit}`;
+  const releasePage = repositoryUrl ? `${repositoryUrl}/releases/tag/${releaseTag}` : null;
+  const latestRelease = repositoryUrl ? `${repositoryUrl}/releases/latest` : null;
+  const releaseAsset = repositoryUrl ? `${repositoryUrl}/releases/latest/download/${archiveName}` : null;
+  const sourceArchive = repositoryUrl ? `${repositoryUrl}/archive/${commit}.zip` : null;
   const notes = [
     '# SPECTER: Blacksite release',
     '',
     `- Version: \`${version}\``,
     `- Commit: \`${commit}\``,
     `- Commit timestamp: ${committedAt}`,
-    `- Archive: [${archiveName}](./${archiveName})`,
+    `- Archive: ${archiveName}`,
     `- SHA-256: \`${archiveSha256}\``,
     '',
     'This release passed JavaScript syntax, local asset-reference, glTF dependency, local license/provenance, and PBR manifest integrity checks before packaging.'
@@ -716,25 +740,31 @@ async function packageRelease() {
   <h1>SPECTER: Blacksite release</h1>
   <p>Version <code>${escapeHtml(version)}</code></p>
   <ul>
-    <li><a href="./${archiveName}">Download release ZIP</a></li>
-    <li><a href="./${notesName}">Read release notes</a></li>
+    ${releaseAsset ? `<li><a href="${escapeHtml(releaseAsset)}">Download the verified replacement ZIP</a></li>` : ''}
+    ${latestRelease ? `<li><a href="${escapeHtml(latestRelease)}">View the latest GitHub release</a></li>` : ''}
+    ${sourceArchive ? `<li><a href="${escapeHtml(sourceArchive)}">Download the matching source snapshot</a></li>` : ''}
   </ul>
 </main>
 </html>
 `;
-  await writeFile(resolve(RELEASES_ROOT, 'index.html'), index);
+  await writeFile(resolve(DOWNLOAD_ROOT, 'index.html'), index);
   const manifest = {
     schemaVersion: 1,
     version,
     commit,
     committedAt,
-    archive: `releases/${archiveName}`,
+    releaseTag,
+    archive: `artifacts/${archiveName}`,
     archiveSha256,
-    releaseNotes: `releases/${notesName}`,
+    releaseNotes: `artifacts/${notesName}`,
+    releasePage,
+    latestRelease,
+    releaseAsset,
+    sourceArchive,
     archiveContents: 'Repository files are stored at the ZIP root; no enclosing project directory is added.'
   };
-  await writeFile(resolve(RELEASES_ROOT, 'release-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
-  console.log(`Packaged Pages release: ${relativeToRoot(archivePath)}`);
+  await writeFile(resolve(DOWNLOAD_ROOT, 'release-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+  console.log(`Packaged verified release artifact: ${relativeToRoot(archivePath)}`);
 }
 
 async function readZipEntries(path) {
@@ -799,7 +829,7 @@ async function compareDeployableCopies(errors) {
 
 async function verifyRelease() {
   const errors = [];
-  const manifestPath = resolve(RELEASES_ROOT, 'release-manifest.json');
+  const manifestPath = resolve(DOWNLOAD_ROOT, 'release-manifest.json');
   let manifest;
   try {
     manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
@@ -809,12 +839,12 @@ async function verifyRelease() {
   for (const value of ['archive', 'archiveSha256', 'releaseNotes', 'version', 'commit']) {
     if (!manifest[value]) errors.push(`Release manifest is missing ${value}`);
   }
-  const archive = manifest.archive ? resolve(PAGES_ROOT, manifest.archive) : null;
-  const notes = manifest.releaseNotes ? resolve(PAGES_ROOT, manifest.releaseNotes) : null;
-  const archiveIsFile = archive && isInside(PAGES_ROOT, archive) && (await pathExists(archive)) && (await stat(archive)).isFile();
-  const notesIsFile = notes && isInside(PAGES_ROOT, notes) && (await pathExists(notes)) && (await stat(notes)).isFile();
-  if (!archiveIsFile) errors.push('Versioned release ZIP is missing from the Pages package');
-  if (!notesIsFile) errors.push('Release notes are missing from the Pages package');
+  const archive = manifest.archive ? resolve(RELEASE_ROOT, manifest.archive) : null;
+  const notes = manifest.releaseNotes ? resolve(RELEASE_ROOT, manifest.releaseNotes) : null;
+  const archiveIsFile = archive && isInside(ARTIFACTS_ROOT, archive) && (await pathExists(archive)) && (await stat(archive)).isFile();
+  const notesIsFile = notes && isInside(ARTIFACTS_ROOT, notes) && (await pathExists(notes)) && (await stat(notes)).isFile();
+  if (!archiveIsFile) errors.push('Verified release ZIP is missing from the release artifacts');
+  if (!notesIsFile) errors.push('Release notes are missing from the release artifacts');
   if (archiveIsFile) {
     if ((await hashFile(archive)) !== manifest.archiveSha256) errors.push('Release ZIP SHA-256 does not match its manifest');
     try {
@@ -828,13 +858,13 @@ async function verifyRelease() {
     }
   }
   if (!(await pathExists(resolve(PAGES_ROOT, 'index.html')))) errors.push('Pages package is missing index.html');
-  if (!(await pathExists(resolve(RELEASES_ROOT, 'index.html')))) errors.push('Pages package is missing the release download index');
+  if (!(await pathExists(resolve(DOWNLOAD_ROOT, 'index.html')))) errors.push('Pages package is missing the release download index');
   await compareDeployableCopies(errors);
   if (errors.length) {
     for (const error of errors) console.error(`ERROR: ${error}`);
     fail(`Release package verification failed with ${errors.length} issue(s).`);
   }
-  console.log(`Release package verified: ${relativeToRoot(archive)} has repository-root contents and the Pages tree matches validated source files.`);
+  console.log(`Release package verified: ${relativeToRoot(archive)} has repository-root contents, the Pages tree matches validated source files, and the ZIP is ready for GitHub Releases.`);
 }
 
 const command = process.argv[2];
