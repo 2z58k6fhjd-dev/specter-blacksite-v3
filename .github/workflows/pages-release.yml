@@ -54,7 +54,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: build-${{ github.sha }}
-          RELEASE_TITLE: SPECTER: Blacksite build ${{ github.sha }}
+          RELEASE_TITLE: "SPECTER: Blacksite build ${{ github.sha }}"
           RELEASE_ARCHIVE: .release/artifacts/specter-blacksite-latest.zip
           RELEASE_NOTES: .release/artifacts/specter-blacksite-main-${{ github.sha }}-release-notes.md
         run: |
