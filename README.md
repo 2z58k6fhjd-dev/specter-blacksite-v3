@@ -201,9 +201,10 @@ and that notice must stay with redistribution. Loading or decoding these layers
 is optional; if they are unavailable, the procedural weapon system remains the
 automatic fallback without blocking the mission.
 
-The high-resolution runtime payload is substantial, so the first launch requires
-a stable connection and can take noticeably longer on mobile networks. Confirm
-the exact download size from the final release ZIP before publishing.
+The release ZIP is approximately **261 MiB**. Its exact byte count and
+SHA-256 are recorded in the generated release manifest beside the archive.
+The high-resolution runtime payload requires a stable connection on first launch
+and can take noticeably longer on mobile networks.
 The service worker installs the small application shell first, then caches the
 large model and texture payload on a best-effort basis; a failed optional cache
 item is recovered by the normal network-first loader on a later visit.
