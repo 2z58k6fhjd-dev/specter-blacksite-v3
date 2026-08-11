@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'specter-blacksite-overhaul-foundation-';
-const CACHE_VERSION = 'v541-forest-foliage';
+const CACHE_VERSION = 'v542-forest-foliage-fix';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 
 // The application shell is deliberately small and atomic: if any of these files
@@ -99,14 +99,6 @@ const OPTIONAL_PRECACHE_URLS = [
 
   './assets/environment/generated/README.md',
   './assets/environment/generated/fir-tree-billboard-v1.png',
-
-  './assets/environment/polyhaven-fern-02/README.md',
-  './assets/environment/polyhaven-fern-02/LICENSE.txt',
-  './assets/environment/polyhaven-fern-02/fern_02_4k.gltf',
-  './assets/environment/polyhaven-fern-02/fern_02.bin',
-  './assets/environment/polyhaven-fern-02/textures/fern_02_diff_4k.jpg',
-  './assets/environment/polyhaven-fern-02/textures/fern_02_arm_4k.jpg',
-  './assets/environment/polyhaven-fern-02/textures/fern_02_nor_gl_4k.jpg',
 
   './assets/environment/polyhaven-steel-frame-shelves-01/README.md',
   './assets/environment/polyhaven-steel-frame-shelves-01/LICENSE.txt',

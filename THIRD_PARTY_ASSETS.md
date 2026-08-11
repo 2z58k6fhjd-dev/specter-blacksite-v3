@@ -1,6 +1,6 @@
 # SPECTER: Blacksite - Asset Provenance and License Manifest
 
-This manifest distinguishes assets that ship with build `5.4.1-FOREST-FOLIAGE` from links retained
+This manifest distinguishes assets that ship with build `5.4.2-FOREST-FOLIAGE-FIX` from links retained
 only for research. A source appearing in a research table does not mean its
 files were downloaded, integrated, or redistributed.
 
@@ -78,13 +78,20 @@ only adds placement, scale, collision, frustum culling, and rendering behavior.
 
 [Fern 02](https://polyhaven.com/a/fern_02) by Rico Cilliers (modeling) and Rob Tuytel (scanning) is bundled as a raw 4K source set in
 `assets/environment/polyhaven-fern-02/`: the original glTF, buffer, and 4K
-albedo, normal, and ARM maps. Poly Haven publishes the asset under **CC0 1.0**.
+albedo, normal, ARM, and official alpha-mask maps. Poly Haven publishes the
+asset under **CC0 1.0**.
 The folder's `README.md` and `LICENSE.txt` preserve the source and license
 record alongside the runtime files.
+The runtime leaf-cutout mask is the official
+[`fern_02_alpha_4k.png`](https://dl.polyhaven.org/file/ph-assets/Models/png/4k/fern_02/fern_02_alpha_4k.png),
+retained locally at `textures/fern_02_alpha_4k.png`; its verified MD5 is
+`520e194db987df18fd73b49d979ada0c`.
 The runtime streams sparse, non-colliding Fern 02 dressing only after the core
 mission is playable, when vegetation density is High, Ultra, or Extreme and the
-texture tier is not Low. Competitive Low does not request or render Fern 02. The
-raw 4K maps remain excluded from lower vegetation budgets.
+texture tier is not Low. It uses Fern 02's official alpha mask at runtime for
+leaf cutouts. Competitive Low does not request or render Fern 02. The raw 4K
+maps remain excluded from lower vegetation budgets, and no Fern file is
+service-worker precached.
 
 ## Project-authored and derived runtime assets
 
@@ -114,7 +121,7 @@ every enemy weapon clone.
 
 `src/modern-arsenal.js` is preserved as an optional project-authored prototype
 module. It contains compact-carbine, marksman-rifle, and procedural T12 tactical
-autoloader factories plus metadata and animation anchors. Build 5.4.1-FOREST-FOLIAGE does not
+autoloader factories plus metadata and animation anchors. Build 5.4.2-FOREST-FOLIAGE-FIX does not
 import, execute, or precache this module, and no runtime weapon slot selects it.
 In particular, the procedural T12 failed the final close-up art-quality gate and
 has no selectable slot; slot 5 is the full-source MCR-300 suppressed rifle
@@ -156,7 +163,7 @@ redistributions.
 The original `concrete-wall.webp`, `metal-floor.webp`, `utility-panels.webp`, and
 `grass-field-v1.webp` files were generated specifically for this project with
 OpenAI image generation on 2026-08-08. They are preserved with their records in
-`assets/environment/README.txt`, but build 5.4.1-FOREST-FOLIAGE uses the PBR v2 set for its main
+`assets/environment/README.txt`, but build 5.4.2-FOREST-FOLIAGE-FIX uses the PBR v2 set for its main
 runtime materials.
 
 ## Bundled recorded weapon reports
@@ -173,7 +180,7 @@ Sevedge / Tabasco and the CC BY 3.0 notice must remain with redistributions.
 ## Research-only 3D candidates - not bundled
 
 The following links are retained for future evaluation. None of these candidate
-archives or models should be described as included in build 5.4.1-FOREST-FOLIAGE unless a future
+archives or models should be described as included in build 5.4.2-FOREST-FOLIAGE-FIX unless a future
 commit adds the source files, local license receipt, author, conversion notes,
 optimization record, and runtime integration.
 
@@ -231,7 +238,7 @@ links only and are not bundled:
 
 The [Ural 4320](https://sketchfab.com/3d-models/ural-4320-f953c51a5dbc4a15949f4dcc0905c4e8)
 by Brout was identified as a CC BY 4.0 present-day military truck candidate. It
-is not bundled; build 5.4.1-FOREST-FOLIAGE uses project-authored procedural vehicle geometry.
+is not bundled; build 5.4.2-FOREST-FOLIAGE-FIX uses project-authored procedural vehicle geometry.
 
 ## Bundled tactical voice callouts
 
@@ -262,7 +269,7 @@ procedural fallback remains available if a clip cannot download or decode.
 
 ## Research-only audio candidates - not bundled
 
-Build 5.4.1-FOREST-FOLIAGE uses project-authored procedural Web Audio, the separately
+Build 5.4.2-FOREST-FOLIAGE-FIX uses project-authored procedural Web Audio, the separately
 documented CC BY 3.0 recorded report derivatives above, and the documented
 Kenney CC0 tactical callouts and player footsteps. The following pages remain research links only;
 no additional source master or runtime derivative from them ships in this
@@ -286,7 +293,7 @@ author, exact license receipt, source URL, editing notes, and runtime derivative
 
 ## Explicitly rejected and excluded content
 
-Build 5.4.1-FOREST-FOLIAGE does not integrate sci-fi, futuristic, fantasy, anachronistic,
+Build 5.4.2-FOREST-FOLIAGE-FIX does not integrate sci-fi, futuristic, fantasy, anachronistic,
 cartoon, stylized, or visibly low-detail research assets. Small or stylized
 soldier and vehicle downloads used during research were rejected as final art
 and are not part of the runtime repository. Earlier rejected experimental
@@ -335,4 +342,6 @@ license does not override the visual-quality, technical, or provenance review.
   retain the procedural forest fallback.
 - Fern 02's bundled raw 4K glTF/JPG source set streams only after the core
   mission is playable, at High, Ultra, or Extreme vegetation density with a
-  non-Low texture tier. Competitive Low does not request or render it.
+  non-Low texture tier. Its official alpha mask is used at runtime for leaf
+  cutouts, and Competitive Low does not request or render it. Keep Fern files
+  out of the service-worker precache list.

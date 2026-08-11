@@ -1,13 +1,13 @@
 # SPECTER: Blacksite
 
-Build: `5.4.1-FOREST-FOLIAGE`
+Build: `5.4.2-FOREST-FOLIAGE-FIX`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build
-5.4.1 continues the controller, viewmodel, combat presentation, enemy behavior,
+5.4.2 continues the controller, viewmodel, combat presentation, enemy behavior,
 facility, exterior-compound, rendering, materials, audio, and mission-flow work
 while keeping the project suitable for static hosting on GitHub Pages.
 
-## Build 5.4.1 highlights
+## Build 5.4.2 highlights
 
 - Damped first-person movement, sprint transitions, camera motion, weapon bob,
   and mouse-driven sway.
@@ -69,7 +69,8 @@ while keeping the project suitable for static hosting on GitHub Pages.
   photogrammetric, or AAA tree geometry.
 - The raw 4K **Fern 02** CC0 source set streams only after the core mission is
   playable, when vegetation density is **High**, **Ultra**, or **Extreme** and
-  the texture tier is not Low. It supplies sparse, non-colliding foreground
+  the texture tier is not Low. It uses the official `fern_02_alpha_4k.png` mask
+  at runtime for leaf cutouts and supplies sparse, non-colliding foreground
   clumps near the fence and extraction route. Competitive Low does not request
   or render it; its raw 4K maps are deliberately excluded from lower vegetation
   budgets. See `THIRD_PARTY_ASSETS.md` for source and credit details.
@@ -200,11 +201,14 @@ and that notice must stay with redistribution. Loading or decoding these layers
 is optional; if they are unavailable, the procedural weapon system remains the
 automatic fallback without blocking the mission.
 
-The high-resolution runtime payload is about 220 MiB, so the first launch
-requires a stable connection and can take noticeably longer on mobile networks.
+The high-resolution runtime payload is substantial, so the first launch requires
+a stable connection and can take noticeably longer on mobile networks. Confirm
+the exact download size from the final release ZIP before publishing.
 The service worker installs the small application shell first, then caches the
 large model and texture payload on a best-effort basis; a failed optional cache
 item is recovered by the normal network-first loader on a later visit.
+Fern 02 is deliberately excluded from service-worker precaching and remains an
+optional, post-readiness high-vegetation stream.
 
 The `qa` query modes in `src/main.js` are intentionally restricted to
 `localhost` and `127.0.0.1`; they are test helpers, not alternate public game
@@ -267,4 +271,4 @@ prompts, and build records.
 Research links in `THIRD_PARTY_ASSETS.md` are evaluation notes only. Their models,
 textures, and audio are not bundled merely because a source URL is listed. No
 sci-fi, futuristic, fantasy, cartoon, stylized, or visibly low-detail research
-asset was accepted into the build 5.4.1-FOREST-FOLIAGE runtime.
+asset was accepted into the build 5.4.2-FOREST-FOLIAGE-FIX runtime.

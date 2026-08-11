@@ -3,11 +3,11 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.0.0-release';
-import { buildWorldOverhaul } from './world-overhaul.js?v=5.4.1-forest-foliage';
+import { buildWorldOverhaul } from './world-overhaul.js?v=5.4.2-forest-foliage-fix';
 import { EnemyAISystem } from './enemy-ai.js?v=5.0.0-release';
-import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS } from './graphics-pipeline.js?v=5.4.1-forest-foliage';
-import { createAudioDirector } from './audio-overhaul.js?v=5.4.1-forest-foliage';
-import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.4.1-forest-foliage';
+import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS } from './graphics-pipeline.js?v=5.4.2-forest-foliage-fix';
+import { createAudioDirector } from './audio-overhaul.js?v=5.4.2-forest-foliage-fix';
+import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.4.2-forest-foliage-fix';
 
 const graphicsCustomStorageKey='specter-custom-graphics';
 const voiceSettingsStorageKey='specter-voice-settings';
@@ -66,8 +66,10 @@ const weaponSamplePayloads={};
 const enemyVoiceSamplePayloads={};
 const footstepSamplePayloads={};
 let worldOverhaul=null;
-// Optional high-vegetation details stream after the core mission is playable.
-// Competitive Low never requests them.
+// Optional high-vegetation details stream only after the core mission is
+// playable. Competitive Low and Low texture-quality custom setups never
+// request them, so the low-end path stays lightweight from the first load.
+let missionAssetsReady=false;
 let forestFernsRoot=null,forestFernLoadPromise=null,forestFernLoadAttempted=false;
 let graphicsTextureStatus='2K PBR';
 const materialTextureSlots=['map','alphaMap','aoMap','bumpMap','displacementMap','emissiveMap','metalnessMap','normalMap','roughnessMap','clearcoatMap','clearcoatNormalMap','clearcoatRoughnessMap','iridescenceMap','iridescenceThicknessMap','sheenColorMap','sheenRoughnessMap','specularColorMap','specularIntensityMap','transmissionMap','thicknessMap','lightMap'];
@@ -228,6 +230,36 @@ async function loadSetDressAsset(name,url,label='CC0 set-dressing prop'){
   }catch(error){
     console.warn(`Optional set-dressing asset ${name} unavailable; procedural props remain active.`,error);
     assetProgress.props=1;updateLoading();status('props','LOADED','procedural prop fallback');
+    return false;
+  }
+}
+async function loadForestFernAsset(){
+  const available=await loadSetDressAsset('fern02','./assets/environment/polyhaven-fern-02/fern_02_4k.gltf','CC0 4K forest fern');
+  if(!available)return false;
+  try{
+    // Fern 02's browser glTF refers to a JPEG base-color map. The official
+    // alpha mask is loaded beside it so its MASK material retains scanned leaf
+    // cutouts instead of rendering opaque cards in WebGL.
+    const alphaMask=await new Promise((resolve,reject)=>new THREE.TextureLoader().load('./assets/environment/polyhaven-fern-02/textures/fern_02_alpha_4k.png',resolve,undefined,reject));
+    alphaMask.colorSpace=THREE.NoColorSpace;alphaMask.flipY=false;alphaMask.wrapS=alphaMask.wrapT=THREE.ClampToEdgeWrapping;
+    alphaMask.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());alphaMask.needsUpdate=true;
+    const source=assetMap.get('fern02')?.scene;
+    if(!source)throw new Error('Fern 02 source scene was unavailable after loading.');
+    source.traverse(object=>{
+      if(!object.isMesh)return;
+      for(const material of (Array.isArray(object.material)?object.material:[object.material])){
+        if(!material)continue;
+        material.alphaMap=alphaMask;material.alphaTest=Math.max(.5,Number(material.alphaTest)||0);
+        material.transparent=false;material.depthWrite=true;material.side=THREE.DoubleSide;material.needsUpdate=true;
+      }
+    });
+    return true;
+  }catch(error){
+    // Do not show an unmasked fern as a white/opaque cutout if a partial
+    // download is interrupted. The existing procedural forest remains active.
+    assetMap.delete('fern02');
+    console.warn('Optional Fern 02 alpha mask unavailable; using procedural forest foliage.',error);
+    status('props','LOADED','procedural forest fallback');
     return false;
   }
 }
@@ -658,10 +690,11 @@ function installForestFerns(){
 function updateForestFernsForGraphics(preset={}){
   const enabled=forestFernsEnabledForPreset(preset);
   if(forestFernsRoot){forestFernsRoot.visible=enabled;return}
-  // Initial graphics setup happens before the world is constructed.
-  if(!enabled||!worldOverhaul||forestFernLoadAttempted)return;
+  // Initial graphics setup happens before the world is constructed. Hold this
+  // optional 4K source until the core mission has finished its required check.
+  if(!enabled||!missionAssetsReady||!worldOverhaul||forestFernLoadAttempted)return;
   forestFernLoadAttempted=true;
-  forestFernLoadPromise=loadSetDressAsset('fern02','./assets/environment/polyhaven-fern-02/fern_02_4k.gltf','CC0 4K forest fern')
+  forestFernLoadPromise=loadForestFernAsset()
     .then(available=>{
       if(!available)return;
       const count=installForestFerns();
@@ -1781,7 +1814,9 @@ if(requiredAssetFailure){
   spawnEnemy(12.5,-145,'scout');spawnEnemy(-14,-151,'breacher');spawnEnemy(6,-165,'marksman');spawnEnemy(-9,-170,'rifleman');
   applyGraphicsHardwareBudget(graphics.getDiagnostics().quality,graphics.getDiagnostics().preset);renderGraphicsControls();
   status('soldier','LOADED',`${enemies.length} tactical hostiles · 5 role kits · full-detail rifles`);hud();
+  missionAssetsReady=true;
   startButton.disabled=false;startButton.textContent='ENTER BLACKSITE';loadMessage.textContent='Assets verified. Mission ready.';
+  updateForestFernsForGraphics(graphics.getDiagnostics().preset);
 }
 
 function animate(){

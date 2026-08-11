@@ -165,9 +165,9 @@ async function assertReferenceExists(reference, source, baseDirectory, errors) {
   errors.push(`${relativeToRoot(source)} references missing local path ${reference}`);
 }
 
-async function hashFile(path) {
+async function hashFile(path, algorithm = 'sha256') {
   return new Promise((resolvePromise, rejectPromise) => {
-    const hash = createHash('sha256');
+    const hash = createHash(algorithm);
     const stream = createReadStream(path);
     stream.on('error', rejectPromise);
     stream.on('data', chunk => hash.update(chunk));
@@ -335,6 +335,28 @@ async function validatePbrManifest(errors) {
   }
 }
 
+async function validateForestFoliagePolicy(errors) {
+  const mainPath = resolve(ROOT, 'src/main.js');
+  const workerPath = resolve(ROOT, 'service-worker.js');
+  const alphaPath = resolve(ROOT, 'assets/environment/polyhaven-fern-02/textures/fern_02_alpha_4k.png');
+  const [main, worker] = await Promise.all([readFile(mainPath, 'utf8'), readFile(workerPath, 'utf8')]);
+
+  if (!main.includes('missionAssetsReady') || !main.includes('loadForestFernAsset')) {
+    errors.push('Forest foliage must wait until required mission assets are ready.');
+  }
+  if (!main.includes("preset.textureTier!=='low'") || !main.includes('fern_02_alpha_4k.png')) {
+    errors.push('Forest foliage must retain the Low texture-tier guard and official Fern alpha mask.');
+  }
+  if (worker.includes('polyhaven-fern-02/')) {
+    errors.push('Fern 02 must not be precached: it is an optional high-tier stream.');
+  }
+  if (!(await pathExists(alphaPath))) {
+    errors.push('Official Fern 02 alpha mask is missing.');
+  } else if ((await hashFile(alphaPath, 'md5')) !== '520e194db987df18fd73b49d979ada0c') {
+    errors.push('Official Fern 02 alpha-mask MD5 does not match Poly Haven metadata.');
+  }
+}
+
 async function validateRelease() {
   const errors = [];
   const javascriptCount = await validateJavaScriptSyntax(errors);
@@ -343,12 +365,13 @@ async function validateRelease() {
   await validateServiceWorkerReferences(errors);
   await validateGltfClosure(errors);
   await validateAssetProvenance(errors);
+  await validateForestFoliagePolicy(errors);
   await validatePbrManifest(errors);
   if (errors.length) {
     for (const error of errors) console.error(`ERROR: ${error}`);
     fail(`Release validation failed with ${errors.length} issue(s).`);
   }
-  console.log(`Release validation passed: ${javascriptCount} JavaScript file(s), local references, glTF closure, licenses, and PBR manifest verified.`);
+  console.log(`Release validation passed: ${javascriptCount} JavaScript file(s), local references, glTF closure, licenses, forest foliage policy, and PBR manifest verified.`);
 }
 
 function valueForArgument(name) {
