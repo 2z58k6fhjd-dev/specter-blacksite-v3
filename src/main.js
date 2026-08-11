@@ -201,11 +201,11 @@ try{rememberedGraphicsQuality=localStorage.getItem(qualityStorageKey)||''}catch{
 const requestedGraphicsQuality=Object.hasOwn(GRAPHICS_QUALITY_PRESETS,queryQuality)?queryQuality:(Object.hasOwn(GRAPHICS_QUALITY_PRESETS,rememberedGraphicsQuality)?rememberedGraphicsQuality:'high');
 const graphics=await createGraphicsPipeline({renderer,scene,camera,quality:requestedGraphicsQuality,width:innerWidth,height:innerHeight,pixelRatio:devicePixelRatio});
 const graphicsDiagnostics=graphics.getDiagnostics();
-status('graphics','LOADED',`${graphicsDiagnostics.preset.label} · ${graphicsDiagnostics.ambientOcclusionEnabled?'SSAO':'direct'}${graphicsDiagnostics.bloomEnabled?' + bloom':''}`);
+status('graphics','LOADED',`${graphicsDiagnostics.preset.label} · ${graphicsDiagnostics.ambientOcclusionEnabled?'SSAO':'direct'}${graphicsDiagnostics.screenSpaceReflectionsEnabled?' + SSR':''}${graphicsDiagnostics.bloomEnabled?' + bloom':''}`);
 
 function graphicsSummary(diagnostics=graphics.getDiagnostics()){
   const preset=diagnostics.preset;
-  return `${preset.label.toUpperCase()} · ${diagnostics.ambientOcclusionEnabled?'SSAO':'DIRECT'}${diagnostics.bloomEnabled?' + BLOOM':''}`;
+  return `${preset.label.toUpperCase()} · ${diagnostics.ambientOcclusionEnabled?'SSAO':'DIRECT'}${diagnostics.screenSpaceReflectionsEnabled?' + SSR':''}${diagnostics.bloomEnabled?' + BLOOM':''}`;
 }
 function renderGraphicsControls(diagnostics=graphics.getDiagnostics()){
   const summary=graphicsSummary(diagnostics);

@@ -1,6 +1,6 @@
 # SPECTER: Blacksite
 
-Build: `5.2.3-RELEASE-AUDIT`
+Build: `5.3.0-ULTRA-SSR`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build 5.0
 overhauls the controller, viewmodels, combat presentation, enemy behavior,
@@ -50,8 +50,9 @@ keeping the project suitable for static hosting on GitHub Pages.
   exterior terrain while keeping the vegetation to a single efficient draw call.
 - Instanced, non-explorable city skyline beyond the perimeter for atmosphere.
 - Physical sky, moving cloud bank, sun and shadow lighting, fog transitions,
-  ACES tone mapping, SSAO, restrained bloom, and selectable quality presets
-  that apply immediately and persist between launches.
+  ACES tone mapping, SSAO, restrained bloom, and a full-resolution SSR pass in
+  the 8 GB Ultra preset; selectable quality presets apply immediately and persist
+  between launches.
 - Eight project-generated PBR v2 material families using 23 browser-ready 2K
   albedo, normal, and packed ORM maps.
 - Procedural indoor/outdoor ambience, adaptive exploration/combat music,
@@ -202,4 +203,4 @@ prompts, and build records.
 Research links in `THIRD_PARTY_ASSETS.md` are evaluation notes only. Their models,
 textures, and audio are not bundled merely because a source URL is listed. No
 sci-fi, futuristic, fantasy, cartoon, stylized, or visibly low-detail research
-asset was accepted into the build 5.2.3 runtime.
+asset was accepted into the build 5.3.0 runtime.

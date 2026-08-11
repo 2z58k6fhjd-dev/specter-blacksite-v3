@@ -13,6 +13,10 @@ export const GRAPHICS_QUALITY_PRESETS = Object.freeze({
     recommendedVRAMMB: 4096,
     pixelRatioCap: 1,
     ambientOcclusion: false,
+    screenSpaceReflections: false,
+    ssrMaxDistance: 0,
+    ssrThickness: 0.06,
+    ssrOpacity: 0,
     aoKernelRadius: 4,
     aoMinDistance: 0.003,
     aoMaxDistance: 0.07,
@@ -26,6 +30,10 @@ export const GRAPHICS_QUALITY_PRESETS = Object.freeze({
     recommendedVRAMMB: 6144,
     pixelRatioCap: 1.1,
     ambientOcclusion: true,
+    screenSpaceReflections: false,
+    ssrMaxDistance: 0,
+    ssrThickness: 0.06,
+    ssrOpacity: 0,
     aoKernelRadius: 5,
     aoMinDistance: 0.0025,
     aoMaxDistance: 0.08,
@@ -39,6 +47,10 @@ export const GRAPHICS_QUALITY_PRESETS = Object.freeze({
     recommendedVRAMMB: 6144,
     pixelRatioCap: 1.25,
     ambientOcclusion: true,
+    screenSpaceReflections: false,
+    ssrMaxDistance: 0,
+    ssrThickness: 0.06,
+    ssrOpacity: 0,
     aoKernelRadius: 6,
     aoMinDistance: 0.0025,
     aoMaxDistance: 0.1,
@@ -52,6 +64,10 @@ export const GRAPHICS_QUALITY_PRESETS = Object.freeze({
     recommendedVRAMMB: 8192,
     pixelRatioCap: 1.5,
     ambientOcclusion: true,
+    screenSpaceReflections: true,
+    ssrMaxDistance: 72,
+    ssrThickness: 0.055,
+    ssrOpacity: 0.17,
     aoKernelRadius: 8,
     aoMinDistance: 0.002,
     aoMaxDistance: 0.12,
@@ -123,6 +139,7 @@ export async function createGraphicsPipeline({
   let composer = null;
   let renderPass = null;
   let ssaoPass = null;
+  let ssrPass = null;
   let bloomPass = null;
   let outputPass = null;
   let enabled = true;
@@ -166,6 +183,16 @@ export async function createGraphicsPipeline({
       } catch (error) {
         warnOnce('ssao-unavailable', 'Ambient occlusion could not be initialized; continuing without it.', error);
       }
+    }
+
+    try {
+      const { SSRPass } = await import('three/addons/postprocessing/SSRPass.js');
+      ssrPass = new SSRPass({ renderer, scene, camera, width: currentWidth, height: currentHeight });
+      ssrPass.blur = true;
+      ssrPass.bouncing = false;
+      composer.addPass(ssrPass);
+    } catch (error) {
+      warnOnce('ssr-unavailable', 'Screen-space reflections could not be initialized; continuing without them.', error);
     }
 
     if (bloom) {
@@ -227,6 +254,12 @@ export async function createGraphicsPipeline({
       bloomPass.radius = preset.bloomRadius;
       bloomPass.threshold = preset.bloomThreshold;
     }
+    if (ssrPass) {
+      ssrPass.enabled = Boolean(preset.screenSpaceReflections);
+      ssrPass.maxDistance = preset.ssrMaxDistance;
+      ssrPass.thickness = preset.ssrThickness;
+      ssrPass.opacity = preset.ssrOpacity;
+    }
     resize(currentWidth, currentHeight, requestedPixelRatio);
     return getDiagnostics();
   }
@@ -277,6 +310,8 @@ export async function createGraphicsPipeline({
       composerAvailable: Boolean(composer),
       ambientOcclusionAvailable: Boolean(ssaoPass),
       ambientOcclusionEnabled: Boolean(ssaoPass?.enabled),
+      screenSpaceReflectionsAvailable: Boolean(ssrPass),
+      screenSpaceReflectionsEnabled: Boolean(ssrPass?.enabled),
       bloomAvailable: Boolean(bloomPass),
       bloomEnabled: Boolean(bloomPass?.enabled),
       fallback: runtimeFallback || !composer,
@@ -288,13 +323,14 @@ export async function createGraphicsPipeline({
   function dispose() {
     if (disposed) return;
     disposed = true;
-    for (const pass of [ssaoPass, bloomPass, outputPass, renderPass]) {
+    for (const pass of [ssaoPass, ssrPass, bloomPass, outputPass, renderPass]) {
       try { pass?.dispose?.(); } catch (error) { warnOnce('pass-dispose-failed', 'A post-processing pass did not dispose cleanly.', error); }
     }
     try { composer?.dispose(); } catch (error) { warnOnce('composer-dispose-failed', 'The post-processing buffers did not dispose cleanly.', error); }
     composer = null;
     renderPass = null;
     ssaoPass = null;
+    ssrPass = null;
     bloomPass = null;
     outputPass = null;
   }
@@ -310,7 +346,7 @@ export async function createGraphicsPipeline({
     dispose,
     get composer() { return composer; },
     get passes() {
-      return Object.freeze({ render: renderPass, ambientOcclusion: ssaoPass, bloom: bloomPass, output: outputPass });
+      return Object.freeze({ render: renderPass, ambientOcclusion: ssaoPass, reflections: ssrPass, bloom: bloomPass, output: outputPass });
     }
   });
 }
