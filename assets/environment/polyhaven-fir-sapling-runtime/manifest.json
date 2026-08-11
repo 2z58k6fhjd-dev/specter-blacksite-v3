@@ -1,0 +1,86 @@
+{
+  "id": "polyhaven-fir-sapling-runtime",
+  "source": {
+    "asset": "Fir Sapling",
+    "page": "https://polyhaven.com/a/fir_sapling",
+    "manifest": "https://api.polyhaven.com/files/fir_sapling",
+    "license": "CC0-1.0",
+    "authors": [
+      "Rico Cilliers (modeling)",
+      "Rob Tuytel (photography)"
+    ],
+    "sourceResolution": "1K glTF",
+    "inputMd5": {
+      "fir_sapling_1k.gltf": "7b1a5ceae7be69954510b5a5c719b4fb",
+      "fir_sapling.bin": "b329143a90d95201891afc52daeb9698",
+      "textures/fir_sapling_twigs_nor_gl_1k.jpg": "764771b717c54b86fa7d3eadc4a1ada5",
+      "textures/fir_sapling_branches_diff_1k.jpg": "84f1d40b80a015d65c0ded042a10765b",
+      "textures/fir_sapling_twigs_diff_1k.jpg": "cd218269e0b34bd1bdb48a8daf21be67",
+      "textures/fir_sapling_branches_nor_gl_1k.jpg": "db70c4595cf207cc04a02b49c195b78d",
+      "textures/fir_sapling_twigs_arm_1k.jpg": "cf97b5de863ebad9a48cb187ef3c3e74",
+      "textures/fir_sapling_branches_arm_1k.jpg": "29a9ff22b8f7f224069b1254db171c05"
+    }
+  },
+  "conversion": {
+    "sourceMesh": "fir_sapling_a",
+    "sourceTriangles": 157402,
+    "lod0": {
+      "triangles": 157402,
+      "vertices": 187306,
+      "distance": "0–42 m"
+    },
+    "lod1": {
+      "triangles": 39760,
+      "vertices": 93858,
+      "distance": "42–88 m",
+      "foliageCardSampling": "1 of 4 paired foliage cards"
+    },
+    "lod2": {
+      "type": "shared project PBR crossed-card impostor",
+      "distance": "88–150 m"
+    },
+    "runtimeInstances": "6 sparse fence/gate hero saplings at High/Ultra/Extreme only"
+  },
+  "outputs": {
+    "fir_sapling_lod0.gltf": {
+      "bytes": 5601,
+      "sha256": "bfade0d073c989a660b6d7ed6ffef3b3b08560026381be204b6c453625a92bbd"
+    },
+    "fir_sapling_lod0.bin": {
+      "bytes": 7879340,
+      "sha256": "d309b74bab7848d1ce9c7a99d712b8946b9b08220c65a7cb270aefd78610edfc"
+    },
+    "fir_sapling_lod1.gltf": {
+      "bytes": 5595,
+      "sha256": "ab7768cf864d20745a85ce9b3357ba012d85005b6dea41da1c2c803dcd4419a5"
+    },
+    "fir_sapling_lod1.bin": {
+      "bytes": 3477300,
+      "sha256": "90d7645abc3f9346e7ba29db5f5cf8610b017a7181af3b53d4d514ad8d86d9c8"
+    },
+    "textures/fir_sapling_twigs_nor_gl_1k.jpg": {
+      "bytes": 474717,
+      "sha256": "34928b2a9d1f722d2f64a7da468c790ecaca9b89c00ac0878a9e0bad26748368"
+    },
+    "textures/fir_sapling_branches_diff_1k.jpg": {
+      "bytes": 776633,
+      "sha256": "46d216526b6203dbd5dc3cfce5e49d7a4cc1770da2420faab45adf33671c7de4"
+    },
+    "textures/fir_sapling_twigs_diff_1k.jpg": {
+      "bytes": 252678,
+      "sha256": "a9900fafad850deeb5f79b928fd7590bca9e8ec8734d2368d4c64bba8b0c5b22"
+    },
+    "textures/fir_sapling_branches_nor_gl_1k.jpg": {
+      "bytes": 1137599,
+      "sha256": "dbe474f6cd593d51a19fb92a627ad900b9ab47dabd1bf60117a2cf9d110f79ea"
+    },
+    "textures/fir_sapling_twigs_arm_1k.jpg": {
+      "bytes": 300249,
+      "sha256": "d1ec27a55bb67bfe5fa2c8a41a545dc71769934b142db56ad7c703d4146e1770"
+    },
+    "textures/fir_sapling_branches_arm_1k.jpg": {
+      "bytes": 793567,
+      "sha256": "44c32b056b78c1046aeeb44c973a1d1352ea12d0d7ef2425527555f1256a0964"
+    }
+  }
+}

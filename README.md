@@ -1,13 +1,13 @@
 # SPECTER: Blacksite
 
-Build: `5.7.0-FOREST-ANIMATION`
+Build: `5.8.0-FIR-LOD`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build
-5.7.0 continues the controller, viewmodel, combat presentation, enemy behavior,
+5.8.0 continues the controller, viewmodel, combat presentation, enemy behavior,
 facility, exterior-compound, rendering, materials, audio, and mission-flow work
 while keeping the project suitable for static hosting on GitHub Pages.
 
-## Build 5.7.0 highlights
+## Build 5.8.0 highlights
 
 - Damped first-person movement, sprint transitions, camera motion, weapon bob,
   and mouse-driven sway.
@@ -86,6 +86,17 @@ while keeping the project suitable for static hosting on GitHub Pages.
   density, 320 varied instanced fir cards across two shared draw calls, and
   distance-safe dithering. It remains an honest 2D impostor enhancement rather
   than a claim of full 3D scanned trees.
+- A separate bounded **Fir Sapling** close-detail layer derives one 1K CC0 Poly
+  Haven source variation into six sparse, non-colliding perimeter/extraction
+  placements. It uses a 157,402-triangle PBR LOD0 at 0-42 m, a deterministic
+  39,760-triangle PBR LOD1 at 42-88 m, and the existing shared PBR crossed-card
+  LOD2 at 88-150 m. It is a sparse high-tier detail pass; the dense forest still
+  relies on the procedural/card layers and is not claimed as a fully authored
+  3D or AAA forest.
+- The Fir Sapling layer is requested only after the core mission is playable,
+  only at High, Ultra, or Extreme vegetation with a non-Low texture tier, and is
+  excluded from service-worker precaching. Competitive Low/Intel does not
+  request or render it.
 - The raw 4K **Fern 02** CC0 source set streams only after the core mission is
   playable, when vegetation density is **High**, **Ultra**, or **Extreme** and
   the texture tier is not Low. It uses the official `fern_02_alpha_4k.png` mask
@@ -94,10 +105,12 @@ while keeping the project suitable for static hosting on GitHub Pages.
   or render it; its raw 4K maps are deliberately excluded from lower vegetation
   budgets. See `THIRD_PARTY_ASSETS.md` for source and credit details.
 - AUTO chooses a conservative graphics starting point from browser-reported
-  capabilities, then runs after entering the loaded mission (45 warm-up frames
-  followed by 120 unclamped gameplay samples). It is an estimate rather than a
-  precise VRAM test; players can choose Competitive Low, Performance, Balanced,
-  High, Ultra, or Extreme instead.
+  capabilities, including an Intel/Competitive Low fallback for generic
+  capability-constrained or very-slow devices even when the renderer name does
+  not identify Intel. It then runs after entering the loaded mission (45 warm-up
+  frames followed by 120 unclamped gameplay samples). It is an estimate rather
+  than a precise VRAM test; players can choose Competitive Low, Performance,
+  Balanced, High, Ultra, or Extreme instead.
 - Competitive Low / Intel HD 4600 uses a direct-render path that disables
   shadows, post-processing, ground grass, and dense foliage. On a fresh
   Competitive Low or Low-texture launch it selects a checked 68-file,
@@ -224,6 +237,11 @@ during play expose AUTO, the six manual profiles, and custom controls without a
 reload. The selected preference is stored locally, while a valid `?quality=`
 query parameter intentionally takes precedence for a one-off test session.
 
+The focused local-browser acceptance record for this build is in
+[`docs/QA/5.8.0-runtime-acceptance.md`](docs/QA/5.8.0-runtime-acceptance.md).
+It records the exercised High forest, Competitive Low, breaker, and extraction
+paths, along with the coverage limits that still need real-hardware follow-up.
+
 ## Audio provenance and fallback
 
 The runtime retains two short, normalized derivatives from the recorded
@@ -243,8 +261,9 @@ and can take noticeably longer on mobile networks.
 The service worker installs the small application shell first, then caches the
 large model and texture payload on a best-effort basis; a failed optional cache
 item is recovered by the normal network-first loader on a later visit.
-Fern 02 is deliberately excluded from service-worker precaching and remains an
-optional, post-readiness high-vegetation stream.
+Fern 02 and the bounded Fir Sapling derivatives are deliberately excluded from
+service-worker precaching and remain optional, post-readiness high-vegetation
+streams.
 
 The `qa` query modes in `src/main.js` are intentionally restricted to
 `localhost` and `127.0.0.1`; they are test helpers, not alternate public game
@@ -285,6 +304,14 @@ through shared, instanced PBR materials. The Douglas-fir v2 card uses retained
 project-generated albedo, normal, and roughness maps; the cards are hidden at
 Off, Low, and Medium density and use no collision. This keeps the procedural
 forest as the all-tier fallback.
+At High, Ultra, or Extreme vegetation with a non-Low texture tier, six sparse
+CC0 Poly Haven Fir Sapling derivatives can stream after core mission readiness
+for close perimeter/extraction detail. They retain one 1K PBR source variation
+as a 157,402-triangle LOD0 (0-42 m) and a 39,760-triangle LOD1 (42-88 m), then
+hand off to the shared crossed-card LOD2 (88-150 m). They have no collision,
+are omitted by Competitive Low, and do not turn the procedural/card mass forest
+into a fully authored 3D tree pack. Source, hashes, and conversion details are
+in `assets/environment/polyhaven-fir-sapling-runtime/`.
 Fern 02 streams only after the core mission is playable, and only at High, Ultra,
 or Extreme vegetation with a non-Low texture tier. Competitive Low does not
 request or render Fern 02, and its original 4K maps are excluded from lower
@@ -298,6 +325,7 @@ remain beside every bundled third-party model:
 - `assets/ar15/license.txt`
 - `assets/m9/license.txt`
 - `assets/soldier/license.txt`
+- `assets/environment/polyhaven-fir-sapling-runtime/LICENSE.txt`
 
 Important: the bundled AR-15 by Lokeig is licensed CC BY-NC 4.0. It requires
 attribution and prohibits commercial use. Because the HK416, C5-K, R7.62, and
@@ -313,4 +341,4 @@ prompts, and build records.
 Research links in `THIRD_PARTY_ASSETS.md` are evaluation notes only. Their models,
 textures, and audio are not bundled merely because a source URL is listed. No
 sci-fi, futuristic, fantasy, cartoon, stylized, or visibly low-detail research
-asset was accepted into the build 5.7.0-FOREST-ANIMATION runtime.
+asset was accepted into the build 5.8.0-FIR-LOD runtime.

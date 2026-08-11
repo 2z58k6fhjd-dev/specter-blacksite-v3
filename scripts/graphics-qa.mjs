@@ -191,6 +191,34 @@ await test('AUTO benchmark samples raw gameplay timing only', () => {
   check(/startButton\.onclick=.*missionHasStarted=true[\s\S]*beginAutoGraphicsBenchmark\(\)/.test(main), 'Mission start must release a pending AUTO benchmark.');
 });
 
+await test('AUTO falls back to Intel for generic constrained or very slow hardware', () => {
+  const functionStart = main.indexOf('function recommendedGraphicsQuality(capabilities,benchmarkMs=null){');
+  const functionEnd = main.indexOf('\nconst startupGraphicsCapabilities=', functionStart);
+  check(functionStart >= 0 && functionEnd > functionStart, 'recommendedGraphicsQuality is missing or has no stable boundary.');
+  const recommend = Function(`"use strict";${main.slice(functionStart, functionEnd)};return recommendedGraphicsQuality;`)();
+  const capableGeneric = {
+    renderer: 'ANGLE (Generic GPU)', webgl2: true, maxTextureSize: 16384,
+    maxRenderbufferSize: 16384, maxSamples: 4, maxAnisotropy: 16,
+    deviceMemoryGB: 8, cpuCores: 8, displayPixels: 1920 * 1080
+  };
+  const weakGenericLegacy = {
+    ...capableGeneric, renderer: 'ANGLE (Unknown Vendor)', webgl2: false,
+    maxTextureSize: 8192, maxRenderbufferSize: 4096, maxAnisotropy: 4,
+    deviceMemoryGB: 0, cpuCores: 4
+  };
+  const weakGenericDualCore = {
+    ...capableGeneric, renderer: 'WebGL Renderer Unavailable', maxTextureSize: 8192,
+    maxRenderbufferSize: 8192, maxAnisotropy: 4, deviceMemoryGB: 4, cpuCores: 2
+  };
+
+  check(recommend({ ...capableGeneric, maxTextureSize: 4096 }) === 'intel', 'A 4096px texture limit must retain the Intel fallback.');
+  check(recommend({ ...capableGeneric, deviceMemoryGB: 2 }) === 'intel', 'A 2 GB reported-memory device must retain the Intel fallback.');
+  check(recommend(weakGenericLegacy) === 'intel', 'A generic legacy constrained renderer must select Intel without an Intel name.');
+  check(recommend(weakGenericDualCore) === 'intel', 'A generic two-core constrained device must select Intel without an Intel name.');
+  check(recommend(capableGeneric, 40) === 'intel', 'A generic device with a sustained 40 ms P90 must select Intel.');
+  check(recommend(capableGeneric, 16) !== 'intel', 'A capable generic device must not be demoted by a healthy benchmark.');
+});
+
 await test('low-payload manifest and URL-selection contract are complete', async () => {
   check(await pathExists(LOW_MANIFEST_PATH), 'assets/low-textures/manifest.json is missing. Run scripts/build-low-textures.py.');
   const manifest = JSON.parse(await readFile(LOW_MANIFEST_PATH, 'utf8'));

@@ -541,14 +541,17 @@ async function validateOptionalNativePbrManifest(errors) {
 
 async function validateForestFoliagePolicy(errors) {
   const mainPath = resolve(ROOT, 'src/main.js');
+  const worldPath = resolve(ROOT, 'src/world-overhaul.js');
   const workerPath = resolve(ROOT, 'service-worker.js');
   const alphaPath = resolve(ROOT, 'assets/environment/polyhaven-fern-02/textures/fern_02_alpha_4k.png');
+  const heroRoot = resolve(ROOT, 'assets/environment/polyhaven-fir-sapling-runtime');
+  const heroManifestPath = resolve(heroRoot, 'manifest.json');
   const generatedCardFiles = [
     'assets/environment/generated/douglas-fir-card-v2.png',
     'assets/environment/generated/douglas-fir-card-v2-normal.png',
     'assets/environment/generated/douglas-fir-card-v2-roughness.png'
   ];
-  const [main, worker] = await Promise.all([readFile(mainPath, 'utf8'), readFile(workerPath, 'utf8')]);
+  const [main, world, worker] = await Promise.all([readFile(mainPath, 'utf8'), readFile(worldPath, 'utf8'), readFile(workerPath, 'utf8')]);
 
   if (!main.includes('missionAssetsReady') || !main.includes('loadForestFernAsset')) {
     errors.push('Forest foliage must wait until required mission assets are ready.');
@@ -566,10 +569,60 @@ async function validateForestFoliagePolicy(errors) {
   if (worker.includes('polyhaven-fern-02/')) {
     errors.push('Fern 02 must not be precached: it is an optional high-tier stream.');
   }
+  if (worker.includes('polyhaven-fir-sapling-runtime/')) {
+    errors.push('CC0 Fir Sapling hero assets must not be precached: they are optional High-tier streams.');
+  }
   if (!(await pathExists(alphaPath))) {
     errors.push('Official Fern 02 alpha mask is missing.');
   } else if ((await hashFile(alphaPath, 'md5')) !== '520e194db987df18fd73b49d979ada0c') {
     errors.push('Official Fern 02 alpha-mask MD5 does not match Poly Haven metadata.');
+  }
+
+  if (!(await pathExists(heroManifestPath))) {
+    errors.push('CC0 Fir Sapling runtime manifest is missing.');
+    return;
+  }
+  let heroManifest;
+  try {
+    heroManifest = JSON.parse(await readFile(heroManifestPath, 'utf8'));
+  } catch (error) {
+    errors.push(`CC0 Fir Sapling runtime manifest is invalid: ${error.message}`);
+    return;
+  }
+  if (heroManifest?.source?.license !== 'CC0-1.0' || !Array.isArray(heroManifest?.source?.authors) || heroManifest.source.authors.length < 2) {
+    errors.push('CC0 Fir Sapling runtime manifest must retain its CC0 license and both Poly Haven creator credits.');
+  }
+  const inputMd5 = heroManifest?.source?.inputMd5 ?? {};
+  for (const [name, expectedMd5] of Object.entries({
+    'fir_sapling_1k.gltf': '7b1a5ceae7be69954510b5a5c719b4fb',
+    'fir_sapling.bin': 'b329143a90d95201891afc52daeb9698'
+  })) {
+    if (String(inputMd5[name] ?? '').toLowerCase() !== expectedMd5) errors.push(`CC0 Fir Sapling source MD5 is missing or incorrect: ${name}`);
+  }
+  const lod0 = Number(heroManifest?.conversion?.lod0?.triangles);
+  const lod1 = Number(heroManifest?.conversion?.lod1?.triangles);
+  if (!Number.isFinite(lod0) || lod0 < 10000 || lod0 > 160000) errors.push('CC0 Fir Sapling LOD0 must remain a bounded authored high-detail derivative.');
+  if (!Number.isFinite(lod1) || lod1 < 1000 || lod1 >= lod0 || lod1 > 45000) errors.push('CC0 Fir Sapling LOD1 must be a materially reduced geometry derivative.');
+  if (heroManifest?.conversion?.lod2?.type !== 'shared project PBR crossed-card impostor') errors.push('CC0 Fir Sapling must retain the shared PBR card LOD2 fallback.');
+  const outputRecords = heroManifest?.outputs ?? {};
+  for (const [relativePath, record] of Object.entries(outputRecords)) {
+    const outputPath = resolve(heroRoot, relativePath);
+    if (!(await pathExists(outputPath))) {
+      errors.push(`CC0 Fir Sapling runtime output is missing: ${relativePath}`);
+      continue;
+    }
+    const metadata = await stat(outputPath);
+    if (metadata.size !== Number(record?.bytes)) errors.push(`CC0 Fir Sapling output byte count mismatch: ${relativePath}`);
+    if ((await hashFile(outputPath)) !== String(record?.sha256 ?? '').toLowerCase()) errors.push(`CC0 Fir Sapling output SHA-256 mismatch: ${relativePath}`);
+  }
+  for (const required of ['fir_sapling_lod0.gltf', 'fir_sapling_lod1.gltf', 'README.md', 'LICENSE.txt']) {
+    if (!(await pathExists(resolve(heroRoot, required)))) errors.push(`CC0 Fir Sapling runtime record is missing: ${required}`);
+  }
+  if (!main.includes('loadForestHeroFirAssets') || !main.includes('forestHeroFirsEnabledForPreset')) {
+    errors.push('CC0 Fir Sapling hero assets must remain lazy-loaded behind the High vegetation gate.');
+  }
+  if (!world.includes('installHeroSaplings') || !world.includes('new THREE.LOD()') || !world.includes('cc0-fir-sapling-hero-')) {
+    errors.push('Forest world must retain the CC0 Fir Sapling LOD installation path.');
   }
 }
 

@@ -1,6 +1,6 @@
 # SPECTER: Blacksite - Asset Provenance and License Manifest
 
-This manifest distinguishes assets that ship with build `5.7.0-FOREST-ANIMATION` from links retained
+This manifest distinguishes assets that ship with build `5.8.0-FIR-LOD` from links retained
 only for research. A source appearing in a research table does not mean its
 files were downloaded, integrated, or redistributed.
 
@@ -93,6 +93,21 @@ leaf cutouts. Competitive Low does not request or render Fern 02. The raw 4K
 maps remain excluded from lower vegetation budgets, and no Fern file is
 service-worker precached.
 
+[Fir Sapling](https://polyhaven.com/a/fir_sapling) by Rico Cilliers (modeling)
+and Rob Tuytel (photography) is bundled as a bounded 1K-derived high-tier
+runtime layer in `assets/environment/polyhaven-fir-sapling-runtime/`. Poly Haven
+publishes the source under **CC0 1.0**. The local `README.md`, `LICENSE.txt`, and
+`manifest.json` retain the official source links, source MD5 values, output
+SHA-256 values, and conversion record. The runtime keeps one source variation as
+a 157,402-triangle PBR LOD0 (0-42 m) and a 39,760-triangle PBR LOD1 (42-88 m),
+then uses the project PBR crossed-card LOD2 from 88-150 m. Only six sparse,
+non-colliding perimeter/extraction placements are installed; they stream after
+core mission readiness only at High, Ultra, or Extreme vegetation with a
+non-Low texture tier. Competitive Low/Intel neither requests nor renders them,
+and the folder is not service-worker precached. These derivatives add bounded
+close detail; they do not make the procedural/card mass forest a full authored
+3D or AAA forest.
+
 ## Project-authored and derived runtime assets
 
 | Asset | Creation and dependency record | Runtime status |
@@ -103,7 +118,8 @@ service-worker precached.
 | R7.62 Designated Rifle | Full high-resolution clone of the bundled AR-15 source with project-authored marksman proportions, material tint, handling data, and anchors | Bundled and player-selectable; CC BY-NC 4.0 applies through the source clone |
 | MCR-300 Suppressed | Full high-resolution clone of the bundled AR-15 source with a project-authored suppressor, material tint, handling data, and anchors | Bundled and player-selectable; CC BY-NC 4.0 applies through the source clone |
 | Facility, exterior compound, vehicles, props, extraction zone, and non-explorable PNW perimeter forest | Project-authored procedural Three.js geometry; its baseline forest is a texture-free instanced fallback beyond the boundary, with no collision or explorable terrain | Bundled |
-| High-tier fir-tree photo-tree impostors | Project-generated optional `assets/environment/generated/fir-tree-billboard-v1.png` plus the Douglas-fir v2 albedo/normal/roughness card maps; loaded into `environmentTextures.firCards` and used through shared instanced PBR materials | High/Ultra/Extreme vegetation only; absent when the non-critical texture fetch fails; 2D impostors, not a bundled Fir Tree 01 model, full 3D trees, photogrammetry, or AAA geometry |
+| High-tier fir-tree photo-tree impostors | Project-generated optional `assets/environment/generated/fir-tree-billboard-v1.png` plus the Douglas-fir v2 albedo/normal/roughness card maps; loaded into `environmentTextures.firCards` and used through shared instanced PBR materials | High/Ultra/Extreme vegetation only; absent when the non-critical texture fetch fails; these remain 2D impostors, not photogrammetric or AAA forest geometry. The separate bounded CC0 Fir Sapling derivative is documented above. |
+| Bounded high-tier Fir Sapling derivatives | One CC0 Poly Haven 1K source variation (`fir_sapling_a`) is converted into local PBR LOD0 and LOD1 glTF derivatives, then hands off to the project crossed-card LOD2 | Six sparse, non-colliding hero placements only; LOD0: 157,402 triangles at 0-42 m, LOD1: 39,760 triangles at 42-88 m, LOD2 card: 88-150 m. Lazy post-readiness at High/Ultra/Extreme with a non-Low texture tier; no Competitive Low/Intel request or service-worker precache. This is close-detail augmentation, not a dense authored 3D forest. |
 | Weapon action timelines | Project-authored marker choreography for reload, equip, and chamber/bolt-check actions; markers synchronize magazine/action/ready events, visual motion, and existing sound cues | Bundled; not imported mocap or a third-party animation pack |
 | Tactical death drops | Project-authored detach, throw, settle, and cleanup behavior for each defeated enemy's existing carried rifle and role equipment | Bundled presentation only; no pickup, inventory, or loot assets/system |
 | Forest-gate pursuit extraction | Project-authored gate, camera/controller handoff, pursuit audio/visual cues, subtitles, and victory transition | Bundled controlled end beat; no additional licensed scenario asset or post-gate combat space |
@@ -121,7 +137,7 @@ every enemy weapon clone.
 
 `src/modern-arsenal.js` is preserved as an optional project-authored prototype
 module. It contains compact-carbine, marksman-rifle, and procedural T12 tactical
-autoloader factories plus metadata and animation anchors. Build 5.7.0-FOREST-ANIMATION does not
+autoloader factories plus metadata and animation anchors. Build 5.8.0-FIR-LOD does not
 import, execute, or precache this module, and no runtime weapon slot selects it.
 In particular, the procedural T12 failed the final close-up art-quality gate and
 has no selectable slot; slot 5 is the full-source MCR-300 suppressed rifle
@@ -172,7 +188,7 @@ the original source folders.
 The original `concrete-wall.webp`, `metal-floor.webp`, `utility-panels.webp`, and
 `grass-field-v1.webp` files were generated specifically for this project with
 OpenAI image generation on 2026-08-08. They are preserved with their records in
-`assets/environment/README.txt`, but build 5.7.0-FOREST-ANIMATION uses the PBR v2 set for its main
+`assets/environment/README.txt`, but build 5.8.0-FIR-LOD uses the PBR v2 set for its main
 runtime materials.
 
 ## Bundled recorded weapon reports
@@ -193,7 +209,7 @@ and browser-budget acceptance gates, see [`ASSET_CATALOG.md`](ASSET_CATALOG.md).
 It does not alter the attributions or local license records in this manifest.
 
 The following links are retained for future evaluation. None of these candidate
-archives or models should be described as included in build 5.7.0-FOREST-ANIMATION unless a future
+archives or models should be described as included in build 5.8.0-FIR-LOD unless a future
 commit adds the source files, local license receipt, author, conversion notes,
 optimization record, and runtime integration.
 
@@ -251,7 +267,7 @@ links only and are not bundled:
 
 The [Ural 4320](https://sketchfab.com/3d-models/ural-4320-f953c51a5dbc4a15949f4dcc0905c4e8)
 by Brout was identified as a CC BY 4.0 present-day military truck candidate. It
-is not bundled; build 5.7.0-FOREST-ANIMATION uses project-authored procedural vehicle geometry.
+is not bundled; build 5.8.0-FIR-LOD uses project-authored procedural vehicle geometry.
 
 ## Bundled tactical voice callouts
 
@@ -282,7 +298,7 @@ procedural fallback remains available if a clip cannot download or decode.
 
 ## Research-only audio candidates - not bundled
 
-Build 5.7.0-FOREST-ANIMATION uses project-authored procedural Web Audio, the separately
+Build 5.8.0-FIR-LOD uses project-authored procedural Web Audio, the separately
 documented CC BY 3.0 recorded report derivatives above, and the documented
 Kenney CC0 tactical callouts and player footsteps. The following pages remain research links only;
 no additional source master or runtime derivative from them ships in this
@@ -306,7 +322,7 @@ author, exact license receipt, source URL, editing notes, and runtime derivative
 
 ## Explicitly rejected and excluded content
 
-Build 5.7.0-FOREST-ANIMATION does not integrate sci-fi, futuristic, fantasy, anachronistic,
+Build 5.8.0-FIR-LOD does not integrate sci-fi, futuristic, fantasy, anachronistic,
 cartoon, stylized, or visibly low-detail research assets. Small or stylized
 soldier and vehicle downloads used during research were rejected as final art
 and are not part of the runtime repository. Earlier rejected experimental
@@ -356,6 +372,13 @@ license does not override the visual-quality, technical, or provenance review.
   non-colliding, shared-material instanced 2D impostor. Do not relabel either
   card as scanned/modelled 3D trees or an AAA foliage asset. If optional texture
   data is unavailable, omit the batch and retain the procedural forest fallback.
+- The bounded CC0 Fir Sapling derivatives may stream only after core mission
+  readiness at High, Ultra, or Extreme vegetation with a non-Low texture tier.
+  Keep the six non-colliding 1K PBR LOD0/LOD1 placements outside the collision
+  boundary, preserve their 0-42 m / 42-88 m / 88-150 m LOD handoff, and exclude
+  them from Competitive Low/Intel and service-worker precaching. They are sparse
+  close-detail augmentation, not permission to relabel the procedural/card mass
+  forest as a dense, fully authored 3D or AAA forest.
 - Fern 02's bundled raw 4K glTF/JPG source set streams only after the core
   mission is playable, at High, Ultra, or Extreme vegetation density with a
   non-Low texture tier. Its official alpha mask is used at runtime for leaf

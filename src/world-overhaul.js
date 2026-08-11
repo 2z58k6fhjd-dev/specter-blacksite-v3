@@ -118,6 +118,24 @@ function addForestBackdrop(scene,groundMaterial,firCards=[]){
   // layer. The compact cone/cylinder forest remains a no-download fallback for
   // low settings and fills the far perimeter beyond the detail cards.
   const forest=new THREE.Group();forest.name='pnw-perimeter-forest';
+  // Dense instancing owns the broad canopy. These six sparse, fully authored
+  // CC0 fir saplings are a close-range detail layer only: each uses a real
+  // PBR glTF LOD0/LOD1 pair and falls through to the shared card LOD2.
+  const heroSaplingGroup=new THREE.Group();heroSaplingGroup.name='cc0-fir-sapling-hero-lods';forest.add(heroSaplingGroup);
+  const heroSaplings=[];let heroEnabled=false,forestShadows=true;
+  // These are deliberately set behind the perimeter rather than directly on
+  // it.  Each one gets a small scenic clearing so the real sapling silhouette
+  // is not visually buried in the inexpensive cone/card canopy.  The first
+  // site is the exterior inspection composition; the others frame the longer
+  // perimeter and extraction sightlines.
+  const heroPlacements=[
+    {x:-51.2,z:-60.5,rotation:.38,height:9.8,clearance:18.4},{x:51.1,z:-74.8,rotation:-.56,height:8.7,clearance:10.5},
+    {x:-51.8,z:-114.6,rotation:.71,height:9.4,clearance:11.2},{x:51.7,z:-138.4,rotation:-.29,height:8.8,clearance:10.5},
+    {x:-13.6,z:-191.6,rotation:.47,height:9.1,clearance:10.8},{x:15.8,z:-195.2,rotation:-.64,height:8.5,clearance:10.2}
+  ];
+  const isHeroPresentationClear=(x,z,padding=0)=>heroPlacements.some(placement=>{
+    const radius=placement.clearance+padding,dx=x-placement.x,dz=z-placement.z;return dx*dx+dz*dz<radius*radius;
+  });
   // Reuse the already-loaded grass/soil PBR set, but scale this geometry's UVs
   // independently. The exterior's close-detail texel density therefore carries
   // into the much larger non-explorable forest floor without cloning texture
@@ -136,11 +154,13 @@ function addForestBackdrop(scene,groundMaterial,firCards=[]){
   // collision, so the existing readable combat boundary remains authoritative.
   for(let index=0;index<176;index++){
     const side=index%2?-1:1,x=side*(50+random()*18),z=-51-random()*132;
-    nearTrees.push(makeTree(x,z,12+random()*12));
+    const tree=makeTree(x,z,12+random()*12);
+    if(!isHeroPresentationClear(tree.x,tree.z,tree.crown*2.2))nearTrees.push(tree);
   }
   for(let index=0;index<348;index++){
     const x=(random()-.5)*204,z=-190-random()*104;
-    midTrees.push(makeTree(x,z,14+random()*15));
+    const tree=makeTree(x,z,14+random()*15);
+    if(!isHeroPresentationClear(tree.x,tree.z,tree.crown*2.2))midTrees.push(tree);
   }
   for(let index=0;index<560;index++){
     const x=(random()-.5)*352,z=-286-random()*152;
@@ -170,14 +190,21 @@ function addForestBackdrop(scene,groundMaterial,firCards=[]){
   // Low/medium settings retain the compact procedural layers above.
   const coniferCards=(Array.isArray(firCards)?firCards:[]).filter(card=>card?.map?.isTexture);
   const photoTreeLayers=[],photoTrees=[],photoRandom=mulberry32(59371);
-  const addPhotoTree=(x,z)=>photoTrees.push({
-    x,z,height:10+photoRandom()*12,width:5.6+photoRandom()*4.8,rotation:photoRandom()*Math.PI*2,
-    // A restrained per-instance multiplier breaks up the repeated card source
-    // while preserving its natural tree albedo. It is intentionally subtle:
-    // these remain 2D impostors, not a claim of unique full 3D tree assets.
-    tint:.82+photoRandom()*.18,
-    variant:photoTrees.length%Math.max(1,coniferCards.length)
-  });
+  let photoTreeCandidates=0;
+  const addPhotoTree=(x,z)=>{
+    const tree={
+      x,z,height:10+photoRandom()*12,width:5.6+photoRandom()*4.8,rotation:photoRandom()*Math.PI*2,
+      // A restrained per-instance multiplier breaks up the repeated card source
+      // while preserving its natural tree albedo. It is intentionally subtle:
+      // these remain 2D impostors, not a claim of unique full 3D tree assets.
+      tint:.82+photoRandom()*.18,
+      variant:photoTreeCandidates++%Math.max(1,coniferCards.length)
+    };
+    // Preserve the detailed hero's silhouette at High+ while still consuming
+    // the deterministic candidate sequence.  Low/Intel never build these
+    // cards and keep their existing lightweight cone-only path.
+    if(!isHeroPresentationClear(tree.x,tree.z,tree.width*.5))photoTrees.push(tree);
+  };
   // Keep these scenic cards just outside the perimeter and clear of the
   // extraction gate's sightline. They are never inserted into collision.
   for(let index=0;index<184;index++){
@@ -214,7 +241,50 @@ function addForestBackdrop(scene,groundMaterial,firCards=[]){
     if(typeof value==='number'&&Number.isFinite(value))return THREE.MathUtils.clamp(value,0,1);
     return ({off:0,low:.24,medium:.58,high:.84,ultra:.94,extreme:1}[String(value||'').toLowerCase()]??.84);
   };
-  const activeTreeCounts={near:0,mid:0,far:0,photo:0};
+  const activeTreeCounts={near:0,mid:0,far:0,photo:0,hero:0};
+  function setHeroShadows(){
+    for(const lod of heroSaplings){
+      for(const [level,entry] of lod.levels.entries())entry.object.traverse?.(object=>{
+        if(!object.isMesh)return;
+        object.castShadow=Boolean(forestShadows&&level===0);
+        object.receiveShadow=Boolean(forestShadows&&level<2);
+      });
+    }
+  }
+  function setHeroVisibility(){
+    for(const lod of heroSaplings)lod.visible=Boolean(heroEnabled&&forest.visible);
+    activeTreeCounts.hero=heroEnabled?heroSaplings.length:0;
+  }
+  function normalizeHeroLevel(object){
+    object.updateWorldMatrix(true,true);
+    const bounds=new THREE.Box3().setFromObject(object),size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());
+    if(size.y<.001)throw new Error('CC0 Fir Sapling LOD has no usable vertical bounds.');
+    object.position.sub(center);object.position.y+=size.y*.5;
+    return size;
+  }
+  function createHeroCard(size){
+    const card=coniferCards.find(entry=>entry?.normalMap)||coniferCards[0];
+    if(!card)return new THREE.Object3D();
+    const material=new THREE.MeshStandardMaterial({
+      map:card.map,normalMap:card.normalMap||null,roughnessMap:card.roughnessMap||null,
+      color:0xffffff,roughness:.88,metalness:0,transparent:true,alphaTest:.18,
+      side:THREE.DoubleSide,depthWrite:true,fog:true
+    });
+    const mesh=new THREE.Mesh(createConiferCardGeometry(),material);mesh.name='cc0-fir-sapling-lod2-pbr-card';
+    mesh.scale.set(Math.max(size.x,size.z)*1.15,size.y,Math.max(size.x,size.z)*1.15);return mesh;
+  }
+  function installHeroSaplings(lod0Source,lod1Source){
+    if(heroSaplings.length||!lod0Source||!lod1Source)return heroSaplings.length;
+    const sourceLod0=lod0Source.clone(true),sourceLod1=lod1Source.clone(true),lod0Size=normalizeHeroLevel(sourceLod0),lod1Size=normalizeHeroLevel(sourceLod1);
+    for(const [index,placement] of heroPlacements.entries()){
+      const lod=new THREE.LOD();lod.name=`cc0-fir-sapling-hero-${index+1}`;lod.position.set(placement.x,0,placement.z);lod.rotation.y=placement.rotation;lod.autoUpdate=false;
+      const scale=placement.height/lod0Size.y,full=sourceLod0.clone(true),reduced=sourceLod1.clone(true),card=createHeroCard(lod0Size),hidden=new THREE.Object3D();
+      full.scale.multiplyScalar(scale);reduced.scale.multiplyScalar(scale);card.scale.multiplyScalar(scale);hidden.name='cc0-fir-sapling-lod3-hidden';
+      lod.addLevel(full,0);lod.addLevel(reduced,42);lod.addLevel(card,88);lod.addLevel(hidden,150);
+      heroSaplingGroup.add(lod);heroSaplings.push(lod);
+    }
+    setHeroShadows();setHeroVisibility();return heroSaplings.length;
+  }
   function setDensity(value,{photoEnabled=true}={}){
     const density=densityValue(value),fractions=density<=0?{near:0,mid:0,far:0}:{near:THREE.MathUtils.clamp((density-.24)/.76,0,1),mid:THREE.MathUtils.clamp((density-.08)/.92,0,1),far:Math.max(.18,density)};
     for(const mesh of layers){const lod=mesh.userData.forestLod;mesh.count=Math.round(mesh.userData.maxInstances*fractions[lod])}
@@ -226,10 +296,18 @@ function addForestBackdrop(scene,groundMaterial,firCards=[]){
       const count=Math.round(layer.userData.maxInstances*photoFraction);layer.count=count;layer.visible=count>0;layer.material.opacity=.48+.52*photoFraction;photoTreeCount+=count;
     }
     activeTreeCounts.near=Math.round(nearTrees.length*fractions.near);activeTreeCounts.mid=Math.round(midTrees.length*fractions.mid);activeTreeCounts.far=Math.round(farTrees.length*fractions.far);activeTreeCounts.photo=photoTreeCount;forest.visible=density>0;
-    return {density,near:activeTreeCounts.near,mid:activeTreeCounts.mid,far:activeTreeCounts.far,photo:activeTreeCounts.photo,total:activeTreeCounts.near+activeTreeCounts.mid+activeTreeCounts.far+activeTreeCounts.photo};
+    heroEnabled=Boolean(photoEnabled&&density>=.72);setHeroVisibility();
+    return {density,near:activeTreeCounts.near,mid:activeTreeCounts.mid,far:activeTreeCounts.far,photo:activeTreeCounts.photo,hero:activeTreeCounts.hero,total:activeTreeCounts.near+activeTreeCounts.mid+activeTreeCounts.far+activeTreeCounts.photo+activeTreeCounts.hero};
   }
-  function setShadows(enabled){for(const mesh of layers)mesh.castShadow=Boolean(enabled&&mesh.userData.forestCastsShadow)}
-  return {group:forest,layers,setDensity,setShadows,get activeTreeCounts(){return {...activeTreeCounts}}};
+  function setShadows(enabled){forestShadows=Boolean(enabled);for(const mesh of layers)mesh.castShadow=Boolean(forestShadows&&mesh.userData.forestCastsShadow);setHeroShadows()}
+  function updateHeroLods(camera){
+    if(!heroEnabled||!camera)return;
+    // LOD selection happens before the renderer's scene traversal.  Keep the
+    // camera matrix current so an input-frame movement cannot show a stale
+    // level during the close forest inspection route.
+    camera.updateMatrixWorld?.();for(const lod of heroSaplings)lod.update(camera);
+  }
+  return {group:forest,layers,setDensity,setShadows,installHeroSaplings,updateHeroLods,get activeTreeCounts(){return {...activeTreeCounts}}};
 }
 
 function createBarrier(material,x,z,rotation=0){
@@ -554,14 +632,36 @@ export function buildWorldOverhaul({scene,collision,environmentTextures,facility
   for(const [x,z] of [[10,-55],[14,-58],[-11,-112],[13,-118],[-18,-67]]){
     const cover=createBox('field-supply-crate',new THREE.Vector3(1.45,1.15,1.25),darkConcrete,new THREE.Vector3(x,.575,z),new THREE.Euler(0,(x+z)*.03,0));scene.add(cover);collision.push(cover);
   }
-  // Boundary fencing keeps the outdoor combat space readable without invisible walls.
-  const fenceMaterial=new THREE.MeshStandardMaterial({color:0x4c5551,roughness:.58,metalness:.72,wireframe:true});
+  // Boundary fencing keeps the outdoor combat space readable without invisible
+  // walls.  The old wireframe boxes drew a heavy black lattice over the close
+  // forest composition.  Keep the same physical collision panels, but render
+  // them as a restrained transparent chain-link scrim with solid posts/rails.
+  // This reads as a grounded security fence without obscuring a tree viewed
+  // from inside the playable compound.
+  const fenceMaterial=new THREE.MeshStandardMaterial({color:0x5b6a62,roughness:.72,metalness:.48,transparent:true,opacity:.075,depthWrite:false,side:THREE.FrontSide});
+  const fenceFrameMaterial=new THREE.MeshStandardMaterial({color:0x43554c,roughness:.58,metalness:.68});
+  const addFencePanel=(name,size,position)=>{
+    const panel=createBox(name,size,fenceMaterial,position);panel.castShadow=false;panel.receiveShadow=false;scene.add(panel);collision.push(panel);return panel;
+  };
   for(let z=-49;z>=-178;z-=5){
-    for(const x of [-43,43]){const panel=createBox('perimeter-fence',new THREE.Vector3(.08,2.5,4.8),fenceMaterial,new THREE.Vector3(x,1.25,z));scene.add(panel);collision.push(panel)}
+    for(const x of [-43,43])addFencePanel('perimeter-fence',new THREE.Vector3(.08,2.5,4.8),new THREE.Vector3(x,1.25,z));
   }
   for(let x=-40;x<=40;x+=5){
     if(Math.abs(x)<5.5)continue;
-    const panel=createBox('far-perimeter-fence',new THREE.Vector3(4.8,2.5,.08),fenceMaterial,new THREE.Vector3(x,1.25,-180));scene.add(panel);collision.push(panel)
+    addFencePanel('far-perimeter-fence',new THREE.Vector3(4.8,2.5,.08),new THREE.Vector3(x,1.25,-180));
+  }
+  // The low-cost opaque frame supplies scale and believable construction while
+  // the translucent collision scrim stays clear in first-person sightlines.
+  // Side-fence rails are deliberately omitted: at a shallow first-person angle
+  // they form a distracting black stripe across the close forest composition.
+  // Posts preserve the perimeter read; the panel and collider still carry the
+  // physical boundary.
+  for(const x of [-43,43]){
+    for(let z=-54;z>=-174;z-=12)scene.add(createBox('perimeter-fence-post',new THREE.Vector3(.18,2.78,.18),fenceFrameMaterial,new THREE.Vector3(x,1.39,z)));
+  }
+  for(const [x,width] of [[-23,34],[23,34]]){
+    scene.add(createBox('far-perimeter-fence-top-rail',new THREE.Vector3(width,.055,.08),fenceFrameMaterial,new THREE.Vector3(x,2.42,-180)));
+    scene.add(createBox('far-perimeter-fence-bottom-rail',new THREE.Vector3(width,.05,.08),fenceFrameMaterial,new THREE.Vector3(x,.26,-180)));
   }
 
   let powered=false,breakerProgress=0,breakerDoorProgress=0,outdoorBlend=0,communicationsBeaconClock=0;
@@ -603,7 +703,9 @@ export function buildWorldOverhaul({scene,collision,environmentTextures,facility
   }
   function setPowered(value){powered=!!value;exit.target=powered?1:0}
   function setExtractionGateOpen(value=true){extractionGate.target=value?1:0}
-  function update(dt,playerZ){
+  function update(dt,player){
+    const playerZ=typeof player==='number'?player:player?.position?.z||0;
+    forest.updateHeroLods(typeof player==='object'?player:null);
     breakerDoorProgress=damp(breakerDoorProgress,powered?1:0,7,dt);breaker.doorPivot.rotation.y=THREE.MathUtils.lerp(0,-1.48,breakerDoorProgress);
     const leverTarget=powered?THREE.MathUtils.smoothstep(breakerDoorProgress,.38,.92):0;
     breakerProgress=damp(breakerProgress,leverTarget,10,dt);breaker.leverPivot.rotation.z=THREE.MathUtils.lerp(-.62,.62,breakerProgress);

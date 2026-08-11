@@ -1,0 +1,14 @@
+Poly Haven Fir Sapling
+
+Source: https://polyhaven.com/a/fir_sapling
+Source manifest: https://api.polyhaven.com/files/fir_sapling
+License: Creative Commons CC0 1.0 Universal (Public Domain Dedication)
+License reference: https://polyhaven.com/license
+
+Authors credited by Poly Haven:
+- Rico Cilliers (modeling)
+- Rob Tuytel (photography)
+
+The files in this folder are bounded runtime derivatives made from the
+official 1K glTF source. Their source MD5 and derivative SHA-256 records are
+in manifest.json. The derivatives remain subject to the source CC0 dedication.

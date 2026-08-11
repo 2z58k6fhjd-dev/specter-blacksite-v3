@@ -2,12 +2,12 @@ import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.7.0-forest-animation';
-import { buildWorldOverhaul } from './world-overhaul.js?v=5.7.0-forest-animation';
-import { EnemyAISystem } from './enemy-ai.js?v=5.7.0-forest-animation';
-import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS } from './graphics-pipeline.js?v=5.7.0-forest-animation';
-import { createAudioDirector } from './audio-overhaul.js?v=5.7.0-forest-animation';
-import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.7.0-forest-animation';
+import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.8.0-fir-lod';
+import { buildWorldOverhaul } from './world-overhaul.js?v=5.8.0-fir-lod';
+import { EnemyAISystem } from './enemy-ai.js?v=5.8.0-fir-lod';
+import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS } from './graphics-pipeline.js?v=5.8.0-fir-lod';
+import { createAudioDirector } from './audio-overhaul.js?v=5.8.0-fir-lod';
+import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.8.0-fir-lod';
 
 const graphicsCustomStorageKey='specter-custom-graphics';
 const voiceSettingsStorageKey='specter-voice-settings';
@@ -76,6 +76,7 @@ let worldOverhaul=null;
 // request them, so the low-end path stays lightweight from the first load.
 let missionAssetsReady=false;
 let forestFernsRoot=null,forestFernLoadPromise=null,forestFernLoadAttempted=false;
+let forestHeroFirLoadPromise=null,forestHeroFirLoadAttempted=false;
 let graphicsTextureStatus='2K PBR';
 let missionHasStarted=false;
 const materialTextureSlots=['map','alphaMap','aoMap','bumpMap','displacementMap','emissiveMap','metalnessMap','normalMap','roughnessMap','clearcoatMap','clearcoatNormalMap','clearcoatRoughnessMap','iridescenceMap','iridescenceThicknessMap','sheenColorMap','sheenRoughnessMap','specularColorMap','specularIntensityMap','transmissionMap','thicknessMap','lightMap'];
@@ -107,7 +108,20 @@ function inspectGraphicsCapabilities(){
 }
 function recommendedGraphicsQuality(capabilities,benchmarkMs=null){
   const rendererName=capabilities.renderer.toLowerCase();
-  if(/intel.*(?:hd|4000|4400|4600|5000)/.test(rendererName)||capabilities.maxTextureSize<=4096||capabilities.deviceMemoryGB>0&&capabilities.deviceMemoryGB<=2)return 'intel';
+  const namedIntel=/intel.*(?:hd|4000|4400|4600|5000)/.test(rendererName);
+  const limitedTextures=capabilities.maxTextureSize>0&&capabilities.maxTextureSize<=4096;
+  const lowReportedMemory=capabilities.deviceMemoryGB>0&&capabilities.deviceMemoryGB<=2;
+  // Some privacy-restricted browsers hide the useful renderer name. Treat a
+  // genuinely constrained capability set as Intel/Competitive Low instead of
+  // relying on a vendor string alone. Each generic branch needs several weak
+  // signals so a single conservative WebGL limit cannot demote a capable GPU.
+  const legacyConstrainedRenderer=!capabilities.webgl2&&capabilities.maxTextureSize>0&&capabilities.maxTextureSize<=8192&&capabilities.maxRenderbufferSize>0&&capabilities.maxRenderbufferSize<=4096&&capabilities.maxAnisotropy>0&&capabilities.maxAnisotropy<8;
+  const constrainedGenericDevice=capabilities.maxTextureSize>0&&capabilities.maxTextureSize<=8192&&capabilities.maxRenderbufferSize>0&&capabilities.maxRenderbufferSize<=8192&&capabilities.maxAnisotropy>0&&capabilities.maxAnisotropy<8&&capabilities.cpuCores>0&&capabilities.cpuCores<=2;
+  // A post-warm-up P90 of 38 ms is below a stable 30 FPS. The gameplay sample
+  // is deliberately conservative, so sustained timing this slow gets the
+  // true low-payload Intel path even when the renderer string is unavailable.
+  const verySlowBenchmark=Number.isFinite(benchmarkMs)&&benchmarkMs>=38;
+  if(namedIntel||limitedTextures||lowReportedMemory||legacyConstrainedRenderer||constrainedGenericDevice||verySlowBenchmark)return 'intel';
   let rank=capabilities.deviceMemoryGB>=16?4:capabilities.deviceMemoryGB>=10?4:capabilities.deviceMemoryGB>=8?3:capabilities.deviceMemoryGB>=6?2:capabilities.deviceMemoryGB>=4?1:(capabilities.maxTextureSize>=16384&&capabilities.maxAnisotropy>=16?3:capabilities.maxTextureSize>=8192?2:0);
   if(!capabilities.webgl2||capabilities.maxRenderbufferSize<8192)rank=Math.min(rank,1);
   if(capabilities.maxAnisotropy<8)rank=Math.min(rank,1);
@@ -552,6 +566,7 @@ function applyGraphicsHardwareBudget(quality,effectivePreset=null){
   graphicsTextureStatus=lowTexturesReloadPending?'LOW 512 PBR ON RELOAD':highTexturesReloadPending?'HIGH TEXTURES ON RELOAD':preset.textureTier==='4k-preferred'?(environmentIs4K?'NATIVE 4K PBR':'2K PBR FALLBACK'):(preset.textureTier==='low'?'LOW-PAYLOAD 512 PBR':'2K PBR');
   worldOverhaul?.setGraphicsQuality(quality,preset);
   updateForestFernsForGraphics(preset);
+  updateForestHeroFirsForGraphics(preset);
   renderGraphicsMemoryEstimate(preset);
   if(preset.textureTier==='4k-preferred'&&!environmentIs4K)void ensureNativeEnvironment4K().then(loaded=>{
     if(!loaded)return;
@@ -886,6 +901,36 @@ function updateForestFernsForGraphics(preset={}){
       }
     })
     .finally(()=>{forestFernLoadPromise=null});
+}
+function forestHeroFirsEnabledForPreset(preset={}){
+  const density=String(preset.forestDensity||'').toLowerCase();
+  return preset.textureTier!=='low'&&['high','ultra','extreme'].includes(density);
+}
+async function loadForestHeroFirAssets(){
+  const [lod0,lod1]=await Promise.all([
+    loadSetDressAsset('firSaplingLod0','./assets/environment/polyhaven-fir-sapling-runtime/fir_sapling_lod0.gltf','CC0 Fir Sapling LOD0'),
+    loadSetDressAsset('firSaplingLod1','./assets/environment/polyhaven-fir-sapling-runtime/fir_sapling_lod1.gltf','CC0 Fir Sapling LOD1')
+  ]);
+  return Boolean(lod0&&lod1&&assetMap.get('firSaplingLod0')?.scene&&assetMap.get('firSaplingLod1')?.scene);
+}
+function updateForestHeroFirsForGraphics(preset={}){
+  const enabled=forestHeroFirsEnabledForPreset(preset);
+  if(!enabled||!missionAssetsReady||!worldOverhaul?.forest||forestHeroFirLoadAttempted)return;
+  forestHeroFirLoadAttempted=true;
+  forestHeroFirLoadPromise=loadForestHeroFirAssets()
+    .then(available=>{
+      if(!available)return;
+      const count=worldOverhaul.forest.installHeroSaplings(assetMap.get('firSaplingLod0')?.scene,assetMap.get('firSaplingLod1')?.scene);
+      if(count){
+        const diagnostics=graphics.getDiagnostics();
+        // A quality change can arrive while the optional derivative streams.
+        // Reapply the active budget after installation so Intel/Low never keeps
+        // PBR hero textures resident or renders a stale high-detail layer.
+        applyGraphicsHardwareBudget(diagnostics.quality,diagnostics.preset);
+        status('props','LOADED',`${count} CC0 fir saplings · PBR LOD0/1/2`);
+      }
+    })
+    .finally(()=>{forestHeroFirLoadPromise=null});
 }
 const switchGroup=worldOverhaul.breaker.interactionTarget;
 const audio=createAudioDirector({seed:0x5ec7e2,powerOn:false,masterVolume:.78,musicVolume:.28,sfxVolume:.88,voiceVolume:bootVoiceVolume,ambienceVolume:.5});
@@ -2150,6 +2195,7 @@ document.addEventListener('pointerlockerror',()=>{
 const localQAMode=(location.hostname==='127.0.0.1'||location.hostname==='localhost')?new URLSearchParams(location.search).get('qa'):null;
 function applyLocalQA(){
   if(localQAMode==='exterior'){restorePower();camera.position.set(0,1.72,-52);previousAIPlayerPosition.copy(camera.position)}
+  if(localQAMode==='forest'){restorePower();camera.position.set(-39.2,1.72,-60.5);camera.lookAt(-51.2,4.7,-60.5);previousAIPlayerPosition.copy(camera.position)}
   if(localQAMode==='breaker'){camera.position.set(-5.98,1.72,5.4);camera.rotation.set(0,Math.PI/2,0);previousAIPlayerPosition.copy(camera.position)}
   if(localQAMode==='storage'){restorePower();camera.position.set(-5.95,1.72,-98);camera.rotation.set(0,Math.PI/2,0);previousAIPlayerPosition.copy(camera.position)}
   if(localQAMode==='utility'){restorePower();camera.position.set(0,1.72,-166);camera.rotation.set(0,0,0);previousAIPlayerPosition.copy(camera.position)}
@@ -2183,14 +2229,14 @@ if(requiredAssetFailure){
   status('soldier','LOADED',`${enemies.length} tactical hostiles · 5 role kits · full-detail rifle geometry`);hud();
   missionAssetsReady=true;
   startButton.disabled=false;startButton.textContent='ENTER BLACKSITE';loadMessage.textContent='Assets verified. Mission ready.';
-  updateForestFernsForGraphics(graphics.getDiagnostics().preset);
+   updateForestFernsForGraphics(graphics.getDiagnostics().preset);updateForestHeroFirsForGraphics(graphics.getDiagnostics().preset);
 }
 
 function animate(){
   requestAnimationFrame(animate);
   const rawDt=clock.getDelta(),dt=Math.min(rawDt,.05),t=clock.elapsedTime;
   if(started){
-    if(extractionSequence)updateExtractionSequence(dt,t);else move(dt);worldOverhaul.update(dt,camera.position.z);renderer.toneMappingExposure=THREE.MathUtils.lerp(1.02,.8,worldOverhaul.outdoorBlend);weaponFill.intensity=THREE.MathUtils.lerp(4.8,1.45,worldOverhaul.outdoorBlend);
+    if(extractionSequence)updateExtractionSequence(dt,t);else move(dt);worldOverhaul.update(dt,camera);renderer.toneMappingExposure=THREE.MathUtils.lerp(1.02,.8,worldOverhaul.outdoorBlend);weaponFill.intensity=THREE.MathUtils.lerp(4.8,1.45,worldOverhaul.outdoorBlend);
     if(!exteriorEntered&&camera.position.z<-47){exteriorEntered=true;objective.textContent='OBJECTIVE: CLEAR THE CHECKPOINT AND PERIMETER';toast('EXTERIOR COMBAT ZONE ENTERED')}
     updatePlayerModel(t);updateWeapon(dt,t);updateWeaponEffects(dt);updateEnemies(dt,t);
     camera.getWorldDirection(audioForward);const combatIntensity=enemies.reduce((level,enemy)=>Math.max(level,enemy.userData.dead?0:enemy.userData.intent?.alertness||0),0);
