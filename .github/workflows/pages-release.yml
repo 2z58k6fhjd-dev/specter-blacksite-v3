@@ -33,6 +33,12 @@ jobs:
       - name: Validate syntax, asset closure, and licenses
         run: npm run validate:release
 
+      - name: Check graphics profiles and payload contracts
+        run: npm run qa:graphics
+
+      - name: Check gameplay mission and combat contracts
+        run: npm run qa:gameplay
+
       - name: Package the tested repository revision
         env:
           RELEASE_VERSION: main-${{ github.sha }}

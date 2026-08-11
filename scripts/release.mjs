@@ -176,6 +176,41 @@ async function hashFile(path, algorithm = 'sha256') {
   });
 }
 
+async function readImageDimensions(path) {
+  const data = await readFile(path);
+  if (data.length >= 24 && data.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) {
+    return [data.readUInt32BE(16), data.readUInt32BE(20)];
+  }
+  if (data.length >= 16 && data.subarray(0, 4).toString('ascii') === 'RIFF' && data.subarray(8, 12).toString('ascii') === 'WEBP') {
+    let offset = 12;
+    while (offset + 8 <= data.length) {
+      const tag = data.subarray(offset, offset + 4).toString('ascii');
+      const length = data.readUInt32LE(offset + 4), start = offset + 8;
+      if (tag === 'VP8X' && start + 10 <= data.length) return [1 + data.readUIntLE(start + 4, 3), 1 + data.readUIntLE(start + 7, 3)];
+      if (tag === 'VP8L' && start + 5 <= data.length) {
+        const bits = data.readUInt32LE(start + 1);
+        return [1 + (bits & 0x3fff), 1 + ((bits >> 14) & 0x3fff)];
+      }
+      if (tag === 'VP8 ' && start + 10 <= data.length) return [data.readUInt16LE(start + 6), data.readUInt16LE(start + 8)];
+      offset = start + length + (length % 2);
+    }
+  }
+  if (data.length >= 4 && data[0] === 0xff && data[1] === 0xd8) {
+    let offset = 2;
+    while (offset + 9 <= data.length) {
+      if (data[offset] !== 0xff) { offset++; continue; }
+      let marker = data[offset + 1]; offset += 2;
+      while (marker === 0xff && offset < data.length) marker = data[offset++];
+      if (marker === 0xd8 || marker === 0xd9) continue;
+      const length = data.readUInt16BE(offset);
+      if (length < 2 || offset + length > data.length) break;
+      if ((marker >= 0xc0 && marker <= 0xc3) || (marker >= 0xc5 && marker <= 0xc7) || (marker >= 0xc9 && marker <= 0xcb) || (marker >= 0xcd && marker <= 0xcf)) return [data.readUInt16BE(offset + 5), data.readUInt16BE(offset + 3)];
+      offset += length;
+    }
+  }
+  return null;
+}
+
 async function validateJavaScriptSyntax(errors) {
   const sourceFiles = await listFiles(ROOT, { skipIgnored: true });
   const javascriptFiles = sourceFiles.filter(path => JAVASCRIPT_EXTENSIONS.has(extname(path)));
@@ -410,8 +445,9 @@ async function validateOptionalNativePbrManifest(errors) {
     errors.push('Native 4K PBR manifest must declare dimensions of at least 4096px');
     return;
   }
-  const mapRecords = (manifest.materials ?? []).flatMap((material) => material.maps ?? []);
-  const mapNames = new Set(mapRecords.map((record) => record?.file).filter(Boolean));
+  const mapRecords = new Map((manifest.materials ?? []).flatMap((material) => material.maps ?? [])
+    .filter((record) => record?.file)
+    .map((record) => [record.file, record]));
   for (const filename of [
     'concrete-albedo.webp', 'concrete-normal.webp', 'concrete-orm.webp',
     'painted-metal-albedo.webp', 'painted-metal-normal.webp', 'painted-metal-orm.webp',
@@ -421,13 +457,40 @@ async function validateOptionalNativePbrManifest(errors) {
     'vehicle-paint-albedo.webp', 'vehicle-paint-orm.webp',
     'vehicle-rubber-albedo.webp', 'vehicle-rubber-normal.webp', 'vehicle-rubber-orm.webp',
     'grass-soil-albedo.webp', 'grass-soil-normal.webp', 'grass-soil-orm.webp'
-  ]) if (!mapNames.has(filename)) errors.push(`Native 4K PBR manifest is missing ${filename}`);
+  ]) {
+    const record = mapRecords.get(filename);
+    if (!record) {
+      errors.push(`Native 4K PBR manifest is missing ${filename}`);
+      continue;
+    }
+    const mapDimensions = record.dimensions;
+    if (!Array.isArray(mapDimensions) || mapDimensions.length < 2 || Math.min(...mapDimensions.map(Number)) < 4096) {
+      errors.push(`Native 4K PBR map must declare dimensions of at least 4096px: ${filename}`);
+    }
+    if (!Number.isFinite(Number(record.bytes)) || Number(record.bytes) < 1) errors.push(`Native 4K PBR map has no valid byte count: ${filename}`);
+    if (!/^[a-f0-9]{64}$/i.test(String(record.sha256 ?? ''))) errors.push(`Native 4K PBR map has no valid SHA-256: ${filename}`);
+    const mapPath = resolve(dirname(manifestPath), filename);
+    if (!(await pathExists(mapPath))) {
+      errors.push(`Native 4K PBR map is missing from the repository: ${filename}`);
+      continue;
+    }
+    const metadata = await stat(mapPath);
+    if (metadata.size !== Number(record.bytes)) errors.push(`Native 4K PBR byte count mismatch: ${filename}`);
+    if ((await hashFile(mapPath)) !== String(record.sha256).toLowerCase()) errors.push(`Native 4K PBR SHA-256 mismatch: ${filename}`);
+    const actualDimensions = await readImageDimensions(mapPath);
+    if (!actualDimensions || Math.min(...actualDimensions) < 4096) errors.push(`Native 4K PBR image is not a decodable 4096px-or-greater map: ${filename}`);
+  }
 }
 
 async function validateForestFoliagePolicy(errors) {
   const mainPath = resolve(ROOT, 'src/main.js');
   const workerPath = resolve(ROOT, 'service-worker.js');
   const alphaPath = resolve(ROOT, 'assets/environment/polyhaven-fern-02/textures/fern_02_alpha_4k.png');
+  const generatedCardFiles = [
+    'assets/environment/generated/douglas-fir-card-v2.png',
+    'assets/environment/generated/douglas-fir-card-v2-normal.png',
+    'assets/environment/generated/douglas-fir-card-v2-roughness.png'
+  ];
   const [main, worker] = await Promise.all([readFile(mainPath, 'utf8'), readFile(workerPath, 'utf8')]);
 
   if (!main.includes('missionAssetsReady') || !main.includes('loadForestFernAsset')) {
@@ -435,6 +498,13 @@ async function validateForestFoliagePolicy(errors) {
   }
   if (!main.includes("preset.textureTier!=='low'") || !main.includes('fern_02_alpha_4k.png')) {
     errors.push('Forest foliage must retain the Low texture-tier guard and official Fern alpha mask.');
+  }
+  if (!main.includes('loadHighTierTreeCards') || !main.includes('douglas-fir-card-v2-normal.png')) {
+    errors.push('High-tier forest cards must retain their albedo, normal, and roughness loading path.');
+  }
+  for (const file of generatedCardFiles) {
+    if (!(await pathExists(resolve(ROOT, file)))) errors.push(`Generated Douglas-fir card asset is missing: ${file}`);
+    if (!worker.includes(`./${file}`)) errors.push(`Service worker must track the demand-loaded Douglas-fir card: ${file}`);
   }
   if (worker.includes('polyhaven-fern-02/')) {
     errors.push('Fern 02 must not be precached: it is an optional high-tier stream.');

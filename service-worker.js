@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'specter-blacksite-overhaul-foundation-';
-const CACHE_VERSION = 'v550-low-payload-auto';
+const CACHE_VERSION = 'v560-foundation-polish';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 
 // The application shell is deliberately small and atomic: if any of these files
@@ -99,6 +99,9 @@ const OPTIONAL_PRECACHE_URLS = [
 
   './assets/environment/generated/README.md',
   './assets/environment/generated/fir-tree-billboard-v1.png',
+  './assets/environment/generated/douglas-fir-card-v2.png',
+  './assets/environment/generated/douglas-fir-card-v2-normal.png',
+  './assets/environment/generated/douglas-fir-card-v2-roughness.png',
 
   './assets/environment/polyhaven-steel-frame-shelves-01/README.md',
   './assets/environment/polyhaven-steel-frame-shelves-01/LICENSE.txt',
@@ -181,7 +184,7 @@ const OPTIONAL_PRECACHE_CONCURRENCY = 3;
 // download the full high-detail payload on an Intel/Low startup path.
 function isDemandLoadedRuntimeAsset(url) {
   return /^\.\/assets\/(?:ar15|m9|soldier)\//.test(url) ||
-    /^\.\/assets\/environment\/(?:pbr-v2\/|generated\/fir-tree-billboard-v1\.png$|polyhaven-(?:steel-frame-shelves-01|power-box-01|plastic-container|concrete-road-barrier-02)\/)/.test(url);
+    /^\.\/assets\/environment\/(?:pbr-v2\/|generated\/(?:fir-tree-billboard-v1|douglas-fir-card-v2(?:-(?:normal|roughness))?)\.png$|polyhaven-(?:steel-frame-shelves-01|power-box-01|plastic-container|concrete-road-barrier-02)\/)/.test(url);
 }
 const OPTIONAL_INSTALL_URLS = OPTIONAL_PRECACHE_URLS.filter((url) => !isDemandLoadedRuntimeAsset(url));
 

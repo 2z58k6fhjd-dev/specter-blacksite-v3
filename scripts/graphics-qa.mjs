@@ -168,7 +168,7 @@ await test('custom graphics controls remain clamped to supported settings', () =
 });
 
 await test('AUTO benchmark samples raw gameplay timing only', () => {
-  check(/const autoBenchmark=\{active:false,pending:false,samples:\[\],warmupFrames:(\d+),warmup:0,minimumFrames:(\d+)\}/.test(main), 'AUTO benchmark must define a pending gameplay benchmark state.');
+  check(/const autoBenchmark=\{active:false,pending:false,samples:\[\],warmupFrames:(\d+),warmup:0,minimumFrames:(\d+),hitches:0\}/.test(main), 'AUTO benchmark must define a pending gameplay benchmark state.');
   const benchmark = main.slice(main.indexOf('const autoBenchmark='), main.indexOf('function setGraphicsQuality', main.indexOf('const autoBenchmark=')));
   const minimumFrames = Number(benchmark.match(/minimumFrames:(\d+)/)?.[1] || 0);
   const warmupFrames = Number(benchmark.match(/warmupFrames:(\d+)/)?.[1] || 0);
@@ -176,8 +176,10 @@ await test('AUTO benchmark samples raw gameplay timing only', () => {
   check(warmupFrames >= 30, 'AUTO benchmark must include a gameplay warm-up period.');
   check(/if\(!missionHasStarted\)\{\s*autoBenchmark\.pending=true/.test(benchmark), 'AUTO benchmark must wait for mission start.');
   check(/autoBenchmark\.pending=false;autoBenchmark\.active=true/.test(benchmark), 'AUTO benchmark must activate only after the mission is active.');
-  check(/deltaSeconds<=0\|\|deltaSeconds>\.35/.test(benchmark), 'AUTO benchmark must reject invalid/tab-resume frame deltas.');
+  check(/deltaSeconds<=0\)return/.test(benchmark) && /if\(deltaSeconds>\.35\)\{autoBenchmark\.hitches\+\+;return\}/.test(benchmark), 'AUTO benchmark must retain tab-resume hitches as a conservative penalty.');
   check(/autoBenchmark\.samples\.push\(deltaSeconds\*1000\)/.test(benchmark), 'AUTO benchmark must retain raw delta samples in milliseconds.');
+  check(/const scoredP90=autoBenchmark\.hitches>=2\?Math\.max\(p90,24\):p90/.test(benchmark), 'AUTO benchmark must use repeated hitches to reduce unsafe headroom.');
+  check(/benchmarkMs<9\)rank=Math\.min\(4,rank\+1\)/.test(main), 'AUTO benchmark must cap fast-sample promotion to one tier.');
 
   const animate = main.slice(main.indexOf('function animate(){'));
   const rawTiming = animate.indexOf('const rawDt=clock.getDelta(),dt=Math.min(rawDt,.05)');
@@ -237,16 +239,18 @@ await test('low-payload manifest and URL-selection contract are complete', async
   check(/loader\.manager\.setURLModifier\(lowPayloadModelTextureUrl\)/.test(main), 'GLTFLoader must install the low-payload URL modifier.');
   check(/assets\/low-textures\/\$\{match\[1\]\.slice\('assets\/'\.length\)\}/.test(main), 'Model texture URL modifier must mirror files into assets/low-textures.');
   check(/let pbrRoot=startupLowPayloadMode\?'\.\/assets\/low-textures\/environment\/pbr-v2':'\.\/assets\/environment\/pbr-v2'/.test(main), 'Environment PBR loading must choose the low-payload tree before fetch/decode.');
-  check(/if\(!startupLowPayloadMode\)try\{[\s\S]*fir-tree-billboard-v1\.png/.test(main), 'Low payload mode must skip optional high-tier foliage fetches.');
+  check(/if\(!startupLowPayloadMode\)await loadHighTierTreeCards\(textureLoader\)/.test(main), 'Low payload mode must skip optional high-tier foliage fetches.');
+  check(/const highTexturesReloadPending=requestedPreset\.textureTier!=='low'&&startupLowPayloadMode/.test(main), 'A Low session moving back to higher texture quality must truthfully require a reload.');
 });
 
 await test('native 4K pack is verified or safely falls back', async () => {
   check(/function nativeEnvironmentManifestIsComplete\(manifest\)/.test(main), 'Runtime must validate a native 4K manifest.');
   check(/Math\.min\(Number\(dimensions\[0\]\)\|\|0,Number\(dimensions\[1\]\)\|\|0\)<4096/.test(main), 'Runtime must reject sub-4K native manifest dimensions.');
-  check(/environmentPbrEntries\.every\(\(\[,file\]\)=>files\.has\(file\)\)/.test(main), 'Runtime must require every environment PBR map in a native manifest.');
+  check(/const records=new Map\(\(manifest\.materials\|\|\[\]\)\.flatMap/.test(main) && /const record=records\.get\(file\),mapDimensions=record\?\.dimensions/.test(main), 'Runtime must require verified records for every environment PBR map in a native manifest.');
   check(/if\(!response\.ok\)return null/.test(main) && /catch\{return null\}/.test(main), 'Missing native 4K manifests must be non-fatal.');
   check(/textureTier==='4k-preferred'\?\(environmentIs4K\?'NATIVE 4K PBR':'2K PBR FALLBACK'\)/.test(main), 'UI must report a verified fallback rather than claim 4K without it.');
   check(/if\(!await getNativeEnvironment4KManifest\(\)\)return false/.test(main), 'Dynamic native 4K loading must retain the current pack when no valid manifest exists.');
+  check(/if\(Math\.min\(width,height\)<4096\)throw new Error/.test(main), 'Native 4K maps must be decoded and dimension-checked before replacement.');
 
   if (!await pathExists(NATIVE_4K_MANIFEST_PATH)) {
     console.log('INFO  Native 4K pack absent; verified 2K fallback policy.');
@@ -264,7 +268,7 @@ await test('native 4K pack is verified or safely falls back', async () => {
 
 await test('embedded preview protects itself from unsupported Extreme SSR', () => {
   check(/function runtimeGraphicsQuality\(quality\)\{return embeddedDesktopRuntime&&quality==='extreme'\?'high':quality\}/.test(main), 'Embedded runtime must map Extreme to the safe High compositor preset.');
-  check(/const requestedGraphicsQuality=runtimeGraphicsQuality\(startupGraphicsQuality\)/.test(main), 'Initial graphics quality must use the embedded-safe selector.');
+  check(/const startupRuntimeGraphicsQuality=runtimeGraphicsQuality\(startupGraphicsQuality\)/.test(main) && /const requestedGraphicsQuality=startupRuntimeGraphicsQuality/.test(main), 'Initial graphics quality must use the embedded-safe selector.');
   check(/runtimeSelected=runtimeGraphicsQuality\(selected\)/.test(main), 'Manual and AUTO quality selection must use the embedded-safe selector.');
   check(/SAFE FALLBACK/.test(main), 'The UI must disclose an embedded graphics fallback.');
   check(/function consumeComposerGlError\(\)/.test(pipeline) && /WebGL post-processing validation failed/.test(pipeline), 'Composer rendering must fall back after a WebGL validation failure.');
@@ -273,6 +277,7 @@ await test('embedded preview protects itself from unsupported Extreme SSR', () =
 await test('GPU-memory estimate refreshes after resize', () => {
   check(/function graphicsMemoryEstimate\(preset\)/.test(main), 'Graphics memory estimator is missing.');
   check(/innerWidth\*innerHeight\*ratio\*ratio/.test(main), 'Graphics memory estimate must include the live render target dimensions.');
+  check(/function graphicsRenderTargetEstimate\(\)/.test(main) && /object\.isInstancedMesh/.test(main) && /object\.isSkinnedMesh/.test(main), 'Graphics memory estimate must include compositor targets, instancing, and skeleton buffers.');
   check(/addEventListener\('resize',\(\)=>\{graphics\.resize\(innerWidth,innerHeight,devicePixelRatio\);renderGraphicsMemoryEstimate\(graphics\.getDiagnostics\(\)\.preset\)\}\)/.test(main), 'Resize must refresh both graphics dimensions and the visible GPU-memory estimate.');
 });
 

@@ -1,6 +1,6 @@
 # CC0 tactical voice callouts
 
-This directory contains 12 source clips selected from the official **Kenney
+This directory contains 14 source clips selected from the official **Kenney
 Voiceover Pack #1** for tactical enemy-state callouts. The local `License.txt`
 and `Credits.txt` are retained unmodified from the official archive.
 
@@ -11,7 +11,7 @@ and `Credits.txt` are retained unmodified from the official archive.
 - Female actor credit: Giselle
 
 The runtime loads one male or female variant for each supported callout type:
-contact, investigate, backup request, retreat, suppression, and downed. They
+contact, investigate, backup request, flank, retreat, suppression, and downed. They
 are spatialized and narrowed through a radio filter when the AI communicates by
 radio. If an OGG clip cannot download or decode, `src/audio-overhaul.js` uses
 its existing procedural callout fallback, so audio availability never blocks a

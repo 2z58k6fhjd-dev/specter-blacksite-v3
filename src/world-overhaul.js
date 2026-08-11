@@ -96,26 +96,23 @@ function addForestInstanceLayer(name,geometry,material,trees,transform,{castShad
   mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;mesh.computeBoundingSphere();mesh.castShadow=castShadow;mesh.receiveShadow=receiveShadow;mesh.frustumCulled=true;return mesh;
 }
 
-function createCrossedBillboardGeometry(){
-  // Two perpendicular cards are kept in one indexed geometry, allowing every
-  // photo tree to be submitted through one InstancedMesh draw call rather than
-  // one Sprite / draw per tree.
-  const geometry=new THREE.BufferGeometry();
-  geometry.setAttribute('position',new THREE.Float32BufferAttribute([
-    -.5,0,0, .5,0,0, .5,1,0, -.5,1,0,
-    0,0,-.5, 0,0,.5, 0,1,.5, 0,1,-.5
-  ],3));
-  geometry.setAttribute('uv',new THREE.Float32BufferAttribute([
-    0,0, 1,0, 1,1, 0,1,
-    0,0, 1,0, 1,1, 0,1
-  ],2));
-  geometry.setIndex([0,1,2,0,2,3,4,5,6,4,6,7]);geometry.computeBoundingSphere();return geometry;
+function createConiferCardGeometry(){
+  // Three intersecting cards give a dense silhouette from all practical
+  // perimeter viewing angles while keeping each tree family to one draw call.
+  const positions=[],uvs=[],indices=[];
+  for(const angle of [0,Math.PI/3,(Math.PI*2)/3]){
+    const start=positions.length/3,c=Math.cos(angle),s=Math.sin(angle);
+    const point=(x,y)=>positions.push(x*c,y,-x*s);
+    point(-.5,0);point(.5,0);point(.5,1);point(-.5,1);
+    uvs.push(0,0,1,0,1,1,0,1);indices.push(start,start+1,start+2,start,start+2,start+3);
+  }
+  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geometry.setIndex(indices);geometry.computeBoundingSphere();return geometry;
 }
 
-function addForestBackdrop(scene,groundMaterial,firBillboard=null){
-  // A licensed high-detail tree pack is not bundled yet. This is a deliberately
-  // texture-free procedural fallback using the project's existing material
-  // palette; it is not presented as a substitute for authored 4K foliage.
+function addForestBackdrop(scene,groundMaterial,firCards=[]){
+  // Instanced conifer cards are authored project assets with their own LOD
+  // layer. The compact cone/cylinder forest remains a no-download fallback for
+  // low settings and fills the far perimeter beyond the detail cards.
   const forest=new THREE.Group();forest.name='pnw-perimeter-forest';
   const forestFloor=new THREE.Mesh(new THREE.PlaneGeometry(460,440),groundMaterial);forestFloor.name='pnw-forest-floor';forestFloor.rotation.x=-Math.PI/2;forestFloor.position.set(0,-.16,-244);forestFloor.receiveShadow=true;forest.add(forestFloor);
   const trunkMaterial=new THREE.MeshStandardMaterial({color:0x5b422a,emissive:0x120b06,emissiveIntensity:.24,roughness:.98,metalness:0,flatShading:false});
@@ -157,30 +154,40 @@ function addForestBackdrop(scene,groundMaterial,firBillboard=null){
   addLayer('forest-mid-top-needles',needleGeometry,upperNeedleMaterial,midTrees,middleNeedleTransform,upperNeedleColor);
   addLayer('forest-far-needles',needleGeometry,upperNeedleMaterial,farTrees,farNeedleTransform,{...upperNeedleColor,colorOffset:.1});
 
-  // The authored photo-card layer is intentionally optional: low and medium
-  // settings retain the procedural trees as the low-cost, distant fallback.
-  // A generated CanvasTexture (or normal Texture) lets high-tier presets add
-  // recognisable fir silhouettes without streaming the enormous raw tree mesh.
-  let photoTreeLayer=null,photoTreeCount=0;
-  if(firBillboard?.isTexture){
-    firBillboard.colorSpace=THREE.SRGBColorSpace;
-    const photoTreeMaterial=new THREE.MeshBasicMaterial({map:firBillboard,transparent:true,alphaTest:.09,side:THREE.DoubleSide,depthWrite:true,fog:true});
-    const photoTreeGeometry=createCrossedBillboardGeometry(),photoTrees=[],photoRandom=mulberry32(59371);
-    const addPhotoTree=(x,z)=>photoTrees.push({x,z,height:10+photoRandom()*12,width:5.6+photoRandom()*4.8,rotation:photoRandom()*Math.PI*2});
-    // Keep these scenic cards just outside the perimeter and clear of the
-    // extraction gate's sightline. They are never inserted into collision.
-    for(let index=0;index<48;index++){
-      const side=index%2?-1:1;addPhotoTree(side*(46+photoRandom()*10),-54-photoRandom()*120);
+  // The optional PBR card layer adds a detailed High/Ultra/Extreme silhouette
+  // without pulling a raw multi-million-triangle tree mesh into the browser.
+  // Low/medium settings retain the compact procedural layers above.
+  const coniferCards=(Array.isArray(firCards)?firCards:[]).filter(card=>card?.map?.isTexture);
+  const photoTreeLayers=[],photoTrees=[],photoRandom=mulberry32(59371);
+  const addPhotoTree=(x,z)=>photoTrees.push({x,z,height:10+photoRandom()*12,width:5.6+photoRandom()*4.8,rotation:photoRandom()*Math.PI*2,variant:photoTrees.length%Math.max(1,coniferCards.length)});
+  // Keep these scenic cards just outside the perimeter and clear of the
+  // extraction gate's sightline. They are never inserted into collision.
+  for(let index=0;index<92;index++){
+    const side=index%2?-1:1;addPhotoTree(side*(46+photoRandom()*10),-54-photoRandom()*120);
+  }
+  for(let index=0;index<52;index++){
+    let x=0;do{x=(photoRandom()-.5)*152}while(Math.abs(x)<8);addPhotoTree(x,-188-photoRandom()*42);
+  }
+  if(coniferCards.length){
+    const photoTreeGeometry=createConiferCardGeometry();
+    for(const [variant,card] of coniferCards.entries()){
+      const variantTrees=photoTrees.filter(tree=>tree.variant===variant);
+      const material=new THREE.MeshStandardMaterial({
+        map:card.map,normalMap:card.normalMap||null,roughnessMap:card.roughnessMap||null,
+        // A fir card contains very fine needles. The slightly firmer cutout
+        // threshold removes chroma-edge sparkle at distance without turning the
+        // PBR card into an opaque rectangular billboard.
+        color:0xffffff,roughness:.88,metalness:0,transparent:true,alphaTest:.18,
+        side:THREE.DoubleSide,depthWrite:true,fog:true
+      });
+      const layer=new THREE.InstancedMesh(photoTreeGeometry,material,variantTrees.length);
+      layer.name=`forest-high-tier-${card.id||`conifer-${variant+1}`}-cards`;layer.instanceMatrix.setUsage(THREE.StaticDrawUsage);layer.userData.maxInstances=variantTrees.length;layer.userData.forestLod='photo';layer.userData.highTierOnly=true;layer.userData.variant=card.id||String(variant);
+      const matrix=new THREE.Matrix4(),position=new THREE.Vector3(),scale=new THREE.Vector3(),quaternion=new THREE.Quaternion();
+      for(const [index,tree] of variantTrees.entries()){
+        position.set(tree.x,-.14,tree.z);scale.set(tree.width,tree.height,tree.width);quaternion.setFromAxisAngle(up,tree.rotation);matrix.compose(position,quaternion,scale);layer.setMatrixAt(index,matrix);
+      }
+      layer.instanceMatrix.needsUpdate=true;layer.computeBoundingSphere();layer.castShadow=false;layer.receiveShadow=true;layer.visible=false;forest.add(layer);photoTreeLayers.push(layer);
     }
-    for(let index=0;index<24;index++){
-      let x=0;do{x=(photoRandom()-.5)*152}while(Math.abs(x)<8);addPhotoTree(x,-188-photoRandom()*42);
-    }
-    photoTreeLayer=new THREE.InstancedMesh(photoTreeGeometry,photoTreeMaterial,photoTrees.length);photoTreeLayer.name='forest-high-tier-photo-impostors';photoTreeLayer.instanceMatrix.setUsage(THREE.StaticDrawUsage);photoTreeLayer.userData.maxInstances=photoTrees.length;photoTreeLayer.userData.forestLod='photo';photoTreeLayer.userData.highTierOnly=true;
-    const matrix=new THREE.Matrix4(),position=new THREE.Vector3(),scale=new THREE.Vector3(),quaternion=new THREE.Quaternion();
-    for(let index=0;index<photoTrees.length;index++){
-      const tree=photoTrees[index];position.set(tree.x,-.14,tree.z);scale.set(tree.width,tree.height,tree.width);quaternion.setFromAxisAngle(up,tree.rotation);matrix.compose(position,quaternion,scale);photoTreeLayer.setMatrixAt(index,matrix);
-    }
-    photoTreeLayer.instanceMatrix.needsUpdate=true;photoTreeLayer.computeBoundingSphere();photoTreeLayer.castShadow=false;photoTreeLayer.receiveShadow=false;photoTreeLayer.visible=false;forest.add(photoTreeLayer);
   }
   scene.add(forest);
 
@@ -194,9 +201,11 @@ function addForestBackdrop(scene,groundMaterial,firBillboard=null){
     for(const mesh of layers){const lod=mesh.userData.forestLod;mesh.count=Math.round(mesh.userData.maxInstances*fractions[lod])}
     // High starts with a light silhouette pass; ultra and extreme fill the
     // whole deterministic batch. Off/low/medium do not render photo cards.
-    const photoFraction=photoTreeLayer&&photoEnabled&&density>=.72?THREE.MathUtils.smoothstep(density,.72,1):0;
-    photoTreeCount=photoTreeLayer?Math.round(photoTreeLayer.userData.maxInstances*photoFraction):0;
-    if(photoTreeLayer){photoTreeLayer.count=photoTreeCount;photoTreeLayer.visible=photoTreeCount>0;photoTreeLayer.material.opacity=.48+.52*photoFraction}
+    const photoFraction=photoTreeLayers.length&&photoEnabled&&density>=.72?THREE.MathUtils.smoothstep(density,.72,1):0;
+    let photoTreeCount=0;
+    for(const layer of photoTreeLayers){
+      const count=Math.round(layer.userData.maxInstances*photoFraction);layer.count=count;layer.visible=count>0;layer.material.opacity=.48+.52*photoFraction;photoTreeCount+=count;
+    }
     activeTreeCounts.near=Math.round(nearTrees.length*fractions.near);activeTreeCounts.mid=Math.round(midTrees.length*fractions.mid);activeTreeCounts.far=Math.round(farTrees.length*fractions.far);activeTreeCounts.photo=photoTreeCount;forest.visible=density>0;
     return {density,near:activeTreeCounts.near,mid:activeTreeCounts.mid,far:activeTreeCounts.far,photo:activeTreeCounts.photo,total:activeTreeCounts.near+activeTreeCounts.mid+activeTreeCounts.far+activeTreeCounts.photo};
   }
@@ -414,33 +423,48 @@ function createInteriorFurniture({scene,collision,materials}){
   }
 }
 
-function createBreakerBox(scene,materials){
-  const {metal,trim,warning}=materials,group=new THREE.Group();group.name='breaker-box';group.position.set(-8.72,1.5,5.4);group.rotation.y=Math.PI/2;
-  // A dark cavity and a proud metal frame make the breaker read as a cabinet
-  // seated into the corridor wall rather than a floating interaction prop.
+function createBreakerBox(scene,collision,materials){
+  // This group faces the corridor's left wall: local X runs along the wall,
+  // local Y is vertical, and local Z projects out into the corridor. Keeping
+  // every part in that convention prevents the cabinet, recess, and door from
+  // being ninety degrees out of alignment with one another.
+  const {metal,trim,warning}=materials,group=new THREE.Group();group.name='breaker-box';group.position.set(-8.83,1.55,5.4);group.rotation.y=Math.PI/2;
   const recessMaterial=trim.clone();recessMaterial.color.setHex(0x080d0b);recessMaterial.roughness=.72;
-  const recess=createBox('breaker-wall-recess',new THREE.Vector3(.16,1.48,1.14),recessMaterial,new THREE.Vector3(.095,0,0));
+  const recess=createBox('breaker-wall-recess',new THREE.Vector3(1.08,1.48,.035),recessMaterial,new THREE.Vector3(0,0,.03));
   const recessFrameMaterial=metal.clone();recessFrameMaterial.color.setHex(0x313c38);recessFrameMaterial.roughness=.62;
-  const frameTop=createBox('breaker-recess-frame-top',new THREE.Vector3(.08,.09,1.18),recessFrameMaterial,new THREE.Vector3(-.035,.74,0));
-  const frameBottom=createBox('breaker-recess-frame-bottom',new THREE.Vector3(.08,.09,1.18),recessFrameMaterial,new THREE.Vector3(-.035,-.74,0));
-  const frameLeft=createBox('breaker-recess-frame-left',new THREE.Vector3(.08,1.5,.09),recessFrameMaterial,new THREE.Vector3(-.035,0,-.545));
-  const frameRight=createBox('breaker-recess-frame-right',new THREE.Vector3(.08,1.5,.09),recessFrameMaterial,new THREE.Vector3(-.035,0,.545));
-  const enclosure=createBox('breaker-enclosure',new THREE.Vector3(.18,1.1,.78),metal,new THREE.Vector3(0,0,0));
-  const inset=createBox('breaker-inset',new THREE.Vector3(.025,.78,.55),trim,new THREE.Vector3(-.105,0,0));
-  const hinge=createCylinder('breaker-hinge',.035,.86,trim,new THREE.Vector3(-.13,0,-.38));
-  const doorPivot=new THREE.Group();doorPivot.name='breaker-door-pivot';doorPivot.position.set(-.14,0,-.39);
-  const doorPanel=createBox('breaker-door',new THREE.Vector3(.045,1.06,.76),metal,new THREE.Vector3(-.055,0,.38));doorPivot.add(doorPanel);
-  const latch=createBox('breaker-door-latch',new THREE.Vector3(.07,.24,.08),trim,new THREE.Vector3(-.09,0,.71));doorPivot.add(latch);
-  const leverPivot=new THREE.Group();leverPivot.name='breaker-lever-pivot';leverPivot.position.set(-.17,.05,0);
-  const lever=createBox('breaker-main-handle',new THREE.Vector3(.12,.42,.14),warning,new THREE.Vector3(0,.13,0));leverPivot.add(lever);
+  const frameTop=createBox('breaker-recess-frame-top',new THREE.Vector3(1.18,.09,.08),recessFrameMaterial,new THREE.Vector3(0,.74,.075));
+  const frameBottom=createBox('breaker-recess-frame-bottom',new THREE.Vector3(1.18,.09,.08),recessFrameMaterial,new THREE.Vector3(0,-.74,.075));
+  const frameLeft=createBox('breaker-recess-frame-left',new THREE.Vector3(.09,1.5,.08),recessFrameMaterial,new THREE.Vector3(-.545,0,.075));
+  const frameRight=createBox('breaker-recess-frame-right',new THREE.Vector3(.09,1.5,.08),recessFrameMaterial,new THREE.Vector3(.545,0,.075));
+  // These authored fallback pieces remain behind the CC0 cabinet, so the panel
+  // still reads correctly if the optional power-box asset cannot be loaded.
+  const enclosure=createBox('breaker-enclosure',new THREE.Vector3(.88,1.26,.22),metal,new THREE.Vector3(0,0,.015));
+  const inset=createBox('breaker-inset',new THREE.Vector3(.67,.88,.018),trim,new THREE.Vector3(0,0,.135));
+  const hinge=createCylinder('breaker-hinge',.035,1.18,trim,new THREE.Vector3(-.46,0,.15));
+  const doorPivot=new THREE.Group();doorPivot.name='breaker-door-pivot';doorPivot.position.set(-.46,0,.15);
+  const doorPanel=createBox('breaker-door',new THREE.Vector3(.88,1.24,.045),metal,new THREE.Vector3(.44,0,.026));doorPivot.add(doorPanel);
+  const latch=createBox('breaker-door-latch',new THREE.Vector3(.075,.24,.085),trim,new THREE.Vector3(.81,0,.078));doorPivot.add(latch);
+  // The main handle sits in a protected exterior control well. It remains
+  // reachable before the door opens, and the exact same visual lever is the
+  // only raycast target for mission progression.
+  const controlPlate=createBox('breaker-control-plate',new THREE.Vector3(.34,.58,.035),trim,new THREE.Vector3(.1,.02,.205));
+  const leverPivot=new THREE.Group();leverPivot.name='breaker-lever-pivot';leverPivot.position.set(.1,.03,.23);
+  const lever=createBox('breaker-main-handle',new THREE.Vector3(.12,.42,.13),warning,new THREE.Vector3(0,.13,.035));leverPivot.add(lever);
   const busMaterial=new THREE.MeshStandardMaterial({color:0x8b7448,roughness:.34,metalness:.8});
-  for(const z of [-.2,0,.2])leverPivot.add(createBox('breaker-toggle',new THREE.Vector3(.08,.13,.08),busMaterial,new THREE.Vector3(-.01,-.22,z)));
+  for(const x of [-.12,0,.12])leverPivot.add(createBox('breaker-toggle',new THREE.Vector3(.08,.13,.08),busMaterial,new THREE.Vector3(x,-.22,.025)));
+  const interactionMaterial=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false});interactionMaterial.colorWrite=false;
+  const interactionTarget=createBox('breaker-lever-interaction-target',new THREE.Vector3(.36,.68,.28),interactionMaterial,new THREE.Vector3(0,.12,.02));interactionTarget.userData.interaction='main-breaker';leverPivot.add(interactionTarget);
   const red=new THREE.MeshStandardMaterial({color:0x50120d,emissive:0xff2b17,emissiveIntensity:1.4,roughness:.24});
   const green=new THREE.MeshStandardMaterial({color:0x163a24,emissive:0x29ff83,emissiveIntensity:.1,roughness:.24});
-  const redLamp=createCylinder('breaker-red-lamp',.055,.025,red,new THREE.Vector3(-.12,.39,-.18),new THREE.Euler(0,0,Math.PI/2),12);
-  const greenLamp=createCylinder('breaker-green-lamp',.055,.025,green,new THREE.Vector3(-.12,.39,.18),new THREE.Euler(0,0,Math.PI/2),12);
-  group.add(recess,frameTop,frameBottom,frameLeft,frameRight,enclosure,inset,hinge,doorPivot,leverPivot,redLamp,greenLamp);scene.add(group);setShadow(group);
-  return {group,recess,doorPivot,doorPanel,leverPivot,redLamp,greenLamp,redMaterial:red,greenMaterial:green};
+  const redLamp=createCylinder('breaker-red-lamp',.055,.025,red,new THREE.Vector3(-.22,.42,.21),new THREE.Euler(Math.PI/2,0,0),12);
+  const greenLamp=createCylinder('breaker-green-lamp',.055,.025,green,new THREE.Vector3(.22,.42,.21),new THREE.Euler(Math.PI/2,0,0),12);
+  // The cabinet has a real static footprint even though it is mounted close to
+  // the corridor boundary; this keeps future movement-bound changes from
+  // letting the player clip through its protruding hardware.
+  const collider=createBox('breaker-cabinet-collider',new THREE.Vector3(1.14,1.54,.34),trim,new THREE.Vector3(0,0,.1));collider.visible=false;
+  group.add(recess,frameTop,frameBottom,frameLeft,frameRight,enclosure,inset,hinge,doorPivot,controlPlate,leverPivot,redLamp,greenLamp,collider);scene.add(group);setShadow(group);interactionTarget.castShadow=false;interactionTarget.receiveShadow=false;
+  collision.push(collider);
+  return {group,recess,doorPivot,doorPanel,leverPivot,interactionTarget,collider,redLamp,greenLamp,redMaterial:red,greenMaterial:green};
 }
 
 function createExitDoor(scene,collision,materials){
@@ -477,7 +501,7 @@ export function buildWorldOverhaul({scene,collision,environmentTextures,facility
   const road=new THREE.Mesh(new THREE.PlaneGeometry(8.5,120),asphalt);road.name='service-road';road.rotation.x=-Math.PI/2;road.position.set(0,-.105,-108);road.receiveShadow=true;scene.add(road);
   const apron=new THREE.Mesh(new THREE.PlaneGeometry(22,13),asphalt);apron.name='exit-apron';apron.rotation.x=-Math.PI/2;apron.position.set(0,-.1,-50);apron.receiveShadow=true;scene.add(apron);
   const grass=addGrassBlades(scene);
-  const forest=addForestBackdrop(scene,grassMaterial,environmentTextures.firBillboard),clouds=addCloudBank(scene);
+  const forest=addForestBackdrop(scene,grassMaterial,environmentTextures.firCards||[]),clouds=addCloudBank(scene);
 
   const sky=new Sky();sky.name='physical-sky';sky.scale.setScalar(1100);scene.add(sky);
   const uniforms=sky.material.uniforms;uniforms.turbidity.value=7.2;uniforms.rayleigh.value=1.45;uniforms.mieCoefficient.value=.0032;uniforms.mieDirectionalG.value=.77;
@@ -487,7 +511,7 @@ export function buildWorldOverhaul({scene,collision,environmentTextures,facility
   const sun=new THREE.DirectionalLight(0xffdfbd,1.65);sun.name='exterior-sun';sun.position.copy(sunPosition).multiplyScalar(110);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-48;sun.shadow.camera.right=48;sun.shadow.camera.top=48;sun.shadow.camera.bottom=-48;sun.shadow.camera.near=1;sun.shadow.camera.far=230;sun.shadow.bias=-.00018;sun.shadow.normalBias=.035;scene.add(sun);
   const outdoorAmbient=new THREE.HemisphereLight(0x91aab5,0x263421,.48);outdoorAmbient.name='exterior-ambient';scene.add(outdoorAmbient);
 
-  const exit=createExitDoor(scene,collision,materialSet),breaker=createBreakerBox(scene,materialSet);
+  const exit=createExitDoor(scene,collision,materialSet),breaker=createBreakerBox(scene,collision,materialSet);
   createInteriorFurniture({scene,collision,materials:materialSet});
   const checkpoint=createCheckpointCompound({scene,collision,materials:materialSet});
   const motorPool=createMotorPool({scene,collision,materials:materialSet});

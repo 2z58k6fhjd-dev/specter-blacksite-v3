@@ -3,11 +3,11 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.0.0-release';
-import { buildWorldOverhaul } from './world-overhaul.js?v=5.5.0-low-payload-combat';
+import { buildWorldOverhaul } from './world-overhaul.js?v=5.6.0-foundation-polish';
 import { EnemyAISystem } from './enemy-ai.js?v=5.0.0-release';
-import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS } from './graphics-pipeline.js?v=5.5.0-low-payload-combat';
-import { createAudioDirector } from './audio-overhaul.js?v=5.5.0-low-payload-combat';
-import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.5.0-low-payload-combat';
+import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS } from './graphics-pipeline.js?v=5.6.0-foundation-polish';
+import { createAudioDirector } from './audio-overhaul.js?v=5.6.0-foundation-polish';
+import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.6.0-foundation-polish';
 
 const graphicsCustomStorageKey='specter-custom-graphics';
 const voiceSettingsStorageKey='specter-voice-settings';
@@ -113,7 +113,9 @@ function recommendedGraphicsQuality(capabilities,benchmarkMs=null){
   if(capabilities.maxAnisotropy<8)rank=Math.min(rank,1);
   if(capabilities.cpuCores&&capabilities.cpuCores<=4)rank=Math.min(rank,Math.max(0,rank-1));
   if(capabilities.displayPixels>9_000_000)rank=Math.max(0,rank-1);
-  if(Number.isFinite(benchmarkMs)){if(benchmarkMs>29)rank=Math.max(0,rank-2);else if(benchmarkMs>22)rank=Math.max(0,rank-1);else if(benchmarkMs<9)rank=Math.min(4,rank+2);else if(benchmarkMs<12&&rank<4)rank++}
+  // This is a short gameplay sample, not a full combat benchmark. Never let
+  // it promote more than one tier above the capability-derived baseline.
+  if(Number.isFinite(benchmarkMs)){if(benchmarkMs>29)rank=Math.max(0,rank-2);else if(benchmarkMs>22)rank=Math.max(0,rank-1);else if(benchmarkMs<9)rank=Math.min(4,rank+1);else if(benchmarkMs<12&&rank<4)rank++}
   return ['performance','balanced','high','ultra','extreme'][rank];
 }
 const startupGraphicsCapabilities=inspectGraphicsCapabilities();
@@ -121,6 +123,7 @@ let startupRememberedQuality='';
 try{startupRememberedQuality=localStorage.getItem(startupQualityKey)||''}catch{ /* Storage is optional in embedded previews. */ }
 const startupGraphicsPreference=isGraphicsQualityChoice(startupQualityQuery)?startupQualityQuery:(isGraphicsQualityChoice(startupRememberedQuality)?startupRememberedQuality:AUTO_GRAPHICS_QUALITY);
 const startupGraphicsQuality=startupGraphicsPreference===AUTO_GRAPHICS_QUALITY?recommendedGraphicsQuality(startupGraphicsCapabilities):startupGraphicsPreference;
+const startupRuntimeGraphicsQuality=runtimeGraphicsQuality(startupGraphicsQuality);
 // Low is a true payload choice on a fresh load, not just a late material
 // downgrade. Keep the compact source images in use before GLTFLoader or the
 // environment texture loader gets a chance to decode their 2K/4K originals.
@@ -171,15 +174,43 @@ async function loadAsset(name,url){
     status(name,'LOADED',`${count} meshes`);
   }catch(e){console.error(e);requiredAssetFailure=true;assetProgress[name]=1;updateLoading();status(name,'FAILED',e.message)}
 }
+function loadTexture(textureLoader,url){
+  return new Promise((resolve,reject)=>textureLoader.load(url,resolve,undefined,reject));
+}
+function prepareFoliageTexture(texture,{color=false}={}){
+  texture.colorSpace=color?THREE.SRGBColorSpace:THREE.NoColorSpace;
+  texture.wrapS=texture.wrapT=THREE.ClampToEdgeWrapping;
+  texture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
+  texture.needsUpdate=true;
+  return texture;
+}
+async function loadHighTierTreeCards(textureLoader){
+  // These project-authored card assets are deliberately high-tier only. They
+  // add two realistic conifer silhouettes and a normal/roughness response
+  // without making the Intel/Low boot path download any foliage artwork.
+  try{
+    const [firV1,douglasV2,douglasNormal,douglasRoughness]=await Promise.all([
+      loadTexture(textureLoader,'./assets/environment/generated/fir-tree-billboard-v1.png'),
+      loadTexture(textureLoader,'./assets/environment/generated/douglas-fir-card-v2.png'),
+      loadTexture(textureLoader,'./assets/environment/generated/douglas-fir-card-v2-normal.png'),
+      loadTexture(textureLoader,'./assets/environment/generated/douglas-fir-card-v2-roughness.png')
+    ]);
+    environmentTextures.firBillboard=prepareFoliageTexture(firV1,{color:true});
+    environmentTextures.firCards=[
+      {id:'fir-v1',map:environmentTextures.firBillboard},
+      {id:'douglas-fir-v2',map:prepareFoliageTexture(douglasV2,{color:true}),normalMap:prepareFoliageTexture(douglasNormal),roughnessMap:prepareFoliageTexture(douglasRoughness)}
+    ];
+    return environmentTextures.firCards;
+  }catch(error){
+    console.info('Optional high-tier conifer cards unavailable; using the instanced procedural forest.',error);
+    environmentTextures.firCards=[];
+    return environmentTextures.firCards;
+  }
+}
 async function loadEnvironmentAssets(){
   status('environment','LOADING');
   const textureLoader=new THREE.TextureLoader();
   let pbrRoot=startupLowPayloadMode?'./assets/low-textures/environment/pbr-v2':'./assets/environment/pbr-v2';
-  // A real 4K pack is optional rather than an upscaled copy of the 2K runtime
-  // maps. Extreme selects it at startup when a matching manifest is bundled.
-  if(!startupLowPayloadMode&&startupGraphicsQuality==='extreme'&&await getNativeEnvironment4KManifest()){
-    pbrRoot='./assets/environment/pbr-v2-4k';nativeEnvironment4KLoaded=true;
-  }
   const entries=environmentPbrEntries.map(([name,file])=>[name,`${pbrRoot}/${file}`]);
   let completed=0;
   try{
@@ -187,14 +218,13 @@ async function loadEnvironmentAssets(){
       prepareEnvironmentTexture(name,texture);environmentTextures[name]=texture;
       completed++;assetProgress.environment=completed/entries.length;updateLoading();resolve();
     },undefined,reject))));
-    // This generated tree card is non-critical. A transient foliage fetch must
-    // never block the map or turn the low-end preset into an asset failure.
-    if(!startupLowPayloadMode)try{
-      const firBillboard=await new Promise((resolve,reject)=>textureLoader.load('./assets/environment/generated/fir-tree-billboard-v1.png',resolve,undefined,reject));
-      firBillboard.colorSpace=THREE.SRGBColorSpace;firBillboard.wrapS=firBillboard.wrapT=THREE.ClampToEdgeWrapping;
-      firBillboard.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());firBillboard.needsUpdate=true;
-      environmentTextures.firBillboard=firBillboard;
-    }catch(error){console.info('Optional high-tier fir billboard unavailable; using the procedural distant forest.',error)}
+    // Required 2K (or Low) maps always arrive first. A malformed optional 4K
+    // pack can therefore never strand the loading screen; its all-or-nothing
+    // upgrade is attempted only after a complete base environment exists.
+    if(!startupLowPayloadMode&&startupRuntimeGraphicsQuality==='extreme')await ensureNativeEnvironment4K();
+    // This generated foliage set is non-critical. A transient fetch must never
+    // block the map or turn the low-end preset into an asset failure.
+    if(!startupLowPayloadMode)await loadHighTierTreeCards(textureLoader);
     environmentTextures.native4K=nativeEnvironment4KLoaded;
     status('environment','LOADED',nativeEnvironment4KLoaded?'8 PBR families · native 4K maps':startupLowPayloadMode?'8 PBR families · 512px low payload':'8 PBR families · 23 maps');
   }catch(error){
@@ -211,8 +241,11 @@ function prepareEnvironmentTexture(name,texture){
 function nativeEnvironmentManifestIsComplete(manifest){
   const dimensions=manifest?.runtimeFormat?.dimensions;
   if(!Array.isArray(dimensions)||dimensions.length<2||Math.min(Number(dimensions[0])||0,Number(dimensions[1])||0)<4096)return false;
-  const files=new Set((manifest.materials||[]).flatMap(material=>(material.maps||[]).map(map=>map?.file)).filter(Boolean));
-  return environmentPbrEntries.every(([,file])=>files.has(file));
+  const records=new Map((manifest.materials||[]).flatMap(material=>material.maps||[]).filter(map=>map?.file).map(map=>[map.file,map]));
+  return environmentPbrEntries.every(([,file])=>{
+    const record=records.get(file),mapDimensions=record?.dimensions;
+    return record&&Array.isArray(mapDimensions)&&mapDimensions.length>=2&&Math.min(Number(mapDimensions[0])||0,Number(mapDimensions[1])||0)>=4096&&Number(record.bytes)>0&&/^[a-f0-9]{64}$/i.test(String(record.sha256||''));
+  });
 }
 async function getNativeEnvironment4KManifest(){
   if(!nativeEnvironment4KManifestPromise)nativeEnvironment4KManifestPromise=(async()=>{
@@ -241,14 +274,27 @@ async function ensureNativeEnvironment4K(){
   if(nativeEnvironment4KLoaded)return true;
   if(!nativeEnvironment4KLoadPromise)nativeEnvironment4KLoadPromise=(async()=>{
     if(!await getNativeEnvironment4KManifest())return false;
+    const loaded=[];
     try{
       const textureLoader=new THREE.TextureLoader();
-      const loaded=await Promise.all(environmentPbrEntries.map(([name,file])=>new Promise((resolve,reject)=>textureLoader.load(`./assets/environment/pbr-v2-4k/${file}`,texture=>resolve([name,prepareEnvironmentTexture(name,texture)]),undefined,reject))));
+      // Preserve the verified base pack until every optional map has decoded
+      // and demonstrated that it is genuinely native 4K.  A partial upgrade
+      // must never replace only some of the environment material inputs.
+      for(const [name,file] of environmentPbrEntries){
+        const texture=prepareEnvironmentTexture(name,await loadTexture(textureLoader,`./assets/environment/pbr-v2-4k/${file}`));
+        const width=Number(texture.image?.naturalWidth||texture.image?.width||0),height=Number(texture.image?.naturalHeight||texture.image?.height||0);
+        if(Math.min(width,height)<4096)throw new Error(`${file} is not a native 4K image.`);
+        loaded.push([name,texture]);
+      }
       for(const [name,texture] of loaded)replaceEnvironmentTextureSource(name,texture);
       nativeEnvironment4KLoaded=true;environmentTextures.native4K=true;
       status('environment','LOADED','8 PBR families · native 4K maps');
       return true;
-    }catch(error){console.info('Native 4K environment pack could not be loaded; retaining the verified lower-resolution pack.',error);return false}
+    }catch(error){
+      for(const [,texture] of loaded)texture.dispose();
+      console.info('Native 4K environment pack could not be loaded; retaining the verified lower-resolution pack.',error);
+      return false;
+    }
   })();
   return nativeEnvironment4KLoadPromise;
 }
@@ -422,14 +468,41 @@ function applyMaterialTextureTier(material,textureTier,anisotropy,keepReducedTex
   }
   material.needsUpdate=true;
 }
+function graphicsRenderTargetEstimate(){
+  const targets=new Set(),visited=new WeakSet(),candidateKeys=/(?:renderTarget|renderTargets|readBuffer|writeBuffer|beauty|normal|depth|blur|mask|outputBuffer)/i;
+  const inspect=(value,depth=0)=>{
+    if(!value||typeof value!=='object'||depth>3||visited.has(value))return;
+    visited.add(value);
+    if(value.isWebGLRenderTarget){targets.add(value);return}
+    if(Array.isArray(value)){for(const item of value)inspect(item,depth+1);return}
+    for(const [key,item] of Object.entries(value))if(candidateKeys.test(key))inspect(item,depth+1);
+  };
+  inspect(graphics?.composer);
+  for(const pass of Object.values(graphics?.passes||{}))inspect(pass);
+  let bytes=0;
+  for(const target of targets){
+    const pixels=Math.max(0,(target.width||0)*(target.height||0));
+    const textures=target.textures?.length?target.textures:(target.texture?[target.texture]:[]);
+    const colorBytes=textures.reduce((total,texture)=>{
+      const bytesPerPixel=texture?.type===THREE.FloatType?16:texture?.type===THREE.HalfFloatType?8:4;
+      return total+pixels*bytesPerPixel;
+    },0);
+    const depthBytes=target.depthBuffer?pixels*4:0,stencilBytes=target.stencilBuffer?pixels:0;
+    // Multisampled buffers require a transient copy in addition to the resolve.
+    bytes+=colorBytes+depthBytes+stencilBytes+(target.samples>0?(colorBytes+depthBytes+stencilBytes):0);
+  }
+  return {bytes,count:targets.size};
+}
 function graphicsMemoryEstimate(preset){
-  const textures=new Set(),geometries=new Set();let textureBytes=0,geometryBytes=0;
+  const textures=new Set(),geometries=new Set(),instanceBuffers=new Set(),skeletonBuffers=new Set();let textureBytes=0,geometryBytes=0,instanceBytes=0,skeletonBytes=0;
   scene.traverse(object=>{
     if(object.isMesh&&object.geometry&&!geometries.has(object.geometry)){
       geometries.add(object.geometry);
       for(const attribute of Object.values(object.geometry.attributes||{}))geometryBytes+=attribute?.array?.byteLength||0;
       geometryBytes+=object.geometry.index?.array?.byteLength||0;
     }
+    if(object.isInstancedMesh)for(const attribute of [object.instanceMatrix,object.instanceColor])if(attribute?.array&&!instanceBuffers.has(attribute)){instanceBuffers.add(attribute);instanceBytes+=attribute.array.byteLength}
+    if(object.isSkinnedMesh&&object.skeleton?.boneMatrices&&!skeletonBuffers.has(object.skeleton)){skeletonBuffers.add(object.skeleton);skeletonBytes+=object.skeleton.boneMatrices.byteLength||0}
     if(!object.isMesh&&!object.isSprite)return;
     for(const material of (Array.isArray(object.material)?object.material:[object.material]))for(const slot of materialTextureSlots){
       const texture=material?.[slot],image=texture?.image;
@@ -437,11 +510,12 @@ function graphicsMemoryEstimate(preset){
     }
   });
   const ratio=Math.min(devicePixelRatio||1,preset.pixelRatioCap||1),pixels=Math.max(1,innerWidth*innerHeight*ratio*ratio);
+  const actualTargets=graphicsRenderTargetEstimate();
   const targetCount=preset.postProcessing===false?0:2+(preset.ambientOcclusion?1:0)+(preset.screenSpaceReflections?5:0)+(preset.bloom?2:0);
-  const targetBytes=pixels*8*targetCount;
+  const targetBytes=actualTargets.bytes||pixels*8*targetCount;
   const shadowBytes=preset.shadows&&preset.shadowMapSize?(preset.shadowMapSize*preset.shadowMapSize*4*1.333):0;
-  const totalBytes=textureBytes+geometryBytes+targetBytes+shadowBytes;
-  return {textureMB:textureBytes/1048576,geometryMB:geometryBytes/1048576,targetMB:targetBytes/1048576,shadowMB:shadowBytes/1048576,totalMB:totalBytes/1048576};
+  const totalBytes=textureBytes+geometryBytes+instanceBytes+skeletonBytes+targetBytes+shadowBytes;
+  return {textureMB:textureBytes/1048576,geometryMB:geometryBytes/1048576,instanceMB:instanceBytes/1048576,skeletonMB:skeletonBytes/1048576,targetMB:targetBytes/1048576,targetCount:actualTargets.count||targetCount,shadowMB:shadowBytes/1048576,totalMB:totalBytes/1048576};
 }
 function renderGraphicsMemoryEstimate(preset=graphics?.getDiagnostics?.().preset){
   if(!preset||!graphicsVramEstimate)return;
@@ -449,21 +523,33 @@ function renderGraphicsMemoryEstimate(preset=graphics?.getDiagnostics?.().preset
   graphicsVramEstimate.textContent=`EST. GPU MEMORY: ${total} · textures ${Math.round(estimate.textureMB)} MB · geometry ${Math.round(estimate.geometryMB)} MB · targets ${Math.round(estimate.targetMB)} MB · shadows ${Math.round(estimate.shadowMB)} MB`;
 }
 function applyGraphicsHardwareBudget(quality,effectivePreset=null){
-  const preset=effectivePreset||GRAPHICS_QUALITY_PRESETS[quality]||GRAPHICS_QUALITY_PRESETS.high;
+  const requestedPreset=effectivePreset||GRAPHICS_QUALITY_PRESETS[quality]||GRAPHICS_QUALITY_PRESETS.high;
+  // Loading the actual 512px sources is a boot-time decision: it prevents the
+  // original 2K/4K images from decoding at all.  Preserve the currently loaded
+  // material maps during a live High-to-Low change and make the reload need
+  // explicit instead of replacing the world with blank stand-in materials.
+  const lowTexturesReloadPending=requestedPreset.textureTier==='low'&&!startupLowPayloadMode;
+  const highTexturesReloadPending=requestedPreset.textureTier!=='low'&&startupLowPayloadMode;
+  const textureReloadPending=lowTexturesReloadPending||highTexturesReloadPending;
+  const activeTextureTier=textureReloadPending?(startupLowPayloadMode?'low':'standard'):requestedPreset.textureTier;
+  const preset=activeTextureTier===requestedPreset.textureTier?requestedPreset:{...requestedPreset,textureTier:activeTextureTier};
   const maxAnisotropy=renderer.capabilities.getMaxAnisotropy?.()||1;
-  const anisotropy=Math.min(maxAnisotropy,preset.textureAnisotropy||1);
-  const releasedTextures=preset.textureTier==='low'?new Set():null;
+  const anisotropy=Math.min(maxAnisotropy,requestedPreset.textureAnisotropy||1);
+  const releasedTextures=activeTextureTier==='low'?new Set():null;
   const keepLowPayloadTextures=startupLowPayloadMode&&preset.textureTier==='low';
   renderer.shadowMap.enabled=Boolean(preset.shadows);
   renderer.shadowMap.type=!preset.shadows||quality==='performance'||quality==='intel'?THREE.BasicShadowMap:THREE.PCFSoftShadowMap;
-  for(const texture of Object.values(environmentTextures))applyTextureSampling(texture,anisotropy);
+  for(const texture of Object.values(environmentTextures)){
+    if(Array.isArray(texture))for(const card of texture)for(const map of [card?.map,card?.normalMap,card?.roughnessMap])applyTextureSampling(map,anisotropy);
+    else applyTextureSampling(texture,anisotropy);
+  }
   scene.traverse(object=>{
     if(!object.isMesh)return;
     const materials=Array.isArray(object.material)?object.material:[object.material];
     for(const material of materials)applyMaterialTextureTier(material,preset.textureTier,anisotropy,Boolean(object.userData.specterViewmodel)||keepLowPayloadTextures,releasedTextures);
   });
   const environmentIs4K=environmentPbrEntries.every(([name])=>Math.max(environmentTextures[name]?.image?.width||0,environmentTextures[name]?.image?.height||0)>=4096);
-  graphicsTextureStatus=preset.textureTier==='4k-preferred'?(environmentIs4K?'NATIVE 4K PBR':'2K PBR FALLBACK'):(preset.textureTier==='low'?(startupLowPayloadMode?'LOW-PAYLOAD 512 PBR':'LOW-SAMPLING PBR'):'2K PBR');
+  graphicsTextureStatus=lowTexturesReloadPending?'LOW 512 PBR ON RELOAD':highTexturesReloadPending?'HIGH TEXTURES ON RELOAD':preset.textureTier==='4k-preferred'?(environmentIs4K?'NATIVE 4K PBR':'2K PBR FALLBACK'):(preset.textureTier==='low'?'LOW-PAYLOAD 512 PBR':'2K PBR');
   worldOverhaul?.setGraphicsQuality(quality,preset);
   updateForestFernsForGraphics(preset);
   renderGraphicsMemoryEstimate(preset);
@@ -473,11 +559,11 @@ function applyGraphicsHardwareBudget(quality,effectivePreset=null){
     if(!current||current.preset.textureTier!=='4k-preferred')return;
     applyGraphicsHardwareBudget(current.quality,current.preset);renderGraphicsControls(current);
   });
-  return {anisotropy,textureStatus:graphicsTextureStatus};
+  return {anisotropy,textureStatus:graphicsTextureStatus,textureReloadPending};
 }
 
 const qualityStorageKey='specter-graphics-quality';
-const requestedGraphicsQuality=runtimeGraphicsQuality(startupGraphicsQuality);
+const requestedGraphicsQuality=startupRuntimeGraphicsQuality;
 const graphics=await createGraphicsPipeline({renderer,scene,camera,quality:requestedGraphicsQuality,width:innerWidth,height:innerHeight,pixelRatio:devicePixelRatio});
 let activeGraphicsPreference=startupGraphicsPreference;
 const savedRuntimeCustomSettings=Object.fromEntries(Object.entries(bootGraphicsCustomSettings).filter(([key])=>key!=='antialiasing'));
@@ -526,10 +612,10 @@ function refreshGraphicsDiagnostics(){
   const current=graphicsDiagnostics;
   if(!current||latest.mode!==current.mode||latest.ambientOcclusionEnabled!==current.ambientOcclusionEnabled||latest.screenSpaceReflectionsEnabled!==current.screenSpaceReflectionsEnabled||latest.bloomEnabled!==current.bloomEnabled||latest.fallback!==current.fallback)renderGraphicsControls(latest);
 }
-const autoBenchmark={active:false,pending:false,samples:[],warmupFrames:45,warmup:0,minimumFrames:120};
-function cancelAutoGraphicsBenchmark(){autoBenchmark.active=false;autoBenchmark.pending=false;autoBenchmark.samples.length=0;autoBenchmark.warmup=0}
+const autoBenchmark={active:false,pending:false,samples:[],warmupFrames:45,warmup:0,minimumFrames:120,hitches:0};
+function cancelAutoGraphicsBenchmark(){autoBenchmark.active=false;autoBenchmark.pending=false;autoBenchmark.samples.length=0;autoBenchmark.warmup=0;autoBenchmark.hitches=0}
 function beginAutoGraphicsBenchmark(){
-  autoBenchmark.active=false;autoBenchmark.samples.length=0;autoBenchmark.warmup=autoBenchmark.warmupFrames;
+  autoBenchmark.active=false;autoBenchmark.samples.length=0;autoBenchmark.warmup=autoBenchmark.warmupFrames;autoBenchmark.hitches=0;
   if(!missionHasStarted){
     autoBenchmark.pending=true;graphicsHint.textContent='AUTO BENCHMARK — begins after entering the mission.';
     return;
@@ -540,12 +626,16 @@ function beginAutoGraphicsBenchmark(){
 function finishAutoGraphicsBenchmark(){
   if(!autoBenchmark.active||activeGraphicsPreference!==AUTO_GRAPHICS_QUALITY||autoBenchmark.samples.length<autoBenchmark.minimumFrames)return;
   autoBenchmark.active=false;const sorted=[...autoBenchmark.samples].sort((a,b)=>a-b),p90=sorted[Math.floor(sorted.length*.9)];
-  const selected=recommendedGraphicsQuality(startupGraphicsCapabilities,p90),runtimeSelected=runtimeGraphicsQuality(selected),diagnostics=graphics.setQuality(runtimeSelected);
+  // Retain long-frame stalls as a conservative score penalty instead of
+  // silently excluding them from the AUTO recommendation.
+  const scoredP90=autoBenchmark.hitches>=2?Math.max(p90,24):p90;
+  const selected=recommendedGraphicsQuality(startupGraphicsCapabilities,scoredP90),runtimeSelected=runtimeGraphicsQuality(selected),diagnostics=graphics.setQuality(runtimeSelected);
   applyGraphicsHardwareBudget(runtimeSelected,diagnostics.preset);renderGraphicsControls(diagnostics);
   toast(`AUTO GRAPHICS → ${runtimeSelected.toUpperCase()} (${Math.round(p90)} MS P90)`);
 }
 function sampleAutoGraphicsBenchmark(deltaSeconds){
-  if(!autoBenchmark.active||!Number.isFinite(deltaSeconds)||deltaSeconds<=0||deltaSeconds>.35)return;
+  if(!autoBenchmark.active||!Number.isFinite(deltaSeconds)||deltaSeconds<=0)return;
+  if(deltaSeconds>.35){autoBenchmark.hitches++;return}
   if(autoBenchmark.warmup>0){autoBenchmark.warmup--;return}
   autoBenchmark.samples.push(deltaSeconds*1000);finishAutoGraphicsBenchmark();
 }
@@ -698,14 +788,16 @@ function installPowerBox(){
   const source=assetMap.get('powerBox')?.scene;if(!source)return;
   const breaker=worldOverhaul.breaker;
   const cabinetRoot=new THREE.Group();cabinetRoot.name='cc0-power-box-cabinet';
-  const cabinet=source.clone(true);normalize(cabinet,1.26,true);cabinet.name='power-box-01-2k';
+  const cabinet=source.clone(true);cabinet.name='power-box-01-2k';
   // The source cabinet has a separate static door. Hide it so the existing
   // mission-critical door, lamps, and lever keep their real-time animation.
+  // Hide it before fitting the cabinet so the body centers exactly on the
+  // recessed frame instead of inheriting the source door's open-pose bounds.
   cabinet.traverse(object=>{
     if(object.isMesh){object.castShadow=true;object.receiveShadow=true;object.frustumCulled=true}
     if(object.name==='power_box_01_door')object.visible=false;
   });
-  cabinet.position.set(.015,-.64,0);cabinetRoot.add(cabinet);breaker.group.add(cabinetRoot);
+  normalize(cabinet,1.26,true);cabinet.position.set(0,-.63,.015);cabinetRoot.add(cabinet);breaker.group.add(cabinetRoot);
   for(const name of ['breaker-enclosure','breaker-inset','breaker-hinge']){
     const authoredPart=breaker.group.getObjectByName(name);if(authoredPart)authoredPart.visible=false;
   }
@@ -795,7 +887,7 @@ function updateForestFernsForGraphics(preset={}){
     })
     .finally(()=>{forestFernLoadPromise=null});
 }
-const switchGroup=worldOverhaul.breaker.group;
+const switchGroup=worldOverhaul.breaker.interactionTarget;
 const audio=createAudioDirector({seed:0x5ec7e2,powerOn:false,masterVolume:.78,musicVolume:.28,sfxVolume:.88,voiceVolume:bootVoiceVolume,ambienceVolume:.5});
 let recordedAudioDecodePromise=null;
 
@@ -900,6 +992,33 @@ let viewmodelActionKind=null,pendingReload=null,pendingWeaponSwitch=null;
 function markViewmodelMeshes(root){
   root.traverse(object=>{if(object.isMesh)object.userData.specterViewmodel=true});
 }
+function captureRifleReloadParts(model,holder,rig){
+  // The bundled source contains one verified inserted magazine (`mag`). Keep
+  // that real mesh visible and animate it from the shared action timeline;
+  // loose display magazines remain hidden by the source cleanup list.
+  const magazine=model.getObjectByName('mag');
+  if(!magazine?.parent)return;
+  model.updateWorldMatrix(true,true);holder.updateWorldMatrix(true,false);
+  const holderOrigin=holder.localToWorld(new THREE.Vector3()),holderOut=holder.localToWorld(new THREE.Vector3(-.012,-.22,.06));
+  const parentOrigin=magazine.parent.worldToLocal(holderOrigin),parentOut=magazine.parent.worldToLocal(holderOut);
+  rig.reloadMechanics={magazine,basePosition:magazine.position.clone(),outOffset:parentOut.sub(parentOrigin),hidden:false};
+}
+function updateRifleReloadMechanics(kind,normalizedTime=0,active=false){
+  const mechanics=weaponRig[kind]?.reloadMechanics;if(!mechanics)return;
+  const {magazine,basePosition,outOffset}=mechanics;
+  if(!active){magazine.visible=true;magazine.position.copy(basePosition);mechanics.hidden=false;return}
+  const p=THREE.MathUtils.clamp(normalizedTime,0,1);
+  // Mag-out, an intentional hand-covered transfer gap, then a fresh magazine
+  // entering from below. The action uses the authored marker timings rather
+  // than a second, unsynchronised timeout.
+  if(p<.32){
+    magazine.visible=true;magazine.position.copy(basePosition).addScaledVector(outOffset,THREE.MathUtils.smoothstep(p,.13,.32));mechanics.hidden=false;
+  }else if(p<.46){
+    magazine.visible=false;mechanics.hidden=true;
+  }else if(p<.69){
+    magazine.visible=true;magazine.position.copy(basePosition).addScaledVector(outOffset,1-THREE.MathUtils.smoothstep(p,.46,.69));mechanics.hidden=false;
+  }else{magazine.visible=true;magazine.position.copy(basePosition);mechanics.hidden=false}
+}
 
 function installRifle(){
   const model=cloneAsset('ar15');if(!model)return;
@@ -911,6 +1030,7 @@ function installRifle(){
   markViewmodelMeshes(model);
   weaponRig.rifle.visuals=[model];
   faceWeaponForward(model,rifleHolder,'Handguard','Stock');
+  captureRifleReloadParts(model,rifleHolder,weaponRig.rifle);
   const modelBox=boundsInSpace(model,rifleHolder);
   const handguardBox=boundsInSpace(model.getObjectByName('Handguard')||model,rifleHolder);
   const receiverBox=boundsInSpace(model.getObjectByName('Dust cover')||model.getObjectByName('upper receiver part')||model,rifleHolder);
@@ -981,7 +1101,7 @@ function installRifleVariants(){
       const materials=Array.isArray(object.material)?object.material:[object.material];
       const clones=materials.map(material=>{const clone=material?.clone?.()||material;if(clone?.color)clone.color.multiply(new THREE.Color(variant.tint));return clone});object.material=Array.isArray(object.material)?clones:clones[0];
     });
-    holder.add(model);markViewmodelMeshes(model);rig.visuals=[model];faceWeaponForward(model,holder,'Handguard','Stock');
+    holder.add(model);markViewmodelMeshes(model);rig.visuals=[model];faceWeaponForward(model,holder,'Handguard','Stock');captureRifleReloadParts(model,holder,rig);
     const modelBox=boundsInSpace(model,holder),handguardBox=boundsInSpace(model.getObjectByName('Handguard')||model,holder),receiverBox=boundsInSpace(model.getObjectByName('Dust cover')||model.getObjectByName('upper receiver part')||model,holder),aperture=sourcePointInSpace(model,arRearApertureSource,holder);
     rig.ads.set(-aperture.x,-aperture.y,scopeSurface.position.z-aperture.z);
     if(modelBox&&handguardBox){
@@ -1047,13 +1167,21 @@ function dropGroundHeight(){return .018}
 function configureDroppedCombatProp(object){
   object.traverse(mesh=>{if(mesh.isMesh){mesh.castShadow=true;mesh.receiveShadow=true;mesh.frustumCulled=true}});
 }
+// Enemy and weapon roots keep live references in userData (AI controller,
+// owner model, anchors). Three's Object3D.clone serializes that metadata, so
+// temporarily clear it while taking a purely visual snapshot for the drop pool.
+function cloneDroppedCombatSource(source){
+  const savedUserData=[];
+  source.traverse(node=>{if(node.userData&&Object.keys(node.userData).length){savedUserData.push([node,node.userData]);node.userData={}}});
+  try{return source.clone(true)}finally{for(const [node,userData] of savedUserData)node.userData=userData}
+}
 function acquireDroppedCombatProp(source,poolKey){
   if(!source?.parent)return null;
   source.updateWorldMatrix(true,false);
   source.getWorldPosition(dropWorldPosition);source.getWorldQuaternion(dropWorldQuaternion);source.getWorldScale(dropWorldScale);
   const bucket=droppedCombatPropPool.get(poolKey);
   const pooledObject=bucket?.pop();
-  const object=pooledObject||source.clone(true);
+  const object=pooledObject||cloneDroppedCombatSource(source);
   if(pooledObject&&droppedCombatPropPoolSize>0)droppedCombatPropPoolSize--;
   if(!object)return null;
   object.position.copy(dropWorldPosition);object.quaternion.copy(dropWorldQuaternion);object.scale.copy(dropWorldScale);object.visible=true;object.matrixAutoUpdate=true;
@@ -1329,7 +1457,10 @@ function spawnEnemy(x,z,role='rifleman'){
   const weapon=createEnemyRifle(heavy,role);root.add(weapon.group);
   root.userData.weapon=weapon.group;root.userData.weaponDetail=weapon.detail;root.userData.weaponProxy=weapon.proxy;root.userData.weaponBase=weapon.basePosition;root.userData.muzzle=weapon.muzzle;root.userData.eject=weapon.eject;
   addEnemyRoleEquipment(root,role);
-  root.userData.droppableGear=root.children.filter(object=>/enemy-.*(?:helmet|field-cap|assault-pack|marksman-pack|radio|headset|holster)/.test(object.name));
+  // Snapshot every meaningful external kit component after the grounded death
+  // settle: carrier, belt, pouches, pads, helmet/cap, comms, packs and holster
+  // all leave the corpse through the bounded pooled drop system.
+  root.userData.droppableGear=root.children.filter(object=>/enemy-.*(?:helmet|field-cap|assault-pack|marksman-pack|radio|headset|holster|plate-carrier|carrier-collar|battle-belt|pouch|shoulder-(?:pad|cover)|knee-pad|visor)/.test(object.name));
   root.traverse(object=>{if(object.isMesh)object.userData.enemy=root});
   const interior=z>-45,patrolPoints=interior
     ?[{x:THREE.MathUtils.clamp(x-1.8,-7.8,7.8),y:0,z:THREE.MathUtils.clamp(z+2.8,-42,7)},{x:THREE.MathUtils.clamp(x+1.8,-7.8,7.8),y:0,z:THREE.MathUtils.clamp(z-2.8,-42,7)}]
@@ -1687,6 +1818,7 @@ function completeWeaponSwitch(){
 }
 function updateViewmodelAction(dt){
   const sample=viewmodelActionTimeline.update(dt),markers=viewmodelActionTimeline.consumeMarkers([]),profile=weaponProfiles[currentWeapon];
+  updateRifleReloadMechanics(currentWeapon,viewmodelActionTimeline.normalizedTime,viewmodelActionKind==='reload'&&profile.family==='rifle');
   for(const marker of markers){
     if(viewmodelActionKind==='reload'){
       if(marker.name==='magOut')audio.playWeaponMechanism(profile.family,'magOut');

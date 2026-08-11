@@ -17,3 +17,30 @@ chroma-key transparency step; it is not a downloaded third-party model.
 
 The card is a performance-conscious high-tier foliage enhancement, not a claim
 that the fallback procedural forest is a full authored 3D tree pack.
+
+## Douglas fir PBR card v2
+
+`douglas-fir-card-v2.png` is a second, project-authored transparent conifer
+card used with the existing version-one card at High, Ultra, and Extreme
+vegetation density. It has companion runtime maps:
+
+- `douglas-fir-card-v2-normal.png`
+- `douglas-fir-card-v2-roughness.png`
+
+The browser uses these maps only for the high-tier instanced card layer; the
+compact procedural forest remains the all-tier fallback. These files are not a
+downloaded tree model, scan, or substitute for a full authored 3D tree pack.
+
+- Source output: `douglas-fir-card-v2-source.png`
+- Runtime alpha-cutout: `douglas-fir-card-v2.png`
+- Image generation output ID: `exec-670de1a7-ee9c-4f85-ab7f-9a0f5891cc76`
+- Prompt intent: a realistic mature Pacific Northwest Douglas fir, isolated on
+  a flat chroma background, no ground plane, text, people, or cast shadow.
+- Transparency processing: project chroma-key removal; the source is retained
+  with the runtime cutout for reproducibility.
+- Derived PBR maps: `scripts/build-tree-card-maps.py`, which builds a
+  conservative foliage normal response and high-roughness map from the final
+  alpha-cutout.
+
+This is a project-owned generated bitmap asset. It carries no third-party tree
+model license or attribution claim.

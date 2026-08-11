@@ -1,13 +1,13 @@
 # SPECTER: Blacksite
 
-Build: `5.5.0-LOW-PAYLOAD-COMBAT`
+Build: `5.6.0-FOUNDATION-POLISH`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build
-5.5.0 continues the controller, viewmodel, combat presentation, enemy behavior,
+5.6.0 continues the controller, viewmodel, combat presentation, enemy behavior,
 facility, exterior-compound, rendering, materials, audio, and mission-flow work
 while keeping the project suitable for static hosting on GitHub Pages.
 
-## Build 5.5.0 highlights
+## Build 5.6.0 highlights
 
 - Damped first-person movement, sprint transitions, camera motion, weapon bob,
   and mouse-driven sway.
@@ -31,6 +31,10 @@ while keeping the project suitable for static hosting on GitHub Pages.
   action, and ready markers synchronize the ammo transition, slide/bolt motion,
   and sound cues. This is project-authored procedural choreography, not imported
   motion capture or a separately licensed weapon-animation pack.
+- Rifle reloads now physically animate the verified inserted magazine through the
+  stow, hand-off, and reseat markers; the M9 retains its separate slide, casing,
+  muzzle, and ejection choreography. Unverified AR parts are deliberately not
+  mislabeled as a bolt or charging handle.
 - Defeated enemies complete a grounded death and brief settle hold before their
   carried rifle and role equipment drop. A bounded reusable prop pool prevents
   sustained combat from continually allocating new visual dressing; drops are
@@ -68,10 +72,12 @@ while keeping the project suitable for static hosting on GitHub Pages.
   texture-free procedural fallback--not a substitute for a future authored
   high-detail tree pack.
 - Project-generated 2D photo-tree impostors supplement the procedural fallback
-  only at **High**, **Ultra**, and **Extreme** vegetation density. They use one
-  shared, instanced texture treatment with no collision and stay absent if the
-  optional texture is unavailable; they are not represented as full 3D,
-  photogrammetric, or AAA tree geometry.
+  only at **High**, **Ultra**, and **Extreme** vegetation density. The high-tier
+  card layer combines the original fir silhouette with a Douglas-fir v2 card
+  using its own albedo, normal, and roughness maps through shared instanced PBR
+  materials. The cards have no collision and stay absent if optional textures
+  are unavailable; they are not represented as full 3D, photogrammetric, or AAA
+  tree geometry.
 - The raw 4K **Fern 02** CC0 source set streams only after the core mission is
   playable, when vegetation density is **High**, **Ultra**, or **Extreme** and
   the texture tier is not Low. It uses the official `fern_02_alpha_4k.png` mask
@@ -175,6 +181,8 @@ prototype.
 | `F` | Toggle the weapon-mounted flashlight |
 | `R` | Reload |
 | `C` | Chamber/bolt check (action animation) |
+| `I` | Inspect the equipped weapon |
+| `Space` | Jump (grounded; collision-safe) |
 | `B` | Toggle SEMI/AUTO when the selected weapon supports it |
 | `G` | Open/close graphics settings; use AUTO, a manual profile, or custom controls |
 | `1` | HK416 |
@@ -195,11 +203,11 @@ structure intact.
 
 Useful rendering query parameters are:
 
-- `?quality=auto`
+- `?quality=auto` (first-run default; quick benchmark + safe headroom)
 - `?quality=intel` (Competitive Low)
 - `?quality=performance`
 - `?quality=balanced`
-- `?quality=high` (default; designed around a 6 GB GPU at 1080p)
+- `?quality=high` (designed around a 6 GB GPU at 1080p)
 - `?quality=ultra` (8 GB GPU target)
 - `?quality=extreme` (10 GB target)
 
@@ -259,14 +267,16 @@ The shipped environment pack remains 23 native 2048px WebP maps. Extreme is
 fallback until a native `assets/environment/pbr-v2-4k/` asset tier is supplied.
 High-resolution source textures remain in the project payload; Competitive Low
 selects compact 512px derivatives before decode rather than promising the full
-close-up texture treatment on constrained hardware. Switching to Low during an
-already high-detail session reduces the active material budget, but a fresh Low
-launch is the full low-payload path.
+close-up texture treatment on constrained hardware. Texture-tier changes are
+explicitly reload-bound in either direction: the game keeps currently decoded
+maps visible, shows the requested reload status, and applies the real payload
+tree on the next launch instead of replacing materials with blank stand-ins.
 
 High vegetation can additionally show project-generated 2D photo-tree impostors
-through a shared, instanced material; they are hidden at Off, Low, and Medium
-density and use no collision. This keeps the procedural forest as the all-tier
-fallback.
+through shared, instanced PBR materials. The Douglas-fir v2 card uses retained
+project-generated albedo, normal, and roughness maps; the cards are hidden at
+Off, Low, and Medium density and use no collision. This keeps the procedural
+forest as the all-tier fallback.
 Fern 02 streams only after the core mission is playable, and only at High, Ultra,
 or Extreme vegetation with a non-Low texture tier. Competitive Low does not
 request or render Fern 02, and its original 4K maps are excluded from lower
@@ -295,4 +305,4 @@ prompts, and build records.
 Research links in `THIRD_PARTY_ASSETS.md` are evaluation notes only. Their models,
 textures, and audio are not bundled merely because a source URL is listed. No
 sci-fi, futuristic, fantasy, cartoon, stylized, or visibly low-detail research
-asset was accepted into the build 5.5.0-LOW-PAYLOAD-COMBAT runtime.
+asset was accepted into the build 5.6.0-FOUNDATION-POLISH runtime.
