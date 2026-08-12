@@ -2,12 +2,12 @@ import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.13.0-browser-acceptance';
-import { buildWorldOverhaul } from './world-overhaul.js?v=5.13.0-browser-acceptance';
-import { EnemyAISystem } from './enemy-ai.js?v=5.13.0-browser-acceptance';
-import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS,SPATIAL_UPSCALE_FALLBACK_SCALE } from './graphics-pipeline.js?v=5.13.0-browser-acceptance';
-import { createAudioDirector } from './audio-overhaul.js?v=5.13.0-browser-acceptance';
-import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.13.0-browser-acceptance';
+import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.14.0-forest-browser';
+import { buildWorldOverhaul } from './world-overhaul.js?v=5.14.0-forest-browser';
+import { EnemyAISystem } from './enemy-ai.js?v=5.14.0-forest-browser';
+import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS,SPATIAL_UPSCALE_FALLBACK_SCALE } from './graphics-pipeline.js?v=5.14.0-forest-browser';
+import { createAudioDirector } from './audio-overhaul.js?v=5.14.0-forest-browser';
+import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.14.0-forest-browser';
 
 const graphicsCustomStorageKey='specter-custom-graphics';
 const voiceSettingsStorageKey='specter-voice-settings';
@@ -2353,6 +2353,19 @@ document.addEventListener('pointerlockerror',()=>{
   if(!fallbackNoticeShown){fallbackNoticeShown=true;toast('EMBEDDED MOUSE LOOK ACTIVE')}
 });
 const localQAMode=(location.hostname==='127.0.0.1'||location.hostname==='localhost')?new URLSearchParams(location.search).get('qa'):null;
+// Kept off the public build: the browser acceptance suite can inspect real
+// runtime state after it starts one of the local QA routes. This is stronger
+// than a source-pattern assertion while avoiding an in-game debug surface.
+function readLocalRuntimeDiagnostics(){
+  const diagnostics=graphics?.getDiagnostics?.()||{},forest=worldOverhaul?.forest;
+  return {
+    quality:diagnostics.quality||null,textureTier:diagnostics.preset?.textureTier||null,
+    textureStatus:graphicsTextureStatus,missionAssetsReady,
+    camera:{x:camera.position.x,y:camera.position.y,z:camera.position.z},
+    forest:{trees:forest?.activeTreeCounts||{},fir:forest?.highTierFirStats||{}}
+  };
+}
+if(localQAMode)Object.defineProperty(globalThis,'__specterLocalRuntimeDiagnostics',{value:readLocalRuntimeDiagnostics,configurable:true});
 function applyLocalQA(){
   if(localQAMode==='exterior'){restorePower();camera.position.set(0,1.72,-52);previousAIPlayerPosition.copy(camera.position)}
   if(localQAMode==='forest'){restorePower();camera.position.set(-39.2,1.72,-60.5);camera.lookAt(-51.2,4.7,-60.5);previousAIPlayerPosition.copy(camera.position)}

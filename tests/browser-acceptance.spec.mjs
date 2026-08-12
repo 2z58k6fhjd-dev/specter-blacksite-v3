@@ -20,6 +20,10 @@ async function enterMission(page) {
   await expect(page.locator('#startPanel')).toBeHidden({ timeout: 10_000 });
 }
 
+async function localRuntimeDiagnostics(page) {
+  return page.evaluate(() => globalThis.__specterLocalRuntimeDiagnostics?.() || null);
+}
+
 // The shipped game intentionally imports Three.js from a pinned CDN URL.
 // Browser acceptance mirrors that same pinned package locally, making CI and
 // developer runs deterministic even when a browser sandbox blocks CDN traffic.
@@ -68,6 +72,31 @@ test('a weapon action and an actual enemy radio call reach the rendered HUD', as
   await expect(page.locator('#enemySubtitle')).toBeVisible({ timeout: 12_000 });
   await page.keyboard.press('KeyC');
   await expect(page.locator('#message')).toContainText('BOLT CHECK');
+  expect(errors).toEqual([]);
+});
+
+test('high vegetation streams and presents the real CC0 fir LOD chain', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await mirrorPinnedThree(page);
+  await page.goto('/?quality=high&qa=forest', { waitUntil: 'domcontentloaded' });
+  await waitForMission(page);
+  await enterMission(page);
+  // The optional close/mid forest asset is intentionally post-readiness. Wait
+  // for the actual glTF-derived LODs, not merely the procedural cone fallback.
+  await expect.poll(() => localRuntimeDiagnostics(page), { timeout: 180_000 }).toMatchObject({
+    quality: 'high', textureTier: 'high', missionAssetsReady: true,
+    forest: {
+      fir: {
+        source: 'Poly Haven Fir Sapling (CC0)', heroLodInstances: 6,
+        instancedLod1Active: 6, enabled: true
+      }
+    }
+  });
+  const diagnostics = await localRuntimeDiagnostics(page);
+  expect(diagnostics.camera.z).toBeLessThan(-60);
+  expect(diagnostics.forest.trees.hero).toBe(6);
+  expect(diagnostics.forest.trees.detail).toBe(6);
   expect(errors).toEqual([]);
 });
 

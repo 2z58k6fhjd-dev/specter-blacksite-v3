@@ -155,6 +155,7 @@ await test('Chromium acceptance is a required Pages pre-deploy gate', () => {
   check(/mirrorPinnedThree/.test(browserTest) && /cdn\.jsdelivr\.net\/npm\/three@0\.166\.1/.test(browserTest), 'Browser tests must mirror the exact pinned CDN module locally for deterministic execution.');
   check(/SM-A166B/.test(browserTest) && browserTest.includes('[data-touch-action="use"]'), 'Browser tests must include a Galaxy A16-style touch and breaker flow.');
   check(/qa=voice/.test(browserTest) && /enemySubtitle/.test(browserTest), 'Browser tests must observe a real scheduled enemy radio subtitle.');
+  check(/qa=forest/.test(browserTest) && /Poly Haven Fir Sapling \(CC0\)/.test(browserTest) && /instancedLod1Active: 6/.test(browserTest), 'Browser tests must observe the actual high-tier CC0 fir LOD chain, not only the procedural fallback.');
   check(/qa=victory/.test(browserTest) && /victoryPanel/.test(browserTest), 'Browser tests must observe the grounded-death extraction path reaching victory.');
   check(/matching GitHub Pages path behavior/.test(browserServer) && /cache-control/.test(browserServer), 'Browser acceptance must serve the same static-root shape as Pages.');
   check(/timeout: 240_000/.test(browserConfig) && /workers: 1/.test(browserConfig), 'Browser acceptance must retain a stable bounded CI timing budget.');
@@ -189,6 +190,7 @@ await test('localhost-only QA routes drive the real breaker, exterior, forest, a
   check(/raycaster\.setFromCamera\(new THREE\.Vector2\(\),camera\)/.test(interact), 'Breaker use must raycast from the first-person center view.');
   check(/h&&h\.distance<2\.7/.test(interact), 'Breaker use must retain a close-range constraint.');
   check(/localQAMode==='voice'[\s\S]*queueEnemyVoice\(speaker,\{type:'contact',radio:true/.test(applyQA), 'Voice QA must use the real enemy voice scheduler and radio route after audio activation.');
+  check(/__specterLocalRuntimeDiagnostics/.test(main) && /heroLodInstances/.test(main)===false, 'Local browser diagnostics must be exposed only as a generic live-state reader, not a hard-coded forest test result.');
   const restore = functionBody(main, 'restorePower');
   check(/worldOverhaul\.setPowered\(true\)/.test(restore), 'Breaker use must power the environment.');
   check(/EXIT UNLOCKING/.test(restore), 'Breaker use must advance the mission objective.');

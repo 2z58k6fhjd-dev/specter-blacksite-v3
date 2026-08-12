@@ -24,7 +24,8 @@ deployment. The browser suite starts the same static-root server Pages uses and
 executes a Galaxy A16-class touch context plus desktop mission flows. It proves
 the rendered mission shell loads, Mobile Ultra Low selects the real low payload,
 touch interaction can restore power, weapon controls produce runtime feedback,
-and the full death/extraction path reaches victory. The dependency-free
+the real High-quality CC0 fir LOD chain streams, and the full death/extraction
+path reaches victory. The dependency-free
 graphics gate separately validates every saved custom-control and query-override
 contract. Failure traces,
 screenshots, and video are retained by CI for 14 days.
@@ -58,7 +59,7 @@ normal mission; they are not production cheat routes.
    transition is protected by the deterministic gate rather than inferred from
    a DOM label.
 
-## Latest local browser record (5.13.0-BROWSER-ACCEPTANCE)
+## Latest local browser record (5.14.0-FOREST-BROWSER)
 
 On 2026-08-11, the local browser run completed all five spot checks:
 
@@ -75,11 +76,11 @@ On 2026-08-11, the local browser run completed all five spot checks:
   `12 HOSTILES NEUTRALIZED · POWER RESTORED · EXTRACTION REACHED` after the
   gate-run and pursuit callout.
 
-The 5.13 Chromium acceptance suite also completed its three critical flows on
-2026-08-11: mobile touch/power, a weapon action plus radio call, and the victory
-handoff. The full run took about eight minutes under software rendering. CI now
-runs that suite before packaging or deployment and retains browser evidence on
-failure.
+The 5.14 Chromium acceptance suite adds a High forest inspection flow. On
+2026-08-11 it verified the live post-readiness CC0 Fir Sapling presentation:
+six hero LOD chains plus six nearby instanced LOD1 details at the forest camera
+route. The full suite runs before packaging or deployment and retains browser
+evidence on failure.
 
 This evidence is scoped to a local Chromium renderer and does not claim real
 Galaxy A16 or Intel HD 4600 hardware measurement, authored-animation visual
