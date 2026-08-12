@@ -109,7 +109,7 @@ await test('graphics panel exposes every persistent user-facing control', () => 
     'graphicsButton', 'graphicsQuickButton', 'graphicsPanel', 'graphicsRenderScale', 'graphicsResolution',
     'graphicsTextureTier', 'graphicsShadowQuality', 'graphicsVegetationDensity',
     'graphicsSSAO', 'graphicsSSR', 'graphicsRTR', 'graphicsRTShadows',
-    'graphicsRTGI', 'graphicsFSR2', 'graphicsRayStatus', 'graphicsBloom',
+    'graphicsRTGI', 'graphicsFSR2', 'graphicsRayStatus', 'graphicsBloom', 'graphicsReloadButton',
     'graphicsAntialias', 'graphicsGrass', 'graphicsFog', 'graphicsVramEstimate',
     'voiceVolume'
   ]) check(index.includes(`id="${id}"`), `Missing visible graphics/audio control #${id}.`);
@@ -133,6 +133,11 @@ await test('graphics panel exposes every persistent user-facing control', () => 
   const applyCustom = functionBody(main, 'applyCustomGraphicsSettings');
   check(/graphics\.setCustomSettings\(customSettings\)/.test(applyCustom), 'Custom settings must update the active renderer immediately.');
   check(/localStorage\.setItem\(graphicsCustomStorageKey,JSON\.stringify\(bootGraphicsCustomSettings\)\)/.test(applyCustom), 'Custom settings must persist their full draft.');
+  const reloadRequired = functionBody(main, 'graphicsReloadRequired');
+  check(/textureTier!==startupTextureTier/.test(reloadRequired), 'A changed real texture payload must require a reboot before images are decoded.');
+  check(/desiredAntialias!==currentAntialias/.test(reloadRequired), 'A changed WebGL antialiasing choice must require renderer reconstruction.');
+  check(/const startupAntialiasing=bootGraphicsCustomSettings\.antialiasing==='off'\?'off':'on'/.test(main) && /const currentAntialias=startupAntialiasing/.test(reloadRequired), 'Reload detection must compare antialiasing to the immutable renderer-start setting, not the saved draft.');
+  check(/graphicsReloadButton\?\.addEventListener\('click'/.test(main) && /location\.reload\(\)/.test(main), 'The visible Apply & Reload action must restart into the saved texture/renderer path.');
   check(/renderGraphicsMemoryEstimate\(graphicsCustomDraft\(\)\)/.test(main), 'The GPU estimate must update while the render-scale slider is adjusted.');
 });
 

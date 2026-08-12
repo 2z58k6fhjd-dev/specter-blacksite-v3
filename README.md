@@ -1,13 +1,13 @@
 # SPECTER: Blacksite
 
-Build: `5.10.0-GRAPHICS-RESOLUTION-FPS`
+Build: `5.11.0-GRAPHICS-APPLY`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build
-5.10.0 continues the controller, viewmodel, combat presentation, enemy behavior,
+5.11.0 continues the controller, viewmodel, combat presentation, enemy behavior,
 facility, exterior-compound, rendering, materials, audio, and mission-flow work
 while keeping the project suitable for static hosting on GitHub Pages.
 
-## Build 5.10.0 highlights
+## Build 5.11.0 highlights
 
 - Damped first-person movement, sprint transitions, camera motion, weapon bob,
   and mouse-driven sway.
@@ -135,6 +135,10 @@ while keeping the project suitable for static hosting on GitHub Pages.
   shadow requests to PCF shadow maps. An FSR2 request now actively renders at
   77% of the selected render scale before browser output scaling; it is not
   temporal FSR2 and never claims native hardware ray tracing or native FSR2.
+- Choosing a new Low 512px, Medium 1K, Standard/High 2K texture path or WebGL
+  anti-aliasing now exposes an **Apply & Reload** action. It saves the choice
+  first, then reloads into the real selected payload rather than leaving the
+  player to infer that a restart is needed or showing blank stand-in materials.
 - Extreme probes for a complete, manifest-verified native 4K environment pack
   on startup or after switching into Extreme. This release does not bundle that
   pack, so it accurately reports a 2K PBR fallback rather than upscaling or
@@ -392,4 +396,4 @@ prompts, and build records.
 Research links in `THIRD_PARTY_ASSETS.md` are evaluation notes only. Their models,
 textures, and audio are not bundled merely because a source URL is listed. No
 sci-fi, futuristic, fantasy, cartoon, stylized, or visibly low-detail research
-asset was accepted into the build 5.10.0-GRAPHICS-RESOLUTION-FPS runtime.
+asset was accepted into the build 5.11.0-GRAPHICS-APPLY runtime.

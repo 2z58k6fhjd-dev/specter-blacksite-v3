@@ -2,12 +2,12 @@ import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.10.0-graphics-resolution-fps';
-import { buildWorldOverhaul } from './world-overhaul.js?v=5.10.0-graphics-resolution-fps';
-import { EnemyAISystem } from './enemy-ai.js?v=5.10.0-graphics-resolution-fps';
-import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS,SPATIAL_UPSCALE_FALLBACK_SCALE } from './graphics-pipeline.js?v=5.10.0-graphics-resolution-fps';
-import { createAudioDirector } from './audio-overhaul.js?v=5.10.0-graphics-resolution-fps';
-import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.10.0-graphics-resolution-fps';
+import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.11.0-graphics-apply';
+import { buildWorldOverhaul } from './world-overhaul.js?v=5.11.0-graphics-apply';
+import { EnemyAISystem } from './enemy-ai.js?v=5.11.0-graphics-apply';
+import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS,SPATIAL_UPSCALE_FALLBACK_SCALE } from './graphics-pipeline.js?v=5.11.0-graphics-apply';
+import { createAudioDirector } from './audio-overhaul.js?v=5.11.0-graphics-apply';
+import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.11.0-graphics-apply';
 
 const graphicsCustomStorageKey='specter-custom-graphics';
 const voiceSettingsStorageKey='specter-voice-settings';
@@ -17,6 +17,10 @@ const startupQualityQuery=String(new URLSearchParams(location.search).get('quali
 const hasExplicitGraphicsQualityQuery=/^(?:auto|intel|performance|balanced|high|ultra|extreme)$/i.test(startupQualityQuery||'');
 let bootGraphicsCustomSettings={};
 try{bootGraphicsCustomSettings=hasExplicitGraphicsQualityQuery?{}:JSON.parse(localStorage.getItem(graphicsCustomStorageKey)||'{}')||{}}catch{bootGraphicsCustomSettings={}}
+// Renderer antialiasing is fixed at construction time. Keep the boot value
+// separate from the mutable saved draft so the menu can reliably recognise a
+// newly chosen setting that needs an Apply & Reload cycle.
+const startupAntialiasing=bootGraphicsCustomSettings.antialiasing==='off'?'off':'on';
 let bootVoiceVolume=.86;
 try{
   const savedVoiceSettings=JSON.parse(localStorage.getItem(voiceSettingsStorageKey)||'{}')||{};
@@ -86,7 +90,7 @@ const lowWeaponTextureCache=new WeakMap();
 const startButton=document.getElementById('startButton'),startPanel=document.getElementById('startPanel'),promptEl=document.getElementById('prompt');
 const graphicsButton=document.getElementById('graphicsButton'),graphicsQuickButton=document.getElementById('graphicsQuickButton');
 const graphicsPanel=document.getElementById('graphicsPanel'),graphicsCloseButton=document.getElementById('graphicsCloseButton'),graphicsHint=document.getElementById('graphicsHint');
-const graphicsResetButton=document.getElementById('graphicsResetButton'),graphicsRenderScale=document.getElementById('graphicsRenderScale'),graphicsRenderScaleValue=document.getElementById('graphicsRenderScaleValue'),graphicsResolution=document.getElementById('graphicsResolution'),graphicsTextureTier=document.getElementById('graphicsTextureTier'),graphicsShadowQuality=document.getElementById('graphicsShadowQuality'),graphicsVegetationDensity=document.getElementById('graphicsVegetationDensity'),graphicsSSAO=document.getElementById('graphicsSSAO'),graphicsSSR=document.getElementById('graphicsSSR'),graphicsBloom=document.getElementById('graphicsBloom'),graphicsAntialias=document.getElementById('graphicsAntialias'),graphicsGrass=document.getElementById('graphicsGrass'),graphicsFog=document.getElementById('graphicsFog'),graphicsRTR=document.getElementById('graphicsRTR'),graphicsRTShadows=document.getElementById('graphicsRTShadows'),graphicsRTGI=document.getElementById('graphicsRTGI'),graphicsFSR2=document.getElementById('graphicsFSR2'),graphicsRayStatus=document.getElementById('graphicsRayStatus'),graphicsVramEstimate=document.getElementById('graphicsVramEstimate');
+const graphicsResetButton=document.getElementById('graphicsResetButton'),graphicsRenderScale=document.getElementById('graphicsRenderScale'),graphicsRenderScaleValue=document.getElementById('graphicsRenderScaleValue'),graphicsResolution=document.getElementById('graphicsResolution'),graphicsTextureTier=document.getElementById('graphicsTextureTier'),graphicsShadowQuality=document.getElementById('graphicsShadowQuality'),graphicsVegetationDensity=document.getElementById('graphicsVegetationDensity'),graphicsSSAO=document.getElementById('graphicsSSAO'),graphicsSSR=document.getElementById('graphicsSSR'),graphicsBloom=document.getElementById('graphicsBloom'),graphicsAntialias=document.getElementById('graphicsAntialias'),graphicsGrass=document.getElementById('graphicsGrass'),graphicsFog=document.getElementById('graphicsFog'),graphicsRTR=document.getElementById('graphicsRTR'),graphicsRTShadows=document.getElementById('graphicsRTShadows'),graphicsRTGI=document.getElementById('graphicsRTGI'),graphicsFSR2=document.getElementById('graphicsFSR2'),graphicsRayStatus=document.getElementById('graphicsRayStatus'),graphicsVramEstimate=document.getElementById('graphicsVramEstimate'),graphicsReloadButton=document.getElementById('graphicsReloadButton');
 const enemySubtitle=document.getElementById('enemySubtitle'),voiceVolumeControl=document.getElementById('voiceVolume'),voiceVolumeValue=document.getElementById('voiceVolumeValue'),extractionFade=document.getElementById('extractionFade');
 const loadBar=document.getElementById('loadBar'),loadPercent=document.getElementById('loadPercent'),loadMessage=document.getElementById('loadMessage');
 const startupQualityKey='specter-graphics-quality';
@@ -628,6 +632,24 @@ function syncGraphicsCustomControls(diagnostics=graphics.getDiagnostics()){
   graphicsGrass.checked=Boolean(preset.grassEnabled);graphicsFog.checked=preset.fogEnabled!==false;
   graphicsAntialias.checked=bootGraphicsCustomSettings.antialiasing!=='off';renderGraphicsMemoryEstimate(graphicsCustomDraft());
 }
+function graphicsReloadRequired(preset=graphics?.getDiagnostics?.().preset){
+  // The real reduced texture packs are selected before GLTF/environment images
+  // are decoded, and WebGL antialiasing belongs to renderer construction.
+  // Keep a live scene intact while a player changes those options, then offer
+  // one explicit reload instead of presenting blank or fake low-detail maps.
+  const textureTier=preset?.textureTier||startupTextureTier;
+  const textureChange=textureTier!==startupTextureTier;
+  const desiredAntialias=graphicsAntialias.checked?'on':'off';
+  const currentAntialias=startupAntialiasing;
+  return textureChange||desiredAntialias!==currentAntialias;
+}
+function refreshGraphicsReloadAction(preset=graphics?.getDiagnostics?.().preset){
+  if(!graphicsReloadButton)return;
+  const required=graphicsReloadRequired(preset);
+  graphicsReloadButton.hidden=!required;
+  graphicsReloadButton.textContent=required?'APPLY & RELOAD':'APPLIED';
+  graphicsReloadButton.setAttribute('aria-hidden',String(!required));
+}
 function renderGraphicsControls(diagnostics=graphics.getDiagnostics()){
   graphicsDiagnostics=diagnostics;
   const summary=graphicsSummary(diagnostics);
@@ -646,6 +668,7 @@ function renderGraphicsControls(diagnostics=graphics.getDiagnostics()){
   }
   document.querySelectorAll('[data-quality]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.quality===activeGraphicsPreference)));
   syncGraphicsCustomControls(diagnostics);
+  refreshGraphicsReloadAction(diagnostics.preset);
   status('graphics','LOADED',summary);
 }
 function refreshGraphicsDiagnostics(){
@@ -715,6 +738,13 @@ document.querySelectorAll('[data-quality]').forEach(button=>button.onclick=()=>s
 graphicsRenderScale.oninput=()=>{graphicsRenderScaleValue.textContent=`${Number(graphicsRenderScale.value).toFixed(2)}×`;renderGraphicsMemoryEstimate(graphicsCustomDraft())};
 for(const control of [graphicsRenderScale,graphicsResolution,graphicsTextureTier,graphicsShadowQuality,graphicsVegetationDensity,graphicsSSAO,graphicsSSR,graphicsBloom,graphicsAntialias,graphicsGrass,graphicsFog,graphicsRTR,graphicsRTShadows,graphicsRTGI,graphicsFSR2])control.onchange=applyCustomGraphicsSettings;
 graphicsResetButton.onclick=resetCustomGraphicsSettings;
+graphicsReloadButton?.addEventListener('click',()=>{
+  // Settings are already persisted before this action is available. A short
+  // status frame makes the reload intentional for embedded/mobile browsers.
+  graphicsReloadButton.disabled=true;graphicsReloadButton.textContent='RELOADING…';
+  toast('APPLYING GRAPHICS SETTINGS');
+  setTimeout(()=>location.reload(),40);
+});
 renderGraphicsControls(graphicsDiagnostics);
 if(activeGraphicsPreference===AUTO_GRAPHICS_QUALITY)beginAutoGraphicsBenchmark();
 
