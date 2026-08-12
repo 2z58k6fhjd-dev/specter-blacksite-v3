@@ -1,0 +1,9 @@
+Poly Haven Modular Chainlink Fence
+
+Source: https://polyhaven.com/a/modular_chainlink_fence
+Official files API: https://api.polyhaven.com/files/modular_chainlink_fence
+License: Creative Commons Zero 1.0 Universal (CC0 1.0)
+License page: https://polyhaven.com/license
+
+Poly Haven lists Amal Kumar for the model and James Ray Cock for the fence-wire
+material. This local record is retained with the official 2K glTF closure.

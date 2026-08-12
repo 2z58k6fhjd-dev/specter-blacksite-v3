@@ -59,7 +59,26 @@ normal mission; they are not production cheat routes.
    transition is protected by the deterministic gate rather than inferred from
    a DOM label.
 
-## Latest local browser record (5.14.0-FOREST-BROWSER)
+## Latest local browser record (5.15.0-PERIMETER-PBR)
+
+On 2026-08-12, the local Chromium suite completed all four release scenarios
+in 11.1 minutes:
+
+- The Galaxy A16-style Mobile Ultra Low route loaded the real `512px low
+  payload`, preserved touch controls, and completed the breaker interaction.
+- The mobile weapon/voice route showed the real chamber-check feedback and an
+  actual enemy radio subtitle.
+- The High forest route waited for the post-readiness CC0 Fir Sapling chain
+  (six hero LOD chains plus six nearby instanced LOD1 details) and all eight
+  optional CC0 2K Modular Chainlink Fence panels before passing.
+- The Performance victory route exercised grounded enemy deaths and reached
+  `BLACKSITE SECURED` with the normal extraction handoff.
+
+The suite runs before packaging or deployment and retains browser evidence on
+failure. The optional fence is proved in the rendered High route, while the
+Mobile route proves it is not needed for the low-payload/touch path.
+
+## Prior local browser record (5.14.0-FOREST-BROWSER)
 
 On 2026-08-11, the local browser run completed all five spot checks:
 

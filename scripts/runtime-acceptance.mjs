@@ -156,6 +156,7 @@ await test('Chromium acceptance is a required Pages pre-deploy gate', () => {
   check(/SM-A166B/.test(browserTest) && browserTest.includes('[data-touch-action="use"]'), 'Browser tests must include a Galaxy A16-style touch and breaker flow.');
   check(/qa=voice/.test(browserTest) && /enemySubtitle/.test(browserTest), 'Browser tests must observe a real scheduled enemy radio subtitle.');
   check(/qa=forest/.test(browserTest) && /Poly Haven Fir Sapling \(CC0\)/.test(browserTest) && /instancedLod1Active: 6/.test(browserTest), 'Browser tests must observe the actual high-tier CC0 fir LOD chain, not only the procedural fallback.');
+  check(/perimeterFence: \{ highTierPanels: 8, enabled: true \}/.test(browserTest) && /perimeterFence:\{highTierPanels:perimeterFenceRoot\?\.children\.length\|\|0,enabled:Boolean\(perimeterFenceRoot\?\.visible\)\}/.test(main), 'Browser tests must observe the actual high-tier CC0 chain-link panels, not only the procedural fence fallback.');
   check(/qa=victory/.test(browserTest) && /victoryPanel/.test(browserTest), 'Browser tests must observe the grounded-death extraction path reaching victory.');
   check(/matching GitHub Pages path behavior/.test(browserServer) && /cache-control/.test(browserServer), 'Browser acceptance must serve the same static-root shape as Pages.');
   check(/timeout: 240_000/.test(browserConfig) && /workers: 1/.test(browserConfig), 'Browser acceptance must retain a stable bounded CI timing budget.');

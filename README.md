@@ -1,13 +1,13 @@
 # SPECTER: Blacksite
 
-Build: `5.14.0-FOREST-BROWSER`
+Build: `5.15.0-PERIMETER-PBR`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build
-5.14.0 continues the controller, viewmodel, combat presentation, enemy behavior,
+5.15.0 continues the controller, viewmodel, combat presentation, enemy behavior,
 facility, exterior-compound, rendering, materials, audio, and mission-flow work
 while keeping the project suitable for static hosting on GitHub Pages.
 
-## Build 5.14.0 highlights
+## Build 5.15.0 highlights
 
 - Damped first-person movement, sprint transitions, camera motion, weapon bob,
   and mouse-driven sway.
@@ -65,7 +65,10 @@ while keeping the project suitable for static hosting on GitHub Pages.
   animated breaker hardware,
   six high-detail CC0 storage containers and six high-detail CC0 weathered
   concrete road barriers deployed as exterior hard cover that tactical enemies
-  can select when suppressed or retreating,
+  can select when suppressed or retreating, plus eight optional 2K PBR CC0
+  modular chain-link panels around the close exterior route on High/Ultra/
+  Extreme while Mobile/Low keeps the lightweight collision-backed security
+  fence,
   and a powered two-leaf exit.
 - Expanded exterior compound with a checkpoint, motor pool, storage yard,
   communications area, utility/fuel yard, service roads, barriers, grounded
@@ -315,9 +318,9 @@ and can take noticeably longer on mobile networks.
 The service worker installs the small application shell first, then caches the
 large model and texture payload on a best-effort basis; a failed optional cache
 item is recovered by the normal network-first loader on a later visit.
-Fern 02 and the bounded Fir Sapling derivatives are deliberately excluded from
-service-worker precaching and remain optional, post-readiness high-vegetation
-streams.
+Fern 02, the bounded Fir Sapling derivatives, and the optional 2K modular
+chain-link panels are deliberately excluded from service-worker precaching and
+remain optional, post-readiness high-detail streams.
 
 The `qa` query modes in `src/main.js` are intentionally restricted to
 `localhost` and `127.0.0.1`; they are test helpers, not alternate public game
@@ -401,6 +404,7 @@ remain beside every bundled third-party model:
 - `assets/m9/license.txt`
 - `assets/soldier/license.txt`
 - `assets/environment/polyhaven-fir-sapling-runtime/LICENSE.txt`
+- `assets/environment/polyhaven-modular-chainlink-fence/LICENSE.txt`
 
 Important: the bundled AR-15 by Lokeig is licensed CC BY-NC 4.0. It requires
 attribution and prohibits commercial use. Because the HK416, C5-K, R7.62, and
@@ -416,4 +420,4 @@ prompts, and build records.
 Research links in `THIRD_PARTY_ASSETS.md` are evaluation notes only. Their models,
 textures, and audio are not bundled merely because a source URL is listed. No
 sci-fi, futuristic, fantasy, cartoon, stylized, or visibly low-detail research
-asset was accepted into the build 5.14.0-FOREST-BROWSER runtime.
+asset was accepted into the build 5.15.0-PERIMETER-PBR runtime.

@@ -1,0 +1,34 @@
+{
+  "asset": "Modular Chainlink Fence",
+  "source": {
+    "page": "https://polyhaven.com/a/modular_chainlink_fence",
+    "filesApi": "https://api.polyhaven.com/files/modular_chainlink_fence",
+    "license": "CC0-1.0",
+    "authors": [
+      "Amal Kumar (model)",
+      "James Ray Cock (fence-wire material)"
+    ],
+    "tier": "2K glTF",
+    "sourceTriangles": 89232,
+    "runtimePanelTriangles": 3054,
+    "runtimePanelCount": 8
+  },
+  "runtime": {
+    "optional": true,
+    "lazyAfterMissionReady": true,
+    "textureTiers": ["high", "4k-preferred"],
+    "vegetationDensities": ["high", "ultra", "extreme"],
+    "precache": false,
+    "fallback": "existing procedural perimeter fence and collision panels"
+  },
+  "files": {
+    "modular_chainlink_fence_2k.gltf": {"bytes": 41838, "md5": "f81323a83d2ae1e7b99a3ec156aa8da5", "sha256": "9c9c3e7301beff0a0ec8d8f16ba386d7c7aecf3c0c0e75131e4f6077bb064444"},
+    "modular_chainlink_fence.bin": {"bytes": 3168016, "md5": "953d32ee509142cf2ceb1e6b278b2430", "sha256": "be9ea1817089fd35b0927a8271358f6abd2ec80b306a085de435613d936fcb9a"},
+    "textures/modular_chainlink_fence_posts_nor_gl_2k.jpg": {"bytes": 1869713, "md5": "4b4b4d3d4d61d9e27141f5ffe2abe872", "sha256": "36e6f6c16e13dad18224b1c97a8dd388fd7519b3ee29cff901bd3bdfc206d5d8"},
+    "textures/modular_chainlink_fence_wire_arm_2k.jpg": {"bytes": 2082073, "md5": "de230984104a87345c4aa8e78111f1e2", "sha256": "d3e8f0ac72d9177f442d6e2906537f5b4166e50a2dbf74cae9349e7724da2a54"},
+    "textures/modular_chainlink_fence_wire_nor_gl_2k.jpg": {"bytes": 1882329, "md5": "ba604a876a3b0ef5af11fd49b1482ee4", "sha256": "a1b853c5639319d10493aba0e04b67e39186ea5fd98ffde49df6093d29ce4cc0"},
+    "textures/modular_chainlink_fence_wire_diff_2k.jpg": {"bytes": 1746959, "md5": "4d99da51818311cff741329a3cbc912c", "sha256": "6d4906f5676f32f53a5089915d5272340d9a33c52659bbdcf7104ab80e830307"},
+    "textures/modular_chainlink_fence_posts_arm_2k.jpg": {"bytes": 3004035, "md5": "21a14ec9e416a3606a808139d0639c80", "sha256": "54da8887d80d86057e1b94818e374515ae8ee585cfe2a0f5351ed45826a14891"},
+    "textures/modular_chainlink_fence_posts_diff_2k.jpg": {"bytes": 2425889, "md5": "e474fe890146a4c48e8497b238efe4f0", "sha256": "f710dbfd637feb60e69a1c24e04fd6cd03e67684e31511fa5c907929d230c122"}
+  }
+}

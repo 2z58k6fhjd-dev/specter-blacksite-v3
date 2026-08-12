@@ -68,6 +68,7 @@ const REQUIRED_LICENSE_RECORDS = [
   'assets/audio/cc0-zer0-sol-handgun-reload/LICENSE.txt',
   'assets/environment/polyhaven-concrete-road-barrier-02/LICENSE.txt',
   'assets/environment/polyhaven-fern-02/LICENSE.txt',
+  'assets/environment/polyhaven-modular-chainlink-fence/LICENSE.txt',
   'assets/environment/polyhaven-plastic-container/LICENSE.txt',
   'assets/environment/polyhaven-power-box-01/LICENSE.txt',
   'assets/environment/polyhaven-steel-frame-shelves-01/LICENSE.txt'
@@ -637,6 +638,8 @@ async function validateForestFoliagePolicy(errors) {
   const alphaPath = resolve(ROOT, 'assets/environment/polyhaven-fern-02/textures/fern_02_alpha_4k.png');
   const heroRoot = resolve(ROOT, 'assets/environment/polyhaven-fir-sapling-runtime');
   const heroManifestPath = resolve(heroRoot, 'manifest.json');
+  const fenceRoot = resolve(ROOT, 'assets/environment/polyhaven-modular-chainlink-fence');
+  const fenceManifestPath = resolve(fenceRoot, 'manifest.json');
   const generatedCardFiles = [
     'assets/environment/generated/douglas-fir-card-v2.png',
     'assets/environment/generated/douglas-fir-card-v2-normal.png',
@@ -662,6 +665,9 @@ async function validateForestFoliagePolicy(errors) {
   }
   if (worker.includes('polyhaven-fir-sapling-runtime/')) {
     errors.push('CC0 Fir Sapling hero assets must not be precached: they are optional High-tier streams.');
+  }
+  if (worker.includes('polyhaven-modular-chainlink-fence/')) {
+    errors.push('CC0 modular chain-link fence assets must not be precached: they are optional High-tier streams.');
   }
   if (!(await pathExists(alphaPath))) {
     errors.push('Official Fern 02 alpha mask is missing.');
@@ -714,6 +720,41 @@ async function validateForestFoliagePolicy(errors) {
   }
   if (!world.includes('installHeroSaplings') || !world.includes('new THREE.LOD()') || !world.includes('cc0-fir-sapling-hero-')) {
     errors.push('Forest world must retain the CC0 Fir Sapling LOD installation path.');
+  }
+
+  if (!(await pathExists(fenceManifestPath))) {
+    errors.push('CC0 modular chain-link fence manifest is missing.');
+    return;
+  }
+  let fenceManifest;
+  try {
+    fenceManifest = JSON.parse(await readFile(fenceManifestPath, 'utf8'));
+  } catch (error) {
+    errors.push(`CC0 modular chain-link fence manifest is invalid: ${error.message}`);
+    return;
+  }
+  if (fenceManifest?.source?.license !== 'CC0-1.0' || !Array.isArray(fenceManifest?.source?.authors) || fenceManifest.source.authors.length < 2) {
+    errors.push('CC0 modular chain-link fence manifest must retain its license and both Poly Haven credits.');
+  }
+  if (Number(fenceManifest?.source?.runtimePanelTriangles) !== 3054 || Number(fenceManifest?.source?.runtimePanelCount) !== 8) {
+    errors.push('CC0 modular chain-link fence manifest must retain the bounded 3,054-triangle eight-panel runtime budget.');
+  }
+  if (fenceManifest?.runtime?.optional !== true || fenceManifest?.runtime?.lazyAfterMissionReady !== true || fenceManifest?.runtime?.precache !== false) {
+    errors.push('CC0 modular chain-link fence must remain an optional, post-readiness, non-precached High-tier detail.');
+  }
+  for (const [relativePath, record] of Object.entries(fenceManifest?.files ?? {})) {
+    const fenceFile = resolve(fenceRoot, relativePath);
+    if (!(await pathExists(fenceFile))) {
+      errors.push(`CC0 modular chain-link fence runtime file is missing: ${relativePath}`);
+      continue;
+    }
+    const metadata = await stat(fenceFile);
+    if (metadata.size !== Number(record?.bytes)) errors.push(`CC0 modular chain-link fence byte count mismatch: ${relativePath}`);
+    if ((await hashFile(fenceFile, 'md5')) !== String(record?.md5 ?? '').toLowerCase()) errors.push(`CC0 modular chain-link fence MD5 mismatch: ${relativePath}`);
+    if ((await hashFile(fenceFile)) !== String(record?.sha256 ?? '').toLowerCase()) errors.push(`CC0 modular chain-link fence SHA-256 mismatch: ${relativePath}`);
+  }
+  if (!main.includes('loadPerimeterFenceAsset') || !main.includes('perimeterFenceDetailEnabledForPreset') || !main.includes('modular_chainlink_fence_double')) {
+    errors.push('CC0 modular chain-link fence must remain lazy-loaded from the bounded authored double-panel mesh.');
   }
 }
 

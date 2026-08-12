@@ -2,12 +2,12 @@ import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.14.0-forest-browser';
-import { buildWorldOverhaul } from './world-overhaul.js?v=5.14.0-forest-browser';
-import { EnemyAISystem } from './enemy-ai.js?v=5.14.0-forest-browser';
-import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS,SPATIAL_UPSCALE_FALLBACK_SCALE } from './graphics-pipeline.js?v=5.14.0-forest-browser';
-import { createAudioDirector } from './audio-overhaul.js?v=5.14.0-forest-browser';
-import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.14.0-forest-browser';
+import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.15.0-perimeter-pbr';
+import { buildWorldOverhaul } from './world-overhaul.js?v=5.15.0-perimeter-pbr';
+import { EnemyAISystem } from './enemy-ai.js?v=5.15.0-perimeter-pbr';
+import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS,SPATIAL_UPSCALE_FALLBACK_SCALE } from './graphics-pipeline.js?v=5.15.0-perimeter-pbr';
+import { createAudioDirector } from './audio-overhaul.js?v=5.15.0-perimeter-pbr';
+import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.15.0-perimeter-pbr';
 
 const graphicsCustomStorageKey='specter-custom-graphics';
 const voiceSettingsStorageKey='specter-voice-settings';
@@ -82,6 +82,7 @@ let worldOverhaul=null;
 let missionAssetsReady=false;
 let forestFernsRoot=null,forestFernLoadPromise=null,forestFernLoadAttempted=false;
 let forestHeroFirLoadPromise=null,forestHeroFirLoadAttempted=false;
+let perimeterFenceRoot=null,perimeterFenceLoadPromise=null,perimeterFenceLoadAttempted=false;
 let graphicsTextureStatus='2K PBR';
 let missionHasStarted=false;
 const materialTextureSlots=['map','alphaMap','aoMap','bumpMap','displacementMap','emissiveMap','metalnessMap','normalMap','roughnessMap','clearcoatMap','clearcoatNormalMap','clearcoatRoughnessMap','iridescenceMap','iridescenceThicknessMap','sheenColorMap','sheenRoughnessMap','specularColorMap','specularIntensityMap','transmissionMap','thicknessMap','lightMap'];
@@ -592,6 +593,7 @@ function applyGraphicsHardwareBudget(quality,effectivePreset=null){
   worldOverhaul?.setGraphicsQuality(quality,preset);
   updateForestFernsForGraphics(preset);
   updateForestHeroFirsForGraphics(preset);
+  updatePerimeterFenceForGraphics(preset);
   renderGraphicsMemoryEstimate(preset);
   if(preset.textureTier==='4k-preferred'&&!environmentIs4K)void ensureNativeEnvironment4K().then(loaded=>{
     if(!loaded)return;
@@ -1001,6 +1003,66 @@ function updateForestHeroFirsForGraphics(preset={}){
       }
     })
     .finally(()=>{forestHeroFirLoadPromise=null});
+}
+function perimeterFenceDetailEnabledForPreset(preset={}){
+  const density=String(preset.forestDensity||'').toLowerCase();
+  // The scanned/transparent PBR wire maps are a deliberate High-tier exterior
+  // detail. Competitive Low, Mobile, and Medium retain the low-cost security
+  // scrim so the graphics selector never produces a missing boundary.
+  return ['high','4k-preferred'].includes(preset.textureTier)&&['high','ultra','extreme'].includes(density);
+}
+async function loadPerimeterFenceAsset(){
+  return loadSetDressAsset('chainlinkFence','./assets/environment/polyhaven-modular-chainlink-fence/modular_chainlink_fence_2k.gltf','CC0 modular chain-link fence');
+}
+function installPerimeterFenceDetail(){
+  if(perimeterFenceRoot)return perimeterFenceRoot.children.length;
+  const source=assetMap.get('chainlinkFence')?.scene;
+  // Poly Haven ships a full modular kit. The double-panel mesh is a compact
+  // 3,054-triangle PBR section; retaining only that authored piece gives the
+  // close route a real wire/metal read without spawning the 89K-triangle kit.
+  const sourcePanel=source?.getObjectByName('modular_chainlink_fence_double');
+  if(!sourcePanel)return 0;
+  const placements=[
+    {x:-42.78,z:-62.5,rotation:Math.PI/2},{x:42.78,z:-62.5,rotation:-Math.PI/2},
+    {x:-42.78,z:-96.5,rotation:Math.PI/2},{x:42.78,z:-96.5,rotation:-Math.PI/2},
+    {x:-42.78,z:-130.5,rotation:Math.PI/2},{x:42.78,z:-130.5,rotation:-Math.PI/2},
+    {x:-6.8,z:-179.78,rotation:0},{x:6.8,z:-179.78,rotation:0}
+  ];
+  const root=new THREE.Group();root.name='cc0-high-tier-chainlink-perimeter';
+  for(const [index,placement] of placements.entries()){
+    const holder=new THREE.Group();holder.name=`cc0-chainlink-panel-${index+1}`;
+    holder.position.set(placement.x,0,placement.z);holder.rotation.y=placement.rotation;
+    const panel=sourcePanel.clone(true);panel.name=`modular-chainlink-fence-double-${index+1}`;
+    normalize(panel,2.5,true);
+    panel.traverse(object=>{if(object.isMesh){
+      // Transparent wire shadows are costly and unstable at shallow first-
+      // person angles. The existing posts/rails keep the shadow cue instead.
+      object.castShadow=false;object.receiveShadow=true;object.frustumCulled=true;
+    }});
+    holder.add(panel);root.add(holder);
+  }
+  scene.add(root);perimeterFenceRoot=root;
+  return placements.length;
+}
+function updatePerimeterFenceForGraphics(preset={}){
+  const enabled=perimeterFenceDetailEnabledForPreset(preset);
+  if(perimeterFenceRoot){perimeterFenceRoot.visible=enabled;return}
+  // Stream after required mission assets. This guarantees a fresh Mobile/Intel
+  // boot never requests or decodes the 2K PBR fence closure.
+  if(!enabled||!missionAssetsReady||!worldOverhaul||perimeterFenceLoadAttempted)return;
+  perimeterFenceLoadAttempted=true;
+  perimeterFenceLoadPromise=loadPerimeterFenceAsset()
+    .then(available=>{
+      if(!available)return;
+      const count=installPerimeterFenceDetail();
+      if(count){
+        const diagnostics=graphics.getDiagnostics();
+        perimeterFenceRoot.visible=perimeterFenceDetailEnabledForPreset(diagnostics.preset);
+        applyGraphicsHardwareBudget(diagnostics.quality,diagnostics.preset);
+        status('props','LOADED',`${count} CC0 high-tier chain-link panels`);
+      }
+    })
+    .finally(()=>{perimeterFenceLoadPromise=null});
 }
 const switchGroup=worldOverhaul.breaker.interactionTarget;
 const audio=createAudioDirector({seed:0x5ec7e2,powerOn:false,masterVolume:.78,musicVolume:.28,sfxVolume:.88,voiceVolume:bootVoiceVolume,ambienceVolume:.5});
@@ -2362,7 +2424,8 @@ function readLocalRuntimeDiagnostics(){
     quality:diagnostics.quality||null,textureTier:diagnostics.preset?.textureTier||null,
     textureStatus:graphicsTextureStatus,missionAssetsReady,
     camera:{x:camera.position.x,y:camera.position.y,z:camera.position.z},
-    forest:{trees:forest?.activeTreeCounts||{},fir:forest?.highTierFirStats||{}}
+    forest:{trees:forest?.activeTreeCounts||{},fir:forest?.highTierFirStats||{}},
+    perimeterFence:{highTierPanels:perimeterFenceRoot?.children.length||0,enabled:Boolean(perimeterFenceRoot?.visible)}
   };
 }
 if(localQAMode)Object.defineProperty(globalThis,'__specterLocalRuntimeDiagnostics',{value:readLocalRuntimeDiagnostics,configurable:true});
@@ -2410,7 +2473,7 @@ if(requiredAssetFailure){
   status('soldier','LOADED',`${enemies.length} tactical hostiles · 5 role kits · full-detail rifle geometry`);hud();
   missionAssetsReady=true;
   startButton.disabled=false;startButton.textContent='ENTER BLACKSITE';loadMessage.textContent='Assets verified. Mission ready.';
-   updateForestFernsForGraphics(graphics.getDiagnostics().preset);updateForestHeroFirsForGraphics(graphics.getDiagnostics().preset);
+   updateForestFernsForGraphics(graphics.getDiagnostics().preset);updateForestHeroFirsForGraphics(graphics.getDiagnostics().preset);updatePerimeterFenceForGraphics(graphics.getDiagnostics().preset);
 }
 
 function animate(){
