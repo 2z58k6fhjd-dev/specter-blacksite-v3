@@ -1,18 +1,21 @@
 # SPECTER: Blacksite
 
-Build: `5.11.0-GRAPHICS-APPLY`
+Build: `5.12.0-MOBILE-ULTRA-LOW`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build
-5.11.0 continues the controller, viewmodel, combat presentation, enemy behavior,
+5.12.0 continues the controller, viewmodel, combat presentation, enemy behavior,
 facility, exterior-compound, rendering, materials, audio, and mission-flow work
 while keeping the project suitable for static hosting on GitHub Pages.
 
-## Build 5.11.0 highlights
+## Build 5.12.0 highlights
 
 - Damped first-person movement, sprint transitions, camera motion, weapon bob,
   and mouse-driven sway.
 - Pointer-lock mouse look plus an automatic embedded-browser fallback when
-  pointer lock is unavailable.
+  pointer lock is unavailable. Touch-capable devices also receive a dedicated
+  left movement stick, a right-hand swipe-to-look zone, and hold/tap buttons
+  for fire, ADS, sprint, interact, reload, jump, and flashlight control;
+  keyboard and mouse controls remain unchanged on desktop.
 - Five selectable, grounded present-day weapons: HK416, tan M9A4, C5-K compact
   carbine, R7.62 designated rifle, and MCR-300 suppressed rifle.
 - Geometry-calibrated hip and ADS poses, shoulder-seated rifle stocks,
@@ -113,7 +116,13 @@ while keeping the project suitable for static hosting on GitHub Pages.
   not identify Intel. It then runs after entering the loaded mission (45 warm-up
   frames followed by 120 unclamped gameplay samples). It is an estimate rather
   than a precise VRAM test; players can choose Competitive Low, Performance,
-  Balanced, High, Ultra, or Extreme instead.
+  Mobile Ultra Low, Competitive Low, Performance, Balanced, High, Ultra, or
+  Extreme instead. Entry-class Android capability signals select Mobile Ultra
+  Low before asset decoding.
+- **Mobile Ultra Low** is an explicit Galaxy A16-oriented profile: 480p internal
+  output, the real 512px low texture payload, direct lighting, no shadows or
+  post-processing, no stand-in grass, low-density vegetation, and atmospheric
+  fog. It is a lightweight visual profile rather than a blank-material mode.
 - Competitive Low / Intel HD 4600 uses a direct-render path that disables
   shadows, post-processing, ground grass, and dense foliage. On a fresh
   Competitive Low or Low-texture launch it selects a checked 68-file,
@@ -232,6 +241,9 @@ prototype.
 | `3` | C5-K Compact Carbine |
 | `4` | R7.62 Designated Rifle |
 | `5` | MCR-300 Suppressed |
+| Touch left stick | Move on touch-capable devices |
+| Touch right-side swipe | Look around on touch-capable devices |
+| Touch action buttons | Fire, hold ADS, hold sprint, use, reload, jump, flashlight, and weapon cycle |
 
 Open `player-model.html` to inspect the SPECTER operator from four directions and
 export the generated player model as GLB.
@@ -246,6 +258,7 @@ structure intact.
 Useful rendering query parameters are:
 
 - `?quality=auto` (first-run default; quick benchmark + safe headroom)
+- `?quality=mobile` (Mobile Ultra Low / Galaxy A16-oriented)
 - `?quality=intel` (Competitive Low)
 - `?quality=performance`
 - `?quality=balanced`
@@ -396,4 +409,4 @@ prompts, and build records.
 Research links in `THIRD_PARTY_ASSETS.md` are evaluation notes only. Their models,
 textures, and audio are not bundled merely because a source URL is listed. No
 sci-fi, futuristic, fantasy, cartoon, stylized, or visibly low-detail research
-asset was accepted into the build 5.11.0-GRAPHICS-APPLY runtime.
+asset was accepted into the build 5.12.0-MOBILE-ULTRA-LOW runtime.

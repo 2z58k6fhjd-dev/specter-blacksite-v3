@@ -22,7 +22,7 @@ const RELEASE_PATH = resolve(ROOT, 'scripts/release.mjs');
 const LOW_MANIFEST_PATH = resolve(ROOT, 'assets/low-textures/manifest.json');
 const NATIVE_4K_MANIFEST_PATH = resolve(ROOT, 'assets/environment/pbr-v2-4k/manifest.json');
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp']);
-const PRESET_NAMES = ['intel', 'performance', 'balanced', 'high', 'ultra', 'extreme'];
+const PRESET_NAMES = ['mobile', 'intel', 'performance', 'balanced', 'high', 'ultra', 'extreme'];
 const LOW_SOURCE_TEXTURE_DIRECTORIES = [
   'assets/ar15/textures',
   'assets/m9/textures',
@@ -126,6 +126,12 @@ const environmentPbrFiles = sourceFileNameList(main);
 
 await test('graphics presets retain Intel-safe and Extreme contracts', () => {
   for (const name of PRESET_NAMES) presetBlock(pipeline, name);
+  const mobile = presetBlock(pipeline, 'mobile');
+  check(field(mobile, 'recommendedVRAMMB', '384\\b'), 'Mobile Ultra Low must retain a 384 MB active-resource recommendation.');
+  check(field(mobile, 'outputResolution', '480\\b') && field(mobile, 'pixelRatioCap', '0\\.5\\b'), 'Mobile Ultra Low must target a 480p internal buffer with a 0.5x cap.');
+  check(field(mobile, 'postProcessing', 'false\\b') && field(mobile, 'shadows', 'false\\b'), 'Mobile Ultra Low must keep a direct, shadow-free renderer path.');
+  check(field(mobile, 'textureTier', "'low'") && field(mobile, 'textureAnisotropy', '1\\b'), 'Mobile Ultra Low must select the real 512px texture payload.');
+  check(field(mobile, 'grassEnabled', 'false\\b') && field(mobile, 'forestDensity', "'low'"), 'Mobile Ultra Low must keep vegetation lightweight.');
   const intel = presetBlock(pipeline, 'intel');
   check(field(intel, 'recommendedVRAMMB', '512\\b'), 'Intel tier must retain a 512 MB recommendation.');
   check(field(intel, 'pixelRatioCap', '0\\.65\\b'), 'Intel tier must cap render scale at 0.65.');
@@ -171,6 +177,8 @@ await test('custom graphics controls remain clamped to supported settings', () =
     check(pipeline.includes(`'${field}'`) && main.includes(field), `Experimental graphics control ${field} must be persisted and wired.`);
   }
   check(/nativeRayTracing: false/.test(pipeline) && /reflectionFallback: 'screen-space reflections'/.test(pipeline), 'WebGL must report honest ray-tracing fallback capability.');
+  check(/rayTracedReflections: true/.test(presetBlock(pipeline, 'extreme')) && /rayTracedShadows: true/.test(presetBlock(pipeline, 'extreme')) && /rayTracedGlobalIllumination: true/.test(presetBlock(pipeline, 'extreme')), 'Extreme must request every available maximum-quality WebGL lighting fallback.');
+  check(/NATIVE RT: UNAVAILABLE IN WEBGL/.test(main), 'The graphics panel must not misrepresent WebGL effects as native hardware ray tracing.');
   check(/nativeFSR2: false/.test(pipeline) && /fsr2Fallback: 'spatial output scaling at 77% of selected render scale \(not FSR2\)'/.test(pipeline), 'FSR2 must not be falsely reported as native on WebGL.');
   check(/export const SPATIAL_UPSCALE_FALLBACK_SCALE = 0\.77/.test(pipeline), 'The browser-compatible spatial upscale factor must remain explicit.');
   check(/export const OUTPUT_RESOLUTION_HEIGHTS = Object\.freeze\(\[0, 240, 360, 480, 720, 900, 1080, 1440, 2160\]\)/.test(pipeline), 'The render-resolution ladder must cover Auto through 240p-4K.');
@@ -232,7 +240,7 @@ await test('AUTO benchmark samples raw gameplay timing only', () => {
   check(/startButton\.onclick=.*missionHasStarted=true[\s\S]*beginAutoGraphicsBenchmark\(\)/.test(main), 'Mission start must release a pending AUTO benchmark.');
 });
 
-await test('AUTO falls back to Intel for generic constrained or very slow hardware', () => {
+await test('AUTO selects Mobile Ultra Low for entry-class phones and Intel for generic constrained hardware', () => {
   const functionStart = main.indexOf('function recommendedGraphicsQuality(capabilities,benchmarkMs=null){');
   const functionEnd = main.indexOf('\nconst startupGraphicsCapabilities=', functionStart);
   check(functionStart >= 0 && functionEnd > functionStart, 'recommendedGraphicsQuality is missing or has no stable boundary.');
@@ -251,7 +259,12 @@ await test('AUTO falls back to Intel for generic constrained or very slow hardwa
     ...capableGeneric, renderer: 'WebGL Renderer Unavailable', maxTextureSize: 8192,
     maxRenderbufferSize: 8192, maxAnisotropy: 4, deviceMemoryGB: 4, cpuCores: 2
   };
+  const galaxyA16Class = {
+    ...capableGeneric, renderer: 'Mali-G57', mobile: true, userAgent: 'Mozilla/5.0 (Linux; Android 14; SM-A166B)', deviceMemoryGB: 6,
+    cpuCores: 8, maxTextureSize: 16384, maxRenderbufferSize: 16384, maxAnisotropy: 16
+  };
 
+  check(recommend(galaxyA16Class) === 'mobile', 'A Galaxy A16-class mobile capability set must select Mobile Ultra Low.');
   check(recommend({ ...capableGeneric, maxTextureSize: 4096 }) === 'intel', 'A 4096px texture limit must retain the Intel fallback.');
   check(recommend({ ...capableGeneric, deviceMemoryGB: 2 }) === 'intel', 'A 2 GB reported-memory device must retain the Intel fallback.');
   check(recommend(weakGenericLegacy) === 'intel', 'A generic legacy constrained renderer must select Intel without an Intel name.');
@@ -317,12 +330,23 @@ await test('low and medium texture manifests and URL-selection contracts are com
     check(sourceRecords.has(sourceName), `Low-payload manifest is missing ${sourceName}.`);
   }
 
-  check(/const startupLowPayloadMode=startupGraphicsQuality==='intel'\|\|startupTextureTier==='low'/.test(main), 'Intel and saved Low custom paths must select low payloads before decode.');
+  check(/const startupLowPayloadMode=startupGraphicsQuality==='mobile'\|\|startupGraphicsQuality==='intel'\|\|startupTextureTier==='low'/.test(main), 'Mobile, Intel, and saved Low custom paths must select low payloads before decode.');
   check(/loader\.manager\.setURLModifier\(reducedPayloadModelTextureUrl\)/.test(main), 'GLTFLoader must install the reduced-payload URL modifier.');
   check(/const root=startupLowPayloadMode\?'low-textures':'medium-textures'/.test(main), 'Model texture URL modifier must select the real Low or Medium derivative tree.');
   check(/let pbrRoot=startupLowPayloadMode\?'\.\/assets\/low-textures\/environment\/pbr-v2':startupMediumPayloadMode\?'\.\/assets\/medium-textures\/environment\/pbr-v2':'\.\/assets\/environment\/pbr-v2'/.test(main), 'Environment PBR loading must choose Low, Medium, or full maps before fetch/decode.');
   check(/if\(!startupReducedTextureMode\)await loadHighTierTreeCards\(textureLoader\)/.test(main), 'Reduced texture modes must skip optional high-tier foliage fetches.');
   check(/const mediumTexturesReloadPending=requestedPreset\.textureTier==='medium'&&startupTextureTier!=='medium'/.test(main), 'A Medium texture request must truthfully require a reload when the boot tier differs.');
+});
+
+await test('touch controls preserve desktop input while providing a mobile action path', async () => {
+  check(/id="touchControls"/.test(await readFile(resolve(ROOT, 'index.html'), 'utf8')), 'The HTML shell must include mobile touch controls.');
+  check(/const touchCapable=Boolean\(navigator\.maxTouchPoints>0\|\|globalThis\.matchMedia/.test(main), 'Touch controls must be enabled only on touch-capable devices.');
+  check(/id="touchMoveZone"/.test(await readFile(resolve(ROOT, 'index.html'), 'utf8')) && /id="touchLookZone"/.test(await readFile(resolve(ROOT, 'index.html'), 'utf8')), 'Touch controls must provide separate move and look zones.');
+  check(/data-touch-action="fire"/.test(await readFile(resolve(ROOT, 'index.html'), 'utf8')) && /data-touch-action="aim"/.test(await readFile(resolve(ROOT, 'index.html'), 'utf8')) && /data-touch-action="use"/.test(await readFile(resolve(ROOT, 'index.html'), 'utf8')), 'Touch controls must expose fire, ADS, and interaction actions.');
+  check(/const f=\(keys\.KeyW\?1:0\)-\(keys\.KeyS\?1:0\)\+touchInput\.forward/.test(main) && /touchInput\.strafe/.test(main), 'Touch stick input must feed the same movement controller as keyboard input.');
+  check(/function applyLookInput\(dx,dy,locked=false\)/.test(main) && /applyLookInput\(dx\*1\.35,dy\*1\.35,false\)/.test(main), 'Touch look must use the shared first-person camera controller.');
+  check(/startButton\.onclick=.*setTouchControlsActive\(true\)/.test(main) && /startExtractionSequence\(\)[\s\S]*setTouchControlsActive\(false\)/.test(main), 'Touch controls must activate for missions and lock out during extraction.');
+  check(/e\.target\.closest\?\.\('#graphicsPanel,#graphicsQuickButton,#touchControls'\)/.test(main), 'Desktop mouse fire must ignore touch-control UI interactions.');
 });
 
 await test('native 4K pack is verified or safely falls back', async () => {

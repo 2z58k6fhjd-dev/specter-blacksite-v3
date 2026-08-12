@@ -791,6 +791,7 @@ export function buildWorldOverhaul({scene,collision,environmentTextures,facility
   const interiorFogColor=new THREE.Color(0x050a08),exteriorFogColor=new THREE.Color(0x637582);
   function setGraphicsQuality(quality,effectivePreset={}){
     const profiles={
+      mobile:{sun:.74,ambient:.82,grass:false,forestDensity:'low',fog:true,shadows:false,shadowMapSize:0,shadowDistance:0},
       intel:{sun:.78,ambient:.86,grass:false,forestDensity:'low',fog:true,shadows:false,shadowMapSize:0,shadowDistance:0},
       performance:{sun:.9,ambient:.92,grass:false,forestDensity:'low',fog:true,shadows:true,shadowMapSize:1024,shadowDistance:90},
       balanced:{sun:.96,ambient:.98,grass:true,forestDensity:'medium',fog:true,shadows:true,shadowMapSize:1536,shadowDistance:135},

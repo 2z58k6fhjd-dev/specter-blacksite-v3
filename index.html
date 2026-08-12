@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#06100c">
   <title>SPECTER: Blacksite — Overhaul Foundation</title>
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./styles.css?v=5.11.0-graphics-apply">
+  <link rel="stylesheet" href="./styles.css?v=5.12.0-mobile-ultra-low">
 </head>
 <body>
   <div id="game"></div>
@@ -20,7 +20,7 @@
       <button id="startButton" disabled>LOADING ASSETS</button>
       <button id="graphicsButton" class="secondaryButton" type="button">GRAPHICS: HIGH (6 GB)</button>
       <a id="modelPreviewLink" href="./player-model.html">VIEW SPECTER PLAYER MODEL</a>
-      <small>WASD move · Mouse look · Left click fire · Hold right click ADS (click toggles ADS in embedded mode) · Shift sprint · Space jump · E use · F flashlight · R reload · C chamber check · I inspect · B fire mode · G graphics · 1–5 weapons</small>
+      <small>WASD move · Mouse look · Left click fire · Hold right click ADS (click toggles ADS in embedded mode) · Shift sprint · Space jump · E use · F flashlight · R reload · C chamber check · I inspect · B fire mode · G graphics · 1–5 weapons · Touch: left stick move, swipe right side to look, use the on-screen action buttons</small>
     </div>
   </section>
   <section id="victoryPanel">
@@ -32,19 +32,20 @@
     </div>
   </section>
   <div id="extractionFade" aria-hidden="true"></div>
-  <div id="build">BUILD 5.11.0-GRAPHICS-APPLY</div>
+  <div id="build">BUILD 5.12.0-MOBILE-ULTRA-LOW</div>
   <button id="graphicsQuickButton" type="button" aria-expanded="false">GFX</button>
   <section id="graphicsPanel" aria-label="Graphics quality" aria-hidden="true">
     <div class="graphicsHeader"><strong>GRAPHICS QUALITY</strong><button id="graphicsCloseButton" type="button" aria-label="Close graphics settings">×</button></div>
     <p id="graphicsHint">HIGH (6 GB) · SSAO + BLOOM</p>
     <div class="graphicsOptions" role="group" aria-label="Quality presets">
       <button type="button" data-quality="auto">AUTO<span>quick benchmark + safe headroom</span></button>
+      <button type="button" data-quality="mobile">MOBILE ULTRA LOW<span>Galaxy A16 · 480p + 512px textures</span></button>
       <button type="button" data-quality="intel">COMPETITIVE LOW<span>Intel HD 4600 · clean visibility</span></button>
       <button type="button" data-quality="performance">PERFORMANCE<span>4 GB · direct lighting</span></button>
       <button type="button" data-quality="balanced">BALANCED<span>6 GB · SSAO</span></button>
       <button type="button" data-quality="high">HIGH<span>6 GB · SSAO + bloom</span></button>
       <button type="button" data-quality="ultra">ULTRA<span>8 GB · SSAO + SSR + bloom</span></button>
-      <button type="button" data-quality="extreme">EXTREME<span>10 GB · 4K-ready + max SSAO/SSR</span></button>
+      <button type="button" data-quality="extreme">EXTREME<span>10 GB · maximum WebGL lighting / SSR (no native RT)</span></button>
     </div>
     <div class="graphicsCustom" aria-label="Custom graphics settings">
       <div class="graphicsCustomHeader"><strong>CUSTOM TUNING</strong><button id="graphicsResetButton" type="button">RESET</button></div>
@@ -68,7 +69,7 @@
       <div id="graphicsRayStatus" class="graphicsVramEstimate" role="status" aria-live="polite">WEBGL COMPATIBILITY: checking renderer...</div>
       <div id="graphicsVramEstimate" class="graphicsVramEstimate">EST. GPU MEMORY: calculating…</div>
       <button id="graphicsReloadButton" class="graphicsReloadButton" type="button" hidden>APPLY &amp; RELOAD</button>
-      <small>*Render Resolution fixes the vertical internal render height from 240p through 2160p/4K, then scales the canvas to the browser viewport rather than changing a monitor’s native resolution. It controls pixels, not texture detail; it may be GPU-clamped. This WebGL renderer does not expose native hardware ray tracing or native AMD FSR 2. The RT requests select working approximations: reflections use view-limited SSR, indirect light uses SSAO plus ambient light, and shadows use the selected PCF shadow-map path. The FSR 2 request actively renders at 77% of the selected internal scale, then uses browser output scaling; it is not temporal FSR 2. Anti-aliasing and a newly selected texture tier need a reload; choose Apply &amp; Reload when it appears. A fresh Low launch uses the real 512px model and PBR texture pack; Medium uses the generated 1K pack. Live changes keep current textures visible until reload. Estimates include loaded textures, geometry (including instancing/skinning), post-process targets, and shadows; browser APIs cannot reveal exact VRAM.</small>
+      <small>*Render Resolution fixes the vertical internal render height from 240p through 2160p/4K, then scales the canvas to the browser viewport rather than changing a monitor’s native resolution. It controls pixels, not texture detail; it may be GPU-clamped. This WebGL renderer does not expose native hardware ray tracing or native AMD FSR 2. The RT requests select working approximations: reflections use view-limited SSR, indirect light uses SSAO plus ambient light, and shadows use the selected PCF shadow-map path. The FSR 2 request actively renders at 77% of the selected internal scale, then uses browser output scaling; it is not temporal FSR 2. Mobile Ultra Low is designed for entry-class Android phones: it launches the real 512px texture payload with 480p internal output, no post effects, no shadows, and lightweight vegetation. Anti-aliasing and a newly selected texture tier need a reload; choose Apply &amp; Reload when it appears. A fresh Low launch uses the real 512px model and PBR texture pack; Medium uses the generated 1K pack. Live changes keep current textures visible until reload. Estimates include loaded textures, geometry (including instancing/skinning), post-process targets, and shadows; browser APIs cannot reveal exact VRAM.</small>
     </div>
     <div class="audioTuning" aria-label="Enemy voice settings">
       <div class="graphicsCustomHeader"><strong>ENEMY COMMUNICATIONS</strong></div>
@@ -87,6 +88,20 @@
       <div class="scopeHorizontal"></div>
       <div class="scopeVertical"></div>
       <div class="scopeDot"></div>
+    </div>
+  </div>
+  <div id="touchControls" aria-label="Mobile controls" aria-hidden="true">
+    <div id="touchLookZone" aria-label="Swipe to look around"></div>
+    <div id="touchMoveZone" aria-label="Touch joystick to move"><div id="touchMoveKnob"></div></div>
+    <div id="touchActionCluster" aria-label="Touch actions">
+      <button id="touchFire" type="button" data-touch-action="fire" aria-label="Fire weapon">FIRE</button>
+      <button type="button" data-touch-action="aim" aria-label="Aim down sights">ADS</button>
+      <button type="button" data-touch-action="sprint" aria-label="Sprint">RUN</button>
+      <button type="button" data-touch-action="use" aria-label="Use or interact">USE</button>
+      <button type="button" data-touch-action="reload" aria-label="Reload weapon">RLD</button>
+      <button type="button" data-touch-action="jump" aria-label="Jump">JMP</button>
+      <button type="button" data-touch-action="light" aria-label="Toggle flashlight">LGT</button>
+      <button type="button" data-touch-action="weapon" aria-label="Cycle equipped weapon">WPN</button>
     </div>
   </div>
   <footer id="hud">
@@ -118,6 +133,6 @@
     }
   }
   </script>
-  <script type="module" src="./src/main.js?v=5.11.0-graphics-apply"></script>
+  <script type="module" src="./src/main.js?v=5.12.0-mobile-ultra-low"></script>
 </body>
 </html>

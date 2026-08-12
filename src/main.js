@@ -2,19 +2,19 @@ import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.11.0-graphics-apply';
-import { buildWorldOverhaul } from './world-overhaul.js?v=5.11.0-graphics-apply';
-import { EnemyAISystem } from './enemy-ai.js?v=5.11.0-graphics-apply';
-import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS,SPATIAL_UPSCALE_FALLBACK_SCALE } from './graphics-pipeline.js?v=5.11.0-graphics-apply';
-import { createAudioDirector } from './audio-overhaul.js?v=5.11.0-graphics-apply';
-import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.11.0-graphics-apply';
+import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.12.0-mobile-ultra-low';
+import { buildWorldOverhaul } from './world-overhaul.js?v=5.12.0-mobile-ultra-low';
+import { EnemyAISystem } from './enemy-ai.js?v=5.12.0-mobile-ultra-low';
+import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS,SPATIAL_UPSCALE_FALLBACK_SCALE } from './graphics-pipeline.js?v=5.12.0-mobile-ultra-low';
+import { createAudioDirector } from './audio-overhaul.js?v=5.12.0-mobile-ultra-low';
+import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.12.0-mobile-ultra-low';
 
 const graphicsCustomStorageKey='specter-custom-graphics';
 const voiceSettingsStorageKey='specter-voice-settings';
 const startupQualityQuery=String(new URLSearchParams(location.search).get('quality')||'').toLowerCase();
 // A link that deliberately selects a tier must be reproducible.  Do not let a
 // previous custom menu state silently turn an Intel/QA URL into an Extreme one.
-const hasExplicitGraphicsQualityQuery=/^(?:auto|intel|performance|balanced|high|ultra|extreme)$/i.test(startupQualityQuery||'');
+const hasExplicitGraphicsQualityQuery=/^(?:auto|mobile|intel|performance|balanced|high|ultra|extreme)$/i.test(startupQualityQuery||'');
 let bootGraphicsCustomSettings={};
 try{bootGraphicsCustomSettings=hasExplicitGraphicsQualityQuery?{}:JSON.parse(localStorage.getItem(graphicsCustomStorageKey)||'{}')||{}}catch{bootGraphicsCustomSettings={}}
 // Renderer antialiasing is fixed at construction time. Keep the boot value
@@ -88,6 +88,7 @@ const materialTextureSlots=['map','alphaMap','aoMap','bumpMap','displacementMap'
 const materialTextureBackups=new WeakMap();
 const lowWeaponTextureCache=new WeakMap();
 const startButton=document.getElementById('startButton'),startPanel=document.getElementById('startPanel'),promptEl=document.getElementById('prompt');
+const touchControls=document.getElementById('touchControls'),touchMoveZone=document.getElementById('touchMoveZone'),touchMoveKnob=document.getElementById('touchMoveKnob'),touchLookZone=document.getElementById('touchLookZone'),touchActionCluster=document.getElementById('touchActionCluster');
 const graphicsButton=document.getElementById('graphicsButton'),graphicsQuickButton=document.getElementById('graphicsQuickButton');
 const graphicsPanel=document.getElementById('graphicsPanel'),graphicsCloseButton=document.getElementById('graphicsCloseButton'),graphicsHint=document.getElementById('graphicsHint');
 const graphicsResetButton=document.getElementById('graphicsResetButton'),graphicsRenderScale=document.getElementById('graphicsRenderScale'),graphicsRenderScaleValue=document.getElementById('graphicsRenderScaleValue'),graphicsResolution=document.getElementById('graphicsResolution'),graphicsTextureTier=document.getElementById('graphicsTextureTier'),graphicsShadowQuality=document.getElementById('graphicsShadowQuality'),graphicsVegetationDensity=document.getElementById('graphicsVegetationDensity'),graphicsSSAO=document.getElementById('graphicsSSAO'),graphicsSSR=document.getElementById('graphicsSSR'),graphicsBloom=document.getElementById('graphicsBloom'),graphicsAntialias=document.getElementById('graphicsAntialias'),graphicsGrass=document.getElementById('graphicsGrass'),graphicsFog=document.getElementById('graphicsFog'),graphicsRTR=document.getElementById('graphicsRTR'),graphicsRTShadows=document.getElementById('graphicsRTShadows'),graphicsRTGI=document.getElementById('graphicsRTGI'),graphicsFSR2=document.getElementById('graphicsFSR2'),graphicsRayStatus=document.getElementById('graphicsRayStatus'),graphicsVramEstimate=document.getElementById('graphicsVramEstimate'),graphicsReloadButton=document.getElementById('graphicsReloadButton');
@@ -108,6 +109,8 @@ function inspectGraphicsCapabilities(){
     maxAnisotropy:Number(renderer.capabilities.getMaxAnisotropy?.()||1),
     deviceMemoryGB:Number(navigator.deviceMemory||0),
     cpuCores:Number(navigator.hardwareConcurrency||0),
+    mobile:Boolean(navigator.maxTouchPoints>0&&/(?:android|iphone|ipad|ipod|mobile)/i.test(navigator.userAgent||'')),
+    userAgent:String(navigator.userAgent||''),
     displayPixels:Math.max(1,screen.width*screen.height*(devicePixelRatio||1)**2)
   });
 }
@@ -116,6 +119,11 @@ function recommendedGraphicsQuality(capabilities,benchmarkMs=null){
   const namedIntel=/intel.*(?:hd|4000|4400|4600|5000)/.test(rendererName);
   const limitedTextures=capabilities.maxTextureSize>0&&capabilities.maxTextureSize<=4096;
   const lowReportedMemory=capabilities.deviceMemoryGB>0&&capabilities.deviceMemoryGB<=2;
+  // This keeps entry-class Android hardware off the expensive desktop path.
+  // Galaxy A16-class phones commonly expose 4 GB memory or an 8K WebGL limit;
+  // either is enough to select the real 512px Mobile payload before decode.
+  const galaxyA16=/\bsm-a16\d/i.test(capabilities.userAgent||'');
+  const entryMobileDevice=galaxyA16||Boolean(capabilities.mobile)&&(capabilities.deviceMemoryGB>0&&capabilities.deviceMemoryGB<=4||capabilities.maxTextureSize>0&&capabilities.maxTextureSize<=8192||capabilities.maxAnisotropy>0&&capabilities.maxAnisotropy<8||capabilities.cpuCores>0&&capabilities.cpuCores<=6);
   // Some privacy-restricted browsers hide the useful renderer name. Treat a
   // genuinely constrained capability set as Intel/Competitive Low instead of
   // relying on a vendor string alone. Each generic branch needs several weak
@@ -126,7 +134,8 @@ function recommendedGraphicsQuality(capabilities,benchmarkMs=null){
   // is deliberately conservative, so sustained timing this slow gets the
   // true low-payload Intel path even when the renderer string is unavailable.
   const verySlowBenchmark=Number.isFinite(benchmarkMs)&&benchmarkMs>=38;
-  if(namedIntel||limitedTextures||lowReportedMemory||legacyConstrainedRenderer||constrainedGenericDevice||verySlowBenchmark)return 'intel';
+  if(entryMobileDevice)return 'mobile';
+  if(namedIntel||limitedTextures||lowReportedMemory||legacyConstrainedRenderer||constrainedGenericDevice||verySlowBenchmark)return capabilities.mobile?'mobile':'intel';
   let rank=capabilities.deviceMemoryGB>=16?4:capabilities.deviceMemoryGB>=10?4:capabilities.deviceMemoryGB>=8?3:capabilities.deviceMemoryGB>=6?2:capabilities.deviceMemoryGB>=4?1:(capabilities.maxTextureSize>=16384&&capabilities.maxAnisotropy>=16?3:capabilities.maxTextureSize>=8192?2:0);
   if(!capabilities.webgl2||capabilities.maxRenderbufferSize<8192)rank=Math.min(rank,1);
   if(capabilities.maxAnisotropy<8)rank=Math.min(rank,1);
@@ -135,7 +144,7 @@ function recommendedGraphicsQuality(capabilities,benchmarkMs=null){
   // This is a short gameplay sample, not a full combat benchmark. Never let
   // it promote more than one tier above the capability-derived baseline.
   if(Number.isFinite(benchmarkMs)){if(benchmarkMs>29)rank=Math.max(0,rank-2);else if(benchmarkMs>22)rank=Math.max(0,rank-1);else if(benchmarkMs<9)rank=Math.min(4,rank+1);else if(benchmarkMs<12&&rank<4)rank++}
-  return ['performance','balanced','high','ultra','extreme'][rank];
+  return capabilities.mobile?['performance','balanced','high','ultra','extreme'][Math.min(rank,1)]:['performance','balanced','high','ultra','extreme'][rank];
 }
 const startupGraphicsCapabilities=inspectGraphicsCapabilities();
 let startupRememberedQuality='';
@@ -147,7 +156,7 @@ const startupTextureTier=bootGraphicsCustomSettings.textureTier||GRAPHICS_QUALIT
 // Low is a true payload choice on a fresh load, not just a late material
 // downgrade. Keep the compact source images in use before GLTFLoader or the
 // environment texture loader gets a chance to decode their 2K/4K originals.
-const startupLowPayloadMode=startupGraphicsQuality==='intel'||startupTextureTier==='low';
+const startupLowPayloadMode=startupGraphicsQuality==='mobile'||startupGraphicsQuality==='intel'||startupTextureTier==='low';
 const startupMediumPayloadMode=startupTextureTier==='medium'&&!startupLowPayloadMode;
 const startupReducedTextureMode=startupLowPayloadMode||startupMediumPayloadMode;
 const environmentPbrEntries=Object.freeze([
@@ -568,7 +577,7 @@ function applyGraphicsHardwareBudget(quality,effectivePreset=null){
   const releasedTextures=activeTextureTier==='low'?new Set():null;
   const keepLowPayloadTextures=startupLowPayloadMode&&preset.textureTier==='low';
   renderer.shadowMap.enabled=Boolean(preset.shadows);
-  renderer.shadowMap.type=!preset.shadows||quality==='performance'||quality==='intel'?THREE.BasicShadowMap:THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type=!preset.shadows||quality==='mobile'||quality==='performance'||quality==='intel'?THREE.BasicShadowMap:THREE.PCFSoftShadowMap;
   for(const texture of Object.values(environmentTextures)){
     if(Array.isArray(texture))for(const card of texture)for(const map of [card?.map,card?.normalMap,card?.roughnessMap])applyTextureSampling(map,anisotropy);
     else applyTextureSampling(texture,anisotropy);
@@ -664,7 +673,7 @@ function renderGraphicsControls(diagnostics=graphics.getDiagnostics()){
     const indirect=ray.requestedGlobalIllumination?`INDIRECT: ${ray.globalIlluminationMode.toUpperCase()}`:'INDIRECT: OFF';
     const shadows=ray.requestedShadows?`SHADOWS: ${ray.shadowsMode.toUpperCase()}`:'SHADOWS: OFF';
     const upscale=upscaler.spatialFallbackActive?`UPSCALE: SPATIAL ${Math.round(upscaler.spatialScale*100)}% (NOT FSR2)`:upscaler.spatialFallbackBypassed?'UPSCALE: FIXED RESOLUTION (NOT FSR2)':'UPSCALE: NATIVE SCALE';
-    graphicsRayStatus.textContent=`WEBGL COMPATIBILITY - ${reflection} - ${indirect} - ${shadows} - ${upscale}`;
+    graphicsRayStatus.textContent=`NATIVE RT: UNAVAILABLE IN WEBGL - ${reflection} - ${indirect} - ${shadows} - ${upscale}`;
   }
   document.querySelectorAll('[data-quality]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.quality===activeGraphicsPreference)));
   syncGraphicsCustomControls(diagnostics);
@@ -2092,6 +2101,85 @@ let extractionSequence=null;
 const playerEyeHeight=1.72,playerJumpVelocity=4.15,playerGravity=13.5;
 let playerVerticalVelocity=0,playerGrounded=true,landingResponse=0;
 const keys={},clock=new THREE.Clock(),moveVelocity=new THREE.Vector3(),audioForward=new THREE.Vector3(),extractionPoint=new THREE.Vector3(0,1.72,-172),extractionRunTarget=new THREE.Vector3(0,1.72,-204);
+// Touch is an additive input path: keyboard and mouse stay untouched on
+// desktop, while phones receive a left-stick, right-look, and hold actions.
+const touchCapable=Boolean(navigator.maxTouchPoints>0||globalThis.matchMedia?.('(pointer: coarse)').matches);
+const touchInput={forward:0,strafe:0,sprint:false,movePointer:null,lookPointer:null,firePointer:null,aimPointer:null};
+function resetTouchInput(){
+  touchInput.forward=0;touchInput.strafe=0;touchInput.sprint=false;touchInput.movePointer=null;touchInput.lookPointer=null;touchInput.firePointer=null;touchInput.aimPointer=null;fireHeld=false;
+  if(touchMoveKnob)touchMoveKnob.style.transform='translate(-50%,-50%)';
+  touchActionCluster?.querySelectorAll('button.active').forEach(button=>button.classList.remove('active'));
+}
+function setTouchControlsActive(active=started&&!extractionSequence&&!missionWon){
+  const enabled=Boolean(touchCapable&&active);
+  touchControls?.classList.toggle('active',enabled);touchControls?.setAttribute('aria-hidden',String(!enabled));
+  if(!enabled)resetTouchInput();
+}
+function applyLookInput(dx,dy,locked=false){
+  if(!started||extractionSequence)return;
+  if(!locked){
+    camera.rotation.y-=dx*.002;
+    camera.rotation.x=THREE.MathUtils.clamp(camera.rotation.x-dy*.002,-Math.PI/2+.04,Math.PI/2-.04);
+  }
+  swayX=THREE.MathUtils.clamp(swayX+dx,-55,55);swayY=THREE.MathUtils.clamp(swayY+dy,-45,45);
+}
+function updateTouchMove(event){
+  if(touchInput.movePointer!==event.pointerId||!touchMoveZone)return;
+  const rect=touchMoveZone.getBoundingClientRect(),radius=Math.max(1,rect.width*.31),dx=THREE.MathUtils.clamp(event.clientX-(rect.left+rect.width*.5),-radius,radius),dy=THREE.MathUtils.clamp(event.clientY-(rect.top+rect.height*.5),-radius,radius);
+  touchInput.strafe=dx/radius;touchInput.forward=-dy/radius;
+  if(touchMoveKnob)touchMoveKnob.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;
+}
+function clearTouchMove(pointerId){
+  if(pointerId!==undefined&&touchInput.movePointer!==pointerId)return;
+  touchInput.movePointer=null;touchInput.forward=0;touchInput.strafe=0;
+  if(touchMoveKnob)touchMoveKnob.style.transform='translate(-50%,-50%)';
+}
+function bindTouchControls(){
+  if(!touchControls||!touchCapable)return;
+  const capture=(element,event)=>{try{element.setPointerCapture(event.pointerId)}catch{/* Capture can be unavailable during browser gestures. */}};
+  touchMoveZone?.addEventListener('pointerdown',event=>{
+    if(event.pointerType!=='touch'||!started||extractionSequence)return;
+    event.preventDefault();event.stopPropagation();touchInput.movePointer=event.pointerId;capture(touchMoveZone,event);updateTouchMove(event);
+  });
+  touchMoveZone?.addEventListener('pointermove',event=>{if(event.pointerType==='touch'){event.preventDefault();updateTouchMove(event)}});
+  for(const type of ['pointerup','pointercancel','lostpointercapture'])touchMoveZone?.addEventListener(type,event=>clearTouchMove(event.pointerId));
+  let lastLookX=0,lastLookY=0;
+  touchLookZone?.addEventListener('pointerdown',event=>{
+    if(event.pointerType!=='touch'||!started||extractionSequence)return;
+    event.preventDefault();event.stopPropagation();touchInput.lookPointer=event.pointerId;lastLookX=event.clientX;lastLookY=event.clientY;capture(touchLookZone,event);
+  });
+  touchLookZone?.addEventListener('pointermove',event=>{
+    if(event.pointerType!=='touch'||touchInput.lookPointer!==event.pointerId)return;
+    event.preventDefault();const dx=THREE.MathUtils.clamp(event.clientX-lastLookX,-80,80),dy=THREE.MathUtils.clamp(event.clientY-lastLookY,-80,80);lastLookX=event.clientX;lastLookY=event.clientY;applyLookInput(dx*1.35,dy*1.35,false);
+  });
+  for(const type of ['pointerup','pointercancel','lostpointercapture'])touchLookZone?.addEventListener(type,event=>{if(touchInput.lookPointer===event.pointerId)touchInput.lookPointer=null});
+  touchActionCluster?.querySelectorAll('[data-touch-action]').forEach(button=>{
+    const action=button.dataset.touchAction;
+    const release=event=>{
+      if(action==='fire'&&touchInput.firePointer===event.pointerId){touchInput.firePointer=null;fireHeld=false}
+      if(action==='aim'&&touchInput.aimPointer===event.pointerId){touchInput.aimPointer=null;setAim(false)}
+      if(action==='sprint')touchInput.sprint=false;
+      button.classList.remove('active');
+    };
+    button.addEventListener('pointerdown',event=>{
+      if(event.pointerType!=='touch'||!started||extractionSequence)return;
+      event.preventDefault();event.stopPropagation();capture(button,event);button.classList.add('active');ensureAudio();
+      if(action==='fire'){touchInput.firePointer=event.pointerId;fireHeld=true;shoot()}
+      else if(action==='aim'){touchInput.aimPointer=event.pointerId;setAim(true)}
+      else if(action==='sprint')touchInput.sprint=true;
+      else if(action==='use')interact();
+      else if(action==='reload')reload();
+      else if(action==='jump')tryPlayerJump();
+      else if(action==='light'){lightOn=!lightOn;flashlight.visible=lightOn;hud();button.classList.remove('active')}
+      else if(action==='weapon'){
+        const slots=['rifle','pistol','compact','marksman','suppressed'],next=slots[(slots.indexOf(currentWeapon)+1)%slots.length];
+        switchWeapon(next);button.classList.remove('active');
+      }
+    });
+    for(const type of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(type,release);
+  });
+}
+bindTouchControls();
 const extractionPursuitAnchors=[
   new THREE.Object3D(),new THREE.Object3D(),new THREE.Object3D(),new THREE.Object3D()
 ];
@@ -2149,11 +2237,11 @@ function updatePlayerVerticalMotion(dt){
 }
 function move(dt){
   if(extractionSequence)return;
-  const f=(keys.KeyW?1:0)-(keys.KeyS?1:0),s=(keys.KeyD?1:0)-(keys.KeyA?1:0);
+  const f=(keys.KeyW?1:0)-(keys.KeyS?1:0)+touchInput.forward,s=(keys.KeyD?1:0)-(keys.KeyA?1:0)+touchInput.strafe;
   const forward=new THREE.Vector3();camera.getWorldDirection(forward);forward.y=0;forward.normalize();
   const right=new THREE.Vector3().crossVectors(forward,new THREE.Vector3(0,1,0)).normalize();
   const v=forward.multiplyScalar(f).add(right.multiplyScalar(s));moving=v.lengthSq()>.01;if(v.lengthSq()>1)v.normalize();
-  sprinting=!!keys.ShiftLeft&&moving&&!aiming;
+  sprinting=Boolean(keys.ShiftLeft||touchInput.sprint)&&moving&&!aiming;
   const targetVelocity=v.multiplyScalar(sprinting?6.1:3.7);
   moveVelocity.lerp(targetVelocity,1-Math.exp(-(moving?13:18)*dt));
   moveNext.copy(camera.position).addScaledVector(moveVelocity,dt);
@@ -2180,7 +2268,7 @@ function interact(){raycaster.setFromCamera(new THREE.Vector2(),camera);const h=
 const objective=document.getElementById('objective');
 function startExtractionSequence(){
   if(missionWon||extractionSequence)return;
-  ensureAudio();fireHeld=false;setAim(false);moveVelocity.set(0,0,0);playerVerticalVelocity=0;playerGrounded=true;landingResponse=0;camera.position.y=playerEyeHeight;for(const code of Object.keys(keys))keys[code]=false;controls.unlock?.();
+  ensureAudio();fireHeld=false;setAim(false);moveVelocity.set(0,0,0);resetTouchInput();setTouchControlsActive(false);playerVerticalVelocity=0;playerGrounded=true;landingResponse=0;camera.position.y=playerEyeHeight;for(const code of Object.keys(keys))keys[code]=false;controls.unlock?.();
   extractionSequence={time:0,startZ:camera.position.z,nextShotAt:clock.elapsedTime+1.38,nextCallAt:clock.elapsedTime+1.7,nextFootstepAt:clock.elapsedTime+1.08,shotIndex:0,called:false};
   worldOverhaul.setExtractionGateOpen(true);
   const gatePosition=worldOverhaul.extractionGate.group.getWorldPosition(new THREE.Vector3());
@@ -2222,7 +2310,7 @@ function updateExtractionSequence(dt,t){
   if(sequence.time>=4.08)completeMission();
 }
 function completeMission(){
-  if(missionWon)return;missionWon=true;started=false;fireHeld=false;setAim(false);controls.unlock?.();
+  if(missionWon)return;missionWon=true;started=false;fireHeld=false;setAim(false);setTouchControlsActive(false);controls.unlock?.();
   extractionSequence=null;
   scopeSurface.visible=false;document.getElementById('scopeOverlay').classList.remove('active');for(const visual of weaponRig[currentWeapon].visuals||[])visual.visible=true;playerArmsRoot.visible=true;
   objective.textContent='MISSION COMPLETE · BLACKSITE SECURED';audio.setCombatIntensity(0,.8);
@@ -2232,23 +2320,19 @@ function completeMission(){
 
 addEventListener('keydown',e=>{if(extractionSequence){e.preventDefault();return}if(e.code==='KeyG'&&!e.repeat){e.preventDefault();toggleGraphicsPanel();return}if(e.code==='Space'){e.preventDefault();if(!e.repeat)tryPlayerJump();return}keys[e.code]=true;if(e.code==='KeyE')interact();if(e.code==='KeyF'){lightOn=!lightOn;flashlight.visible=lightOn;hud()}if(e.code==='KeyR')reload();if(e.code==='KeyC'&&!e.repeat)chamberCheck();if(e.code==='KeyI'&&!e.repeat)inspectWeapon();if(e.code==='KeyB'&&!e.repeat)toggleMode();if(e.code==='Digit1')switchWeapon('rifle');if(e.code==='Digit2')switchWeapon('pistol');if(e.code==='Digit3')switchWeapon('compact');if(e.code==='Digit4')switchWeapon('marksman');if(e.code==='Digit5')switchWeapon('suppressed')});
 addEventListener('keyup',e=>keys[e.code]=false);
-addEventListener('mousedown',e=>{if(e.target.closest?.('#graphicsPanel,#graphicsQuickButton'))return;if(!started||extractionSequence)return;ensureAudio();if(e.button===0){fireHeld=true;shoot()}if(e.button===2)setAim(embeddedMouseLook?!aiming:true)});
+addEventListener('mousedown',e=>{if(e.target.closest?.('#graphicsPanel,#graphicsQuickButton,#touchControls')||e.sourceCapabilities?.firesTouchEvents)return;if(!started||extractionSequence)return;ensureAudio();if(e.button===0){fireHeld=true;shoot()}if(e.button===2)setAim(embeddedMouseLook?!aiming:true)});
 addEventListener('mouseup',e=>{if(e.button===0)fireHeld=false;if(e.button===2&&!embeddedMouseLook)setAim(false)});
 addEventListener('contextmenu',e=>e.preventDefault());
-addEventListener('blur',()=>{fireHeld=false;setAim(false);for(const code of Object.keys(keys))keys[code]=false;moveVelocity.set(0,0,0)});
+addEventListener('blur',()=>{fireHeld=false;setAim(false);resetTouchInput();for(const code of Object.keys(keys))keys[code]=false;moveVelocity.set(0,0,0)});
 let fallbackPointerX=null,fallbackPointerY=null;
 addEventListener('mousemove',e=>{
   const clientDx=fallbackPointerX===null?0:e.clientX-fallbackPointerX;
   const clientDy=fallbackPointerY===null?0:e.clientY-fallbackPointerY;
   fallbackPointerX=e.clientX;fallbackPointerY=e.clientY;
-  if(!started||extractionSequence)return;
+  if(!started||extractionSequence||touchInput.lookPointer!==null||touchInput.movePointer!==null)return;
   const dx=controls.isLocked?(Number.isFinite(e.movementX)?e.movementX:0):THREE.MathUtils.clamp(clientDx,-120,120);
   const dy=controls.isLocked?(Number.isFinite(e.movementY)?e.movementY:0):THREE.MathUtils.clamp(clientDy,-120,120);
-  if(!controls.isLocked){
-    camera.rotation.y-=dx*.002;
-    camera.rotation.x=THREE.MathUtils.clamp(camera.rotation.x-dy*.002,-Math.PI/2+.04,Math.PI/2-.04);
-  }
-  swayX=THREE.MathUtils.clamp(swayX+dx,-55,55);swayY=THREE.MathUtils.clamp(swayY+dy,-45,45);
+  applyLookInput(dx,dy,controls.isLocked);
 });
 
 let fallbackNoticeShown=false;
@@ -2280,7 +2364,7 @@ function applyLocalQA(){
     camera.position.copy(extractionPoint);previousAIPlayerPosition.copy(camera.position);hud();
   }
 }
-startButton.onclick=()=>{started=true;missionHasStarted=true;startPanel.style.display='none';ensureAudio();applyLocalQA();if(activeGraphicsPreference===AUTO_GRAPHICS_QUALITY||autoBenchmark.pending)beginAutoGraphicsBenchmark();beginMouseLook()};
+startButton.onclick=()=>{started=true;missionHasStarted=true;startPanel.style.display='none';ensureAudio();applyLocalQA();setTouchControlsActive(true);if(activeGraphicsPreference===AUTO_GRAPHICS_QUALITY||autoBenchmark.pending)beginAutoGraphicsBenchmark();if(!touchCapable)beginMouseLook()};
 renderer.domElement.onclick=()=>{if(started&&!extractionSequence&&!controls.isLocked&&!embeddedMouseLook)beginMouseLook()};
 document.getElementById('restartButton').onclick=()=>location.reload();
 

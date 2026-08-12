@@ -8,6 +8,35 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
  * renderer path for older integrated GPUs; Extreme expects a modern 10 GB GPU.
  */
 export const GRAPHICS_QUALITY_PRESETS = Object.freeze({
+  mobile: Object.freeze({
+    // A true low-payload, direct-renderer path for entry-class phones such as
+    // the Galaxy A16.  It trades internal resolution and foliage density for
+    // reliable touch input, texture detail, and battery-friendly frame pacing.
+    label: 'Mobile Ultra Low',
+    recommendedVRAMMB: 384,
+    pixelRatioCap: 0.5,
+    outputResolution: 480,
+    postProcessing: false,
+    shadows: false,
+    shadowMapSize: 0,
+    textureAnisotropy: 1,
+    textureTier: 'low',
+    ambientOcclusion: false,
+    screenSpaceReflections: false,
+    ssrMaxDistance: 0,
+    ssrThickness: 0.06,
+    ssrOpacity: 0,
+    aoKernelRadius: 0,
+    aoMinDistance: 0.003,
+    aoMaxDistance: 0.07,
+    bloom: false,
+    bloomStrength: 0,
+    bloomRadius: 0,
+    bloomThreshold: 1,
+    grassEnabled: false,
+    forestDensity: 'low',
+    fogEnabled: true
+  }),
   intel: Object.freeze({
     // A deliberately clean, competition-style profile: prioritize motion
     // clarity and stable input over surface detail or cinematic effects.
@@ -148,6 +177,12 @@ export const GRAPHICS_QUALITY_PRESETS = Object.freeze({
     textureTier: '4k-preferred',
     ambientOcclusion: true,
     screenSpaceReflections: true,
+    // These are explicit maximum-quality requests.  Diagnostics continue to
+    // identify the concrete WebGL fallbacks (SSR, SSAO, PCF) rather than
+    // presenting them as unavailable native hardware ray tracing.
+    rayTracedReflections: true,
+    rayTracedShadows: true,
+    rayTracedGlobalIllumination: true,
     ssrMaxDistance: 112,
     ssrThickness: 0.035,
     ssrOpacity: 0.23,
