@@ -1,0 +1,26 @@
+{
+  "asset": "Metal Office Desk",
+  "source": {
+    "page": "https://polyhaven.com/a/metal_office_desk",
+    "filesApi": "https://api.polyhaven.com/files/metal_office_desk",
+    "license": "CC0-1.0",
+    "authors": ["Ulan Cabanilla (model)"],
+    "tier": "2K glTF",
+    "sourceTriangles": 6898,
+    "runtimeDeskCount": 3
+  },
+  "runtime": {
+    "optional": true,
+    "lazyAfterMissionReady": true,
+    "textureTiers": ["high", "4k-preferred"],
+    "precache": false,
+    "fallback": "existing procedural security desks"
+  },
+  "files": {
+    "metal_office_desk_2k.gltf": {"bytes": 13510, "md5": "f8b7985eb522e5c3508ccff43c05d922", "sha256": "4323f2e6cae9abb82146449b45445ee9446068c5a9b2ca23e018503b3b0af035"},
+    "metal_office_desk.bin": {"bytes": 229700, "md5": "96f258b9a64d36ca011f44de23da7c65", "sha256": "65b558f41a75ad4822e31cc2a97eb34ed359199279a6bfbd650deb27cef78767"},
+    "textures/metal_office_desk_arm_2k.jpg": {"bytes": 2724325, "md5": "69cfca0d98399bbc5dc62c007f1f2a4a", "sha256": "23c94b99aec8c9b105ff4d843ac41f229b0effb97abe921f0f8b506ccfd76952"},
+    "textures/metal_office_desk_diff_2k.jpg": {"bytes": 1787420, "md5": "62e40035b94716516bd932f83e76ba0c", "sha256": "3f5854edc8a7979ed4576b914c184bda64d7e6ee9969357738703be49118da30"},
+    "textures/metal_office_desk_nor_gl_2k.jpg": {"bytes": 490814, "md5": "b4bd4cd202f44d16a26e70c3fb6e611c", "sha256": "25392e7682c43ca07abbbbe717388b9e6d40bbca663836916204f99ac0378d34"}
+  }
+}

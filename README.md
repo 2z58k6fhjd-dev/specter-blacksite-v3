@@ -1,13 +1,13 @@
 # SPECTER: Blacksite
 
-Build: `5.15.0-PERIMETER-PBR`
+Build: `5.16.0-MOBILE-SCOPE-DESK`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build
-5.15.0 continues the controller, viewmodel, combat presentation, enemy behavior,
+5.16.0 continues the controller, viewmodel, combat presentation, enemy behavior,
 facility, exterior-compound, rendering, materials, audio, and mission-flow work
 while keeping the project suitable for static hosting on GitHub Pages.
 
-## Build 5.15.0 highlights
+## Build 5.16.0 highlights
 
 - Damped first-person movement, sprint transitions, camera motion, weapon bob,
   and mouse-driven sway.
@@ -22,6 +22,10 @@ while keeping the project suitable for static hosting on GitHub Pages.
   barrel-aligned muzzle/ejection anchors, and under-barrel flashlight mounts.
 - Crosshair removal during every ADS transition, aligned iron sights, and a live
   rendered magnified view through the supported rifle optic.
+- Live rifle optics now use a preset-scaled second render: Mobile Ultra Low is
+  256px at 15 Hz, Competitive Low is 320px at 18 Hz, High is 768px at 30 Hz,
+  and Extreme receives 1024px at 45 Hz. The graphics estimate includes that
+  target rather than hiding its cost on mobile hardware.
 - Visible full-body SPECTER operator plus first-person sleeves, hands, gloves,
   and weapon grips derived from the bundled 127-joint soldier rig.
 - Procedural equip, holster, inspect, sprint, jump/landing response, sway,
@@ -65,7 +69,10 @@ while keeping the project suitable for static hosting on GitHub Pages.
   animated breaker hardware,
   six high-detail CC0 storage containers and six high-detail CC0 weathered
   concrete road barriers deployed as exterior hard cover that tactical enemies
-  can select when suppressed or retreating, plus eight optional 2K PBR CC0
+  can select when suppressed or retreating, three optional scanned 2K PBR CC0
+  metal office desks that replace the corridor's procedural desk visuals on
+  High/Ultra/Extreme-class texture settings without changing its tested
+  collision route, plus eight optional 2K PBR CC0
   modular chain-link panels around the close exterior route on High/Ultra/
   Extreme while Mobile/Low keeps the lightweight collision-backed security
   fence,
@@ -118,14 +125,16 @@ while keeping the project suitable for static hosting on GitHub Pages.
   capability-constrained or very-slow devices even when the renderer name does
   not identify Intel. It then runs after entering the loaded mission (45 warm-up
   frames followed by 120 unclamped gameplay samples). It is an estimate rather
-  than a precise VRAM test; players can choose Competitive Low, Performance,
-  Mobile Ultra Low, Competitive Low, Performance, Balanced, High, Ultra, or
-  Extreme instead. Entry-class Android capability signals select Mobile Ultra
+  than a precise VRAM test; players can choose Mobile Ultra Low, Competitive
+  Low, Performance, Balanced, High, Ultra, or Extreme instead. Entry-class
+  Android capability signals select Mobile Ultra
   Low before asset decoding.
 - **Mobile Ultra Low** is an explicit Galaxy A16-oriented profile: 480p internal
   output, the real 512px low texture payload, direct lighting, no shadows or
   post-processing, no stand-in grass, low-density vegetation, and atmospheric
-  fog. It is a lightweight visual profile rather than a blank-material mode.
+  fog. Its live rifle-optic target is limited to 256px at 15 Hz, and its
+  touch controls remain fully enabled. It is a lightweight visual profile
+  rather than a blank-material mode.
 - Competitive Low / Intel HD 4600 uses a direct-render path that disables
   shadows, post-processing, ground grass, and dense foliage. On a fresh
   Competitive Low or Low-texture launch it selects a checked 68-file,
@@ -318,9 +327,10 @@ and can take noticeably longer on mobile networks.
 The service worker installs the small application shell first, then caches the
 large model and texture payload on a best-effort basis; a failed optional cache
 item is recovered by the normal network-first loader on a later visit.
-Fern 02, the bounded Fir Sapling derivatives, and the optional 2K modular
-chain-link panels are deliberately excluded from service-worker precaching and
-remain optional, post-readiness high-detail streams.
+Fern 02, the bounded Fir Sapling derivatives, the optional 2K modular
+chain-link panels, and the optional scanned metal office desks are deliberately
+excluded from service-worker precaching and remain optional, post-readiness
+high-detail streams.
 
 The `qa` query modes in `src/main.js` are intentionally restricted to
 `localhost` and `127.0.0.1`; they are test helpers, not alternate public game
@@ -404,6 +414,7 @@ remain beside every bundled third-party model:
 - `assets/m9/license.txt`
 - `assets/soldier/license.txt`
 - `assets/environment/polyhaven-fir-sapling-runtime/LICENSE.txt`
+- `assets/environment/polyhaven-metal-office-desk/LICENSE.txt`
 - `assets/environment/polyhaven-modular-chainlink-fence/LICENSE.txt`
 
 Important: the bundled AR-15 by Lokeig is licensed CC BY-NC 4.0. It requires
@@ -420,4 +431,4 @@ prompts, and build records.
 Research links in `THIRD_PARTY_ASSETS.md` are evaluation notes only. Their models,
 textures, and audio are not bundled merely because a source URL is listed. No
 sci-fi, futuristic, fantasy, cartoon, stylized, or visibly low-detail research
-asset was accepted into the build 5.15.0-PERIMETER-PBR runtime.
+asset was accepted into the build 5.16.0-MOBILE-SCOPE-DESK runtime.

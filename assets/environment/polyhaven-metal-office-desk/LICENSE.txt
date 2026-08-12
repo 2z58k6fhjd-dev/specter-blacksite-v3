@@ -1,0 +1,9 @@
+Poly Haven Metal Office Desk
+
+Source: https://polyhaven.com/a/metal_office_desk
+Official files API: https://api.polyhaven.com/files/metal_office_desk
+License: Creative Commons Zero 1.0 Universal (CC0 1.0)
+License page: https://polyhaven.com/license
+
+Poly Haven lists Ulan Cabanilla as the model author. This local record is
+retained with the official 2K glTF closure.

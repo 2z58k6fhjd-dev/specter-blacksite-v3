@@ -347,6 +347,9 @@ await test('touch controls preserve desktop input while providing a mobile actio
   check(/function applyLookInput\(dx,dy,locked=false\)/.test(main) && /applyLookInput\(dx\*1\.35,dy\*1\.35,false\)/.test(main), 'Touch look must use the shared first-person camera controller.');
   check(/startButton\.onclick=.*setTouchControlsActive\(true\)/.test(main) && /startExtractionSequence\(\)[\s\S]*setTouchControlsActive\(false\)/.test(main), 'Touch controls must activate for missions and lock out during extraction.');
   check(/e\.target\.closest\?\.\('#graphicsPanel,#graphicsQuickButton,#touchControls'\)/.test(main), 'Desktop mouse fire must ignore touch-control UI interactions.');
+  check(/function scopeBudgetForGraphics\(quality,preset=\{\}\)/.test(main) && /return \{size:256,frameRate:15,label:'Mobile'\}/.test(main), 'Mobile Ultra Low must cap the live scope target at 256px and 15 Hz.');
+  check(/if\(quality==='extreme'\)return \{size:1024,frameRate:45,label:'Extreme'\}/.test(main), 'Extreme must retain a separate 1024px, 45 Hz live-optic budget.');
+  check(/scopeRenderElapsed\+=dt;if\(scopeRenderElapsed<scopeRenderInterval\)return/.test(main), 'The scope renderer must use the active quality budget rather than a fixed 30 Hz interval.');
 });
 
 await test('native 4K pack is verified or safely falls back', async () => {
@@ -384,6 +387,7 @@ await test('GPU-memory estimate refreshes after resize', () => {
   check(/function graphicsMemoryEstimate\(preset,diagnostics=graphics\?\.getDiagnostics\?\.\(\)\)/.test(main), 'Graphics memory estimator is missing.');
   check(/diagnostics\?\.effectiveOutputWidth/.test(main) && /pixels=outputWidth\*outputHeight/.test(main), 'Graphics memory estimate must use the live renderer drawing-buffer dimensions.');
   check(/function graphicsRenderTargetEstimate\(\)/.test(main) && /object\.isInstancedMesh/.test(main) && /object\.isSkinnedMesh/.test(main), 'Graphics memory estimate must include compositor targets, instancing, and skeleton buffers.');
+  check(/if\(scopeRenderTarget\)targets\.add\(scopeRenderTarget\)/.test(main), 'Graphics memory estimate must include the active live-scope render target.');
   check(/addEventListener\('resize',\(\)=>\{graphics\.resize\(innerWidth,innerHeight,devicePixelRatio\);renderGraphicsMemoryEstimate\(graphics\.getDiagnostics\(\)\.preset\)\}\)/.test(main), 'Resize must refresh both graphics dimensions and the visible GPU-memory estimate.');
 });
 

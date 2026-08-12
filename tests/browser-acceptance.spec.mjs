@@ -92,13 +92,16 @@ test('high vegetation streams and presents the real CC0 fir LOD chain', async ({
         instancedLod1Active: 6, enabled: true
       }
     },
-    perimeterFence: { highTierPanels: 8, enabled: true }
+    perimeterFence: { highTierPanels: 8, enabled: true },
+    officeDesks: { highTierDesks: 3, enabled: true },
+    scope: { size: 768, frameRate: 30 }
   });
   const diagnostics = await localRuntimeDiagnostics(page);
   expect(diagnostics.camera.z).toBeLessThan(-60);
   expect(diagnostics.forest.trees.hero).toBe(6);
   expect(diagnostics.forest.trees.detail).toBe(6);
   expect(diagnostics.perimeterFence.highTierPanels).toBe(8);
+  expect(diagnostics.officeDesks.highTierDesks).toBe(3);
   expect(errors).toEqual([]);
 });
 

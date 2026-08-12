@@ -2,12 +2,12 @@ import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.15.0-perimeter-pbr';
-import { buildWorldOverhaul } from './world-overhaul.js?v=5.15.0-perimeter-pbr';
-import { EnemyAISystem } from './enemy-ai.js?v=5.15.0-perimeter-pbr';
-import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS,SPATIAL_UPSCALE_FALLBACK_SCALE } from './graphics-pipeline.js?v=5.15.0-perimeter-pbr';
-import { createAudioDirector } from './audio-overhaul.js?v=5.15.0-perimeter-pbr';
-import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.15.0-perimeter-pbr';
+import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.16.0-mobile-scope-desk';
+import { buildWorldOverhaul } from './world-overhaul.js?v=5.16.0-mobile-scope-desk';
+import { EnemyAISystem } from './enemy-ai.js?v=5.16.0-mobile-scope-desk';
+import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS,SPATIAL_UPSCALE_FALLBACK_SCALE } from './graphics-pipeline.js?v=5.16.0-mobile-scope-desk';
+import { createAudioDirector } from './audio-overhaul.js?v=5.16.0-mobile-scope-desk';
+import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.16.0-mobile-scope-desk';
 
 const graphicsCustomStorageKey='specter-custom-graphics';
 const voiceSettingsStorageKey='specter-voice-settings';
@@ -83,6 +83,12 @@ let missionAssetsReady=false;
 let forestFernsRoot=null,forestFernLoadPromise=null,forestFernLoadAttempted=false;
 let forestHeroFirLoadPromise=null,forestHeroFirLoadAttempted=false;
 let perimeterFenceRoot=null,perimeterFenceLoadPromise=null,perimeterFenceLoadAttempted=false;
+let officeDeskRoot=null,officeDeskLoadPromise=null,officeDeskLoadAttempted=false;
+// True scopes render a second scene. Keep the optic readable on entry phones,
+// but never make Mobile Ultra Low pay the same 768px/30 Hz cost as Ultra.
+let scopeRenderTarget=null;
+let scopeRenderElapsed=1,scopeRenderInterval=1/30;
+let scopeRenderBudget={size:768,frameRate:30,label:'High'};
 let graphicsTextureStatus='2K PBR';
 let missionHasStarted=false;
 const materialTextureSlots=['map','alphaMap','aoMap','bumpMap','displacementMap','emissiveMap','metalnessMap','normalMap','roughnessMap','clearcoatMap','clearcoatNormalMap','clearcoatRoughnessMap','iridescenceMap','iridescenceThicknessMap','sheenColorMap','sheenRoughnessMap','specularColorMap','specularIntensityMap','transmissionMap','thicknessMap','lightMap'];
@@ -514,6 +520,9 @@ function graphicsRenderTargetEstimate(){
   };
   inspect(graphics?.composer);
   for(const pass of Object.values(graphics?.passes||{}))inspect(pass);
+  // The live weapon optic is separate from EffectComposer. Account for the
+  // actual active target so the graphics menu does not hide its mobile cost.
+  if(scopeRenderTarget)targets.add(scopeRenderTarget);
   let bytes=0;
   for(const target of targets){
     const pixels=Math.max(0,(target.width||0)*(target.height||0));
@@ -594,6 +603,8 @@ function applyGraphicsHardwareBudget(quality,effectivePreset=null){
   updateForestFernsForGraphics(preset);
   updateForestHeroFirsForGraphics(preset);
   updatePerimeterFenceForGraphics(preset);
+  updateOfficeDesksForGraphics(preset);
+  applyScopeRenderBudget(quality,preset);
   renderGraphicsMemoryEstimate(preset);
   if(preset.textureTier==='4k-preferred'&&!environmentIs4K)void ensureNativeEnvironment4K().then(loaded=>{
     if(!loaded)return;
@@ -667,7 +678,7 @@ function renderGraphicsControls(diagnostics=graphics.getDiagnostics()){
   graphicsButton.textContent=`GRAPHICS: ${summary}`;
   const internalResolution=`${diagnostics.effectiveOutputWidth}×${diagnostics.effectiveOutputHeight}`;
   const resolutionMode=diagnostics.outputResolutionMode==='fixed-height'?`${diagnostics.requestedOutputHeight}P LOCK`:'AUTO RESOLUTION';
-  graphicsHint.textContent=`${summary} · ${internalResolution} INTERNAL · ${resolutionMode}${diagnostics.outputResolutionLimited?' · GPU CLAMPED':''}`;
+  graphicsHint.textContent=`${summary} · ${internalResolution} INTERNAL · ${resolutionMode} · SCOPE ${scopeRenderBudget.size}P/${scopeRenderBudget.frameRate} FPS${diagnostics.outputResolutionLimited?' · GPU CLAMPED':''}`;
   graphicsQuickButton.textContent=`GFX · ${diagnostics.quality.toUpperCase()}`;
   if(graphicsRayStatus){
     const ray=diagnostics.rayTracing,upscaler=diagnostics.upscaler;
@@ -1064,6 +1075,62 @@ function updatePerimeterFenceForGraphics(preset={}){
     })
     .finally(()=>{perimeterFenceLoadPromise=null});
 }
+function officeDeskDetailEnabledForPreset(preset={}){
+  // Preserve the true mobile/low/medium payload path. Interior desks are
+  // close enough to merit the scanned PBR source only when the player has
+  // explicitly selected High textures or the Extreme 4K-preferred tier.
+  return ['high','4k-preferred'].includes(preset.textureTier);
+}
+async function loadOfficeDeskAsset(){
+  return loadSetDressAsset('metalOfficeDesk','./assets/environment/polyhaven-metal-office-desk/metal_office_desk_2k.gltf','CC0 metal office desk');
+}
+function setProceduralDeskVisibility(visible){
+  scene.getObjectsByProperty('name','security-desk').forEach(group=>{group.visible=visible});
+}
+function installOfficeDeskDetail(){
+  if(officeDeskRoot)return officeDeskRoot.children.length;
+  const source=assetMap.get('metalOfficeDesk')?.scene;if(!source)return 0;
+  // These placements replace the three lightweight security desks in the
+  // playable corridor while retaining their already-tested collision volumes
+  // and chairs. This prevents a new prop pass from narrowing the route.
+  const placements=[
+    {x:-6.2,z:2.4,rotation:Math.PI/2},
+    {x:6.25,z:-12.5,rotation:-Math.PI/2},
+    {x:-6.15,z:-24.5,rotation:Math.PI/2}
+  ];
+  const root=new THREE.Group();root.name='cc0-high-tier-metal-office-desks';
+  for(const [index,placement] of placements.entries()){
+    const holder=new THREE.Group();holder.name=`cc0-metal-office-desk-${index+1}`;
+    holder.position.set(placement.x,0,placement.z);holder.rotation.y=placement.rotation;
+    const desk=source.clone(true);desk.name=`metal-office-desk-2k-${index+1}`;
+    normalize(desk,1.75,true);
+    desk.traverse(object=>{if(object.isMesh){object.castShadow=true;object.receiveShadow=true;object.frustumCulled=true}});
+    holder.add(desk);root.add(holder);
+  }
+  scene.add(root);officeDeskRoot=root;
+  return placements.length;
+}
+function updateOfficeDesksForGraphics(preset={}){
+  const enabled=officeDeskDetailEnabledForPreset(preset);
+  if(officeDeskRoot){
+    officeDeskRoot.visible=enabled;setProceduralDeskVisibility(!enabled);return;
+  }
+  if(!enabled||!missionAssetsReady||officeDeskLoadAttempted)return;
+  officeDeskLoadAttempted=true;
+  officeDeskLoadPromise=loadOfficeDeskAsset()
+    .then(available=>{
+      if(!available)return;
+      const count=installOfficeDeskDetail();
+      if(count){
+        const diagnostics=graphics.getDiagnostics();
+        officeDeskRoot.visible=officeDeskDetailEnabledForPreset(diagnostics.preset);
+        setProceduralDeskVisibility(!officeDeskRoot.visible);
+        applyGraphicsHardwareBudget(diagnostics.quality,diagnostics.preset);
+        status('props','LOADED',`${count} CC0 high-tier metal office desks`);
+      }
+    })
+    .finally(()=>{officeDeskLoadPromise=null});
+}
 const switchGroup=worldOverhaul.breaker.interactionTarget;
 const audio=createAudioDirector({seed:0x5ec7e2,powerOn:false,masterVolume:.78,musicVolume:.28,sfxVolume:.88,voiceVolume:bootVoiceVolume,ambienceVolume:.5});
 let recordedAudioDecodePromise=null;
@@ -1095,12 +1162,32 @@ const weaponHolders={rifle:rifleHolder,pistol:pistolHolder,compact:compactHolder
 weaponRoot.add(...Object.values(weaponHolders));
 for(const [kind,holder] of Object.entries(weaponHolders))holder.visible=kind==='rifle';
 const playerArmsRoot=new THREE.Group();weaponRoot.add(playerArmsRoot);
-const scopeRenderTarget=new THREE.WebGLRenderTarget(768,768,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,depthBuffer:true});scopeRenderTarget.texture.colorSpace=THREE.SRGBColorSpace;
+scopeRenderTarget=new THREE.WebGLRenderTarget(768,768,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,depthBuffer:true});scopeRenderTarget.texture.colorSpace=THREE.SRGBColorSpace;
 const scopeCamera=new THREE.PerspectiveCamera(20,1,.05,900);
 // A single camera-fixed live optic surface fills the reticle aperture.  Scaling it
 // from the active camera FOV keeps every rifle optic the same usable screen size.
 const scopeSurface=new THREE.Mesh(new THREE.CircleGeometry(1,64),new THREE.MeshBasicMaterial({map:scopeRenderTarget.texture,depthTest:false,depthWrite:false,toneMapped:false}));
  scopeSurface.name='live-scope-picture';scopeSurface.userData.specterViewmodel=true;scopeSurface.position.set(0,0,-.34);scopeSurface.renderOrder=10000;scopeSurface.visible=false;camera.add(scopeSurface);
+function scopeBudgetForGraphics(quality,preset={}){
+  // A custom low texture tier should receive the conservative mobile budget
+  // even when it was selected from another base preset.
+  if(quality==='mobile'||preset.textureTier==='low')return {size:256,frameRate:15,label:'Mobile'};
+  if(quality==='intel')return {size:320,frameRate:18,label:'Competitive Low'};
+  if(quality==='performance')return {size:384,frameRate:20,label:'Performance'};
+  if(quality==='balanced'||preset.textureTier==='medium')return {size:512,frameRate:24,label:'Balanced'};
+  if(quality==='extreme')return {size:1024,frameRate:45,label:'Extreme'};
+  if(quality==='ultra')return {size:896,frameRate:36,label:'Ultra'};
+  return {size:768,frameRate:30,label:'High'};
+}
+function applyScopeRenderBudget(quality,preset={}){
+  // The initial graphics budget is applied before the viewmodel exists.
+  // Store the result then resize once the target has been constructed.
+  const next=scopeBudgetForGraphics(quality,preset);
+  scopeRenderBudget=next;scopeRenderInterval=1/next.frameRate;scopeRenderElapsed=Math.min(scopeRenderElapsed,scopeRenderInterval);
+  if(scopeRenderTarget&&(scopeRenderTarget.width!==next.size||scopeRenderTarget.height!==next.size))scopeRenderTarget.setSize(next.size,next.size);
+  return next;
+}
+applyScopeRenderBudget(graphics.getDiagnostics().quality,graphics.getDiagnostics().preset);
 let playerArms=null;
 let playerOperator=null;
 const playerBodyForward=new THREE.Vector3();
@@ -2147,10 +2234,9 @@ function updateWeapon(dt,t){
   updatePlayerArms(dt,t,reloadWave,equipDrop,actionActive?actionSample:null);
 }
 
-let scopeRenderElapsed=1;
 function renderScopeView(dt){
   if(!scopeSurface.visible){scopeRenderElapsed=1;return}
-  scopeRenderElapsed+=dt;if(scopeRenderElapsed<1/30)return;scopeRenderElapsed%=1/30;
+  scopeRenderElapsed+=dt;if(scopeRenderElapsed<scopeRenderInterval)return;scopeRenderElapsed%=scopeRenderInterval;
   camera.getWorldPosition(scopeCamera.position);camera.getWorldQuaternion(scopeCamera.quaternion);scopeCamera.updateMatrixWorld(true);
   const previousTarget=renderer.getRenderTarget(),operatorWasVisible=playerOperator?.root.visible;
   scopeSurface.visible=false;if(playerOperator)playerOperator.root.visible=false;
@@ -2425,7 +2511,9 @@ function readLocalRuntimeDiagnostics(){
     textureStatus:graphicsTextureStatus,missionAssetsReady,
     camera:{x:camera.position.x,y:camera.position.y,z:camera.position.z},
     forest:{trees:forest?.activeTreeCounts||{},fir:forest?.highTierFirStats||{}},
-    perimeterFence:{highTierPanels:perimeterFenceRoot?.children.length||0,enabled:Boolean(perimeterFenceRoot?.visible)}
+    perimeterFence:{highTierPanels:perimeterFenceRoot?.children.length||0,enabled:Boolean(perimeterFenceRoot?.visible)},
+    officeDesks:{highTierDesks:officeDeskRoot?.children.length||0,enabled:Boolean(officeDeskRoot?.visible)},
+    scope:{size:scopeRenderBudget.size,frameRate:scopeRenderBudget.frameRate}
   };
 }
 if(localQAMode)Object.defineProperty(globalThis,'__specterLocalRuntimeDiagnostics',{value:readLocalRuntimeDiagnostics,configurable:true});
@@ -2473,7 +2561,7 @@ if(requiredAssetFailure){
   status('soldier','LOADED',`${enemies.length} tactical hostiles · 5 role kits · full-detail rifle geometry`);hud();
   missionAssetsReady=true;
   startButton.disabled=false;startButton.textContent='ENTER BLACKSITE';loadMessage.textContent='Assets verified. Mission ready.';
-   updateForestFernsForGraphics(graphics.getDiagnostics().preset);updateForestHeroFirsForGraphics(graphics.getDiagnostics().preset);updatePerimeterFenceForGraphics(graphics.getDiagnostics().preset);
+   updateForestFernsForGraphics(graphics.getDiagnostics().preset);updateForestHeroFirsForGraphics(graphics.getDiagnostics().preset);updatePerimeterFenceForGraphics(graphics.getDiagnostics().preset);updateOfficeDesksForGraphics(graphics.getDiagnostics().preset);
 }
 
 function animate(){

@@ -1,6 +1,6 @@
 # SPECTER: Blacksite - Asset Provenance and License Manifest
 
-This manifest distinguishes assets that ship with build `5.15.0-PERIMETER-PBR` from links retained
+This manifest distinguishes assets that ship with build `5.16.0-MOBILE-SCOPE-DESK` from links retained
 only for research. A source appearing in a research table does not mean its
 files were downloaded, integrated, or redistributed.
 
@@ -76,6 +76,16 @@ are retained in `assets/environment/polyhaven-concrete-road-barrier-02/` with
 official source links, MD5 checksums, and a local license record. The project
 only adds placement, scale, collision, frustum culling, and rendering behavior.
 
+[Metal Office Desk](https://polyhaven.com/a/metal_office_desk) by Ulan Cabanilla
+is bundled as an optional **2K** CC0 1.0 high-detail facility prop. The official
+6,898-triangle glTF closure, official MD5 values, local SHA-256 records, and
+license record live in `assets/environment/polyhaven-metal-office-desk/`.
+Three desk roots stream only after core readiness when the texture tier is High
+or 4K-preferred. They replace the existing procedural desk visuals at the same
+positions while retaining the established lightweight collision volumes and
+chairs. Mobile Ultra Low, Competitive Low, Performance, and Medium never
+request the closure, and no desk file is service-worker precached.
+
 [Modular Chainlink Fence](https://polyhaven.com/a/modular_chainlink_fence) by
 Amal Kumar, with fence-wire material by James Ray Cock, is bundled as an
 optional **2K** CC0 1.0 high-tier perimeter detail. The official glTF closure,
@@ -150,7 +160,7 @@ every enemy weapon clone.
 
 `src/modern-arsenal.js` is preserved as an optional project-authored prototype
 module. It contains compact-carbine, marksman-rifle, and procedural T12 tactical
-autoloader factories plus metadata and animation anchors. Build 5.15.0-PERIMETER-PBR does not
+autoloader factories plus metadata and animation anchors. Build 5.16.0-MOBILE-SCOPE-DESK does not
 import, execute, or precache this module, and no runtime weapon slot selects it.
 In particular, the procedural T12 failed the final close-up art-quality gate and
 has no selectable slot; slot 5 is the full-source MCR-300 suppressed rifle
@@ -207,7 +217,7 @@ folders; `manifest.json` records the source and derivative hashes.
 The original `concrete-wall.webp`, `metal-floor.webp`, `utility-panels.webp`, and
 `grass-field-v1.webp` files were generated specifically for this project with
 OpenAI image generation on 2026-08-08. They are preserved with their records in
-`assets/environment/README.txt`, but build 5.15.0-PERIMETER-PBR uses the PBR v2 set for its main
+`assets/environment/README.txt`, but build 5.16.0-MOBILE-SCOPE-DESK uses the PBR v2 set for its main
 runtime materials.
 
 ## Bundled recorded weapon reports
@@ -238,7 +248,7 @@ and browser-budget acceptance gates, see [`ASSET_CATALOG.md`](ASSET_CATALOG.md).
 It does not alter the attributions or local license records in this manifest.
 
 The following links are retained for future evaluation. None of these candidate
-archives or models should be described as included in build 5.15.0-PERIMETER-PBR unless a future
+archives or models should be described as included in build 5.16.0-MOBILE-SCOPE-DESK unless a future
 commit adds the source files, local license receipt, author, conversion notes,
 optimization record, and runtime integration.
 
@@ -295,7 +305,7 @@ links only and are not bundled:
 
 The [Ural 4320](https://sketchfab.com/3d-models/ural-4320-f953c51a5dbc4a15949f4dcc0905c4e8)
 by Brout was identified as a CC BY 4.0 present-day military truck candidate. It
-is not bundled; build 5.15.0-PERIMETER-PBR uses project-authored procedural vehicle geometry.
+is not bundled; build 5.16.0-MOBILE-SCOPE-DESK uses project-authored procedural vehicle geometry.
 
 ## Bundled tactical voice callouts
 
@@ -326,7 +336,7 @@ procedural fallback remains available if a clip cannot download or decode.
 
 ## Research-only audio candidates - not bundled
 
-Build 5.15.0-PERIMETER-PBR uses project-authored procedural Web Audio,
+Build 5.16.0-MOBILE-SCOPE-DESK uses project-authored procedural Web Audio,
 the separately documented CC BY 3.0 recorded report derivatives, zer0_sol CC0
 M9 empty-reload layer, and Kenney CC0 tactical callouts and player footsteps.
 The following pages remain research links only;
@@ -350,7 +360,7 @@ author, exact license receipt, source URL, editing notes, and runtime derivative
 
 ## Explicitly rejected and excluded content
 
-Build 5.15.0-PERIMETER-PBR does not integrate sci-fi, futuristic, fantasy, anachronistic,
+Build 5.16.0-MOBILE-SCOPE-DESK does not integrate sci-fi, futuristic, fantasy, anachronistic,
 cartoon, stylized, or visibly low-detail research assets. Small or stylized
 soldier and vehicle downloads used during research were rejected as final art
 and are not part of the runtime repository. Earlier rejected experimental

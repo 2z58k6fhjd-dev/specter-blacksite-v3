@@ -68,6 +68,7 @@ const REQUIRED_LICENSE_RECORDS = [
   'assets/audio/cc0-zer0-sol-handgun-reload/LICENSE.txt',
   'assets/environment/polyhaven-concrete-road-barrier-02/LICENSE.txt',
   'assets/environment/polyhaven-fern-02/LICENSE.txt',
+  'assets/environment/polyhaven-metal-office-desk/LICENSE.txt',
   'assets/environment/polyhaven-modular-chainlink-fence/LICENSE.txt',
   'assets/environment/polyhaven-plastic-container/LICENSE.txt',
   'assets/environment/polyhaven-power-box-01/LICENSE.txt',
@@ -640,6 +641,8 @@ async function validateForestFoliagePolicy(errors) {
   const heroManifestPath = resolve(heroRoot, 'manifest.json');
   const fenceRoot = resolve(ROOT, 'assets/environment/polyhaven-modular-chainlink-fence');
   const fenceManifestPath = resolve(fenceRoot, 'manifest.json');
+  const deskRoot = resolve(ROOT, 'assets/environment/polyhaven-metal-office-desk');
+  const deskManifestPath = resolve(deskRoot, 'manifest.json');
   const generatedCardFiles = [
     'assets/environment/generated/douglas-fir-card-v2.png',
     'assets/environment/generated/douglas-fir-card-v2-normal.png',
@@ -668,6 +671,9 @@ async function validateForestFoliagePolicy(errors) {
   }
   if (worker.includes('polyhaven-modular-chainlink-fence/')) {
     errors.push('CC0 modular chain-link fence assets must not be precached: they are optional High-tier streams.');
+  }
+  if (worker.includes('polyhaven-metal-office-desk/')) {
+    errors.push('CC0 metal office desk assets must not be precached: they are optional High-tier streams.');
   }
   if (!(await pathExists(alphaPath))) {
     errors.push('Official Fern 02 alpha mask is missing.');
@@ -755,6 +761,41 @@ async function validateForestFoliagePolicy(errors) {
   }
   if (!main.includes('loadPerimeterFenceAsset') || !main.includes('perimeterFenceDetailEnabledForPreset') || !main.includes('modular_chainlink_fence_double')) {
     errors.push('CC0 modular chain-link fence must remain lazy-loaded from the bounded authored double-panel mesh.');
+  }
+
+  if (!(await pathExists(deskManifestPath))) {
+    errors.push('CC0 metal office desk manifest is missing.');
+    return;
+  }
+  let deskManifest;
+  try {
+    deskManifest = JSON.parse(await readFile(deskManifestPath, 'utf8'));
+  } catch (error) {
+    errors.push(`CC0 metal office desk manifest is invalid: ${error.message}`);
+    return;
+  }
+  if (deskManifest?.source?.license !== 'CC0-1.0' || !Array.isArray(deskManifest?.source?.authors) || deskManifest.source.authors.length !== 1 || !String(deskManifest.source.authors[0]).includes('Ulan Cabanilla')) {
+    errors.push('CC0 metal office desk manifest must retain the Poly Haven CC0 license and Ulan Cabanilla credit.');
+  }
+  if (Number(deskManifest?.source?.sourceTriangles) !== 6898 || Number(deskManifest?.source?.runtimeDeskCount) !== 3) {
+    errors.push('CC0 metal office desk manifest must retain the bounded 6,898-triangle three-desk runtime budget.');
+  }
+  if (deskManifest?.runtime?.optional !== true || deskManifest?.runtime?.lazyAfterMissionReady !== true || deskManifest?.runtime?.precache !== false) {
+    errors.push('CC0 metal office desks must remain optional, post-readiness, non-precached High-tier dressing.');
+  }
+  for (const [relativePath, record] of Object.entries(deskManifest?.files ?? {})) {
+    const deskFile = resolve(deskRoot, relativePath);
+    if (!(await pathExists(deskFile))) {
+      errors.push(`CC0 metal office desk runtime file is missing: ${relativePath}`);
+      continue;
+    }
+    const metadata = await stat(deskFile);
+    if (metadata.size !== Number(record?.bytes)) errors.push(`CC0 metal office desk byte count mismatch: ${relativePath}`);
+    if ((await hashFile(deskFile, 'md5')) !== String(record?.md5 ?? '').toLowerCase()) errors.push(`CC0 metal office desk MD5 mismatch: ${relativePath}`);
+    if ((await hashFile(deskFile)) !== String(record?.sha256 ?? '').toLowerCase()) errors.push(`CC0 metal office desk SHA-256 mismatch: ${relativePath}`);
+  }
+  if (!main.includes('loadOfficeDeskAsset') || !main.includes('officeDeskDetailEnabledForPreset') || !main.includes('setProceduralDeskVisibility')) {
+    errors.push('CC0 metal office desks must remain lazy-loaded High-tier replacements for the procedural facility desks.');
   }
 }
 
