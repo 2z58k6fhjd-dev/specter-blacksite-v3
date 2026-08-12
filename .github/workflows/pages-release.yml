@@ -30,9 +30,16 @@ jobs:
         with:
           node-version: 20
 
+      # pnpm v11 is installed as a standalone binary. This avoids Corepack
+      # signature/cache drift on hosted runners while honoring the pinned lock.
+      - name: Install pinned pnpm
+        uses: pnpm/setup@v1
+        with:
+          version: 11.16.0
+          install: false
+
       - name: Install browser acceptance dependencies
         run: |
-          corepack enable
           pnpm install --frozen-lockfile
           pnpm exec playwright install --with-deps chromium
 

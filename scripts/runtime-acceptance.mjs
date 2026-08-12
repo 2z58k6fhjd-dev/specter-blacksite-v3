@@ -149,7 +149,7 @@ await test('graphics panel exposes every persistent user-facing control', () => 
 await test('Chromium acceptance is a required Pages pre-deploy gate', () => {
   check(/"qa:browser"\s*:\s*"playwright test"/.test(packageJson), 'Package scripts must expose the Chromium acceptance command.');
   check(/@playwright\/test/.test(packageJson) && /"three"\s*:\s*"0\.166\.1"/.test(packageJson), 'Browser acceptance must pin Playwright and the exact runtime Three.js version.');
-  check(/pnpm install --frozen-lockfile/.test(workflow) && /playwright install --with-deps chromium/.test(workflow), 'Pages CI must install its pinned browser test stack and Chromium.');
+  check(/uses: pnpm\/setup@v1/.test(workflow) && /version: 11\.16\.0/.test(workflow) && /pnpm install --frozen-lockfile/.test(workflow) && /playwright install --with-deps chromium/.test(workflow), 'Pages CI must install its pinned browser test stack and Chromium.');
   check(/Run Chromium mission acceptance[\s\S]*npm run qa:browser/.test(workflow), 'Browser acceptance must run before the release package and Pages deployment.');
   check(/actions\/upload-artifact@v4/.test(workflow) && /playwright-report/.test(workflow), 'Pages CI must preserve browser diagnostics for failed releases.');
   check(/mirrorPinnedThree/.test(browserTest) && /cdn\.jsdelivr\.net\/npm\/three@0\.166\.1/.test(browserTest), 'Browser tests must mirror the exact pinned CDN module locally for deterministic execution.');
