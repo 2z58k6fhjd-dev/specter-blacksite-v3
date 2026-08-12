@@ -8,7 +8,7 @@ mission wiring. It complements, rather than replaces, `qa:graphics` and
   graphics/voice persistence, the active GPU-memory estimate, and the AUTO
   capability/benchmark decision.
 - It protects the localhost-only QA entry routes for the breaker, exterior,
-  forest, storage, utility, and victory paths.
+  forest, storage, utility, voice, and victory paths.
 - It proves the input-to-action connections for firing, reload, chamber check,
   inspect, fire-mode selection, and the M9 switch; voice/subtitle routing; and
   the grounded enemy-death to pooled weapon/gear-drop handoff.
@@ -18,9 +18,16 @@ mission wiring. It complements, rather than replaces, `qa:graphics` and
 - It verifies that normal extraction remains gated by power, cleared hostiles,
   and arrival, then ends at the victory panel.
 
-The script uses source-level contracts because a headless WebGL browser is not
-available to GitHub Pages CI. It can also confirm that a local static server is
-serving the mission shell:
+The dependency-free script protects source-level contracts. It is now paired
+with `npm run qa:browser`, a Chromium acceptance suite run before every Pages
+deployment. The browser suite starts the same static-root server Pages uses and
+executes a Galaxy A16-class touch context plus desktop mission flows. It proves
+the rendered mission shell loads, Mobile Ultra Low selects the real low payload,
+touch interaction can restore power, weapon controls produce runtime feedback,
+and the full death/extraction path reaches victory. The dependency-free
+graphics gate separately validates every saved custom-control and query-override
+contract. Failure traces,
+screenshots, and video are retained by CI for 14 days.
 
 ```text
 node scripts/runtime-acceptance.mjs --url http://127.0.0.1:4175/
@@ -51,7 +58,7 @@ normal mission; they are not production cheat routes.
    transition is protected by the deterministic gate rather than inferred from
    a DOM label.
 
-## Latest local browser record (5.8.0-FIR-LOD)
+## Latest local browser record (5.13.0-BROWSER-ACCEPTANCE)
 
 On 2026-08-11, the local browser run completed all five spot checks:
 
@@ -68,9 +75,15 @@ On 2026-08-11, the local browser run completed all five spot checks:
   `12 HOSTILES NEUTRALIZED · POWER RESTORED · EXTRACTION REACHED` after the
   gate-run and pursuit callout.
 
-This evidence is scoped to the local in-app browser and does not claim real
-Intel HD 4600 hardware measurement, authored-animation visual fidelity, or
-mass-forest asset quality. Those require the separate visual/hardware checks.
+The 5.13 Chromium acceptance suite also completed its three critical flows on
+2026-08-11: mobile touch/power, a weapon action plus radio call, and the victory
+handoff. The full run took about eight minutes under software rendering. CI now
+runs that suite before packaging or deployment and retains browser evidence on
+failure.
+
+This evidence is scoped to a local Chromium renderer and does not claim real
+Galaxy A16 or Intel HD 4600 hardware measurement, authored-animation visual
+fidelity, or mass-forest asset quality. Those require separate device checks.
 
 ## 5.9.0 audio follow-up
 

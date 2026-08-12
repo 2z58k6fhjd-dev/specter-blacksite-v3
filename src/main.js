@@ -2,12 +2,12 @@ import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.12.0-mobile-ultra-low';
-import { buildWorldOverhaul } from './world-overhaul.js?v=5.12.0-mobile-ultra-low';
-import { EnemyAISystem } from './enemy-ai.js?v=5.12.0-mobile-ultra-low';
-import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS,SPATIAL_UPSCALE_FALLBACK_SCALE } from './graphics-pipeline.js?v=5.12.0-mobile-ultra-low';
-import { createAudioDirector } from './audio-overhaul.js?v=5.12.0-mobile-ultra-low';
-import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.12.0-mobile-ultra-low';
+import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.13.0-browser-acceptance';
+import { buildWorldOverhaul } from './world-overhaul.js?v=5.13.0-browser-acceptance';
+import { EnemyAISystem } from './enemy-ai.js?v=5.13.0-browser-acceptance';
+import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS,SPATIAL_UPSCALE_FALLBACK_SCALE } from './graphics-pipeline.js?v=5.13.0-browser-acceptance';
+import { createAudioDirector } from './audio-overhaul.js?v=5.13.0-browser-acceptance';
+import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.13.0-browser-acceptance';
 
 const graphicsCustomStorageKey='specter-custom-graphics';
 const voiceSettingsStorageKey='specter-voice-settings';
@@ -2359,6 +2359,14 @@ function applyLocalQA(){
   if(localQAMode==='breaker'){camera.position.set(-5.98,1.72,5.4);camera.rotation.set(0,Math.PI/2,0);previousAIPlayerPosition.copy(camera.position)}
   if(localQAMode==='storage'){restorePower();camera.position.set(-5.95,1.72,-98);camera.rotation.set(0,Math.PI/2,0);previousAIPlayerPosition.copy(camera.position)}
   if(localQAMode==='utility'){restorePower();camera.position.set(0,1.72,-166);camera.rotation.set(0,0,0);previousAIPlayerPosition.copy(camera.position)}
+  if(localQAMode==='voice'){
+    restorePower();
+    const speaker=enemies.find(enemy=>!enemy.userData.dead);
+    if(speaker){
+      camera.position.copy(speaker.position).add(new THREE.Vector3(0,playerEyeHeight,5.2));camera.lookAt(speaker.position.x,1.35,speaker.position.z);previousAIPlayerPosition.copy(camera.position);
+      queueEnemyVoice(speaker,{type:'contact',radio:true,radioMix:.6,enemyCooldown:9,squadCooldown:5.2,globalCooldown:2.1});
+    }
+  }
   if(localQAMode==='victory'){
     restorePower();for(const enemy of enemies){if(!enemy.userData.dead){const deathDirection=enemyReactionDirection(enemy);enemy.userData.health=0;enemy.userData.ai?.setHealth(0);beginEnemyDeath(enemy,deathDirection,{duration:1.18});kills++}}
     camera.position.copy(extractionPoint);previousAIPlayerPosition.copy(camera.position);hud();

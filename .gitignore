@@ -3,3 +3,9 @@
 
 # Python bytecode is produced only while rebuilding local texture derivatives.
 scripts/__pycache__/
+
+# Browser acceptance output is recreated per run.
+node_modules/
+playwright-report/
+test-results/
+debug.log

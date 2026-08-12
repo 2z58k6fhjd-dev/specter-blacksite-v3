@@ -30,6 +30,12 @@ jobs:
         with:
           node-version: 20
 
+      - name: Install browser acceptance dependencies
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
+
       - name: Validate syntax, asset closure, and licenses
         run: npm run validate:release
 
@@ -41,6 +47,20 @@ jobs:
 
       - name: Check runtime acceptance contracts
         run: npm run qa:runtime
+
+      - name: Run Chromium mission acceptance
+        run: npm run qa:browser
+
+      - name: Preserve browser evidence on failure
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-acceptance-${{ github.sha }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Package the tested repository revision
         env:

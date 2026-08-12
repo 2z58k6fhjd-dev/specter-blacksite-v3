@@ -1,7 +1,8 @@
 {
   "name": "specter-blacksite",
   "private": true,
-  "version": "5.12.0",
+  "version": "5.13.0",
+  "packageManager": "pnpm@11.16.0",
   "type": "module",
   "description": "Static SPECTER: Blacksite release verification and GitHub Pages packaging.",
   "engines": {
@@ -13,8 +14,13 @@
     "qa:graphics": "node scripts/graphics-qa.mjs",
     "qa:gameplay": "node scripts/gameplay-qa.mjs",
     "qa:runtime": "node scripts/runtime-acceptance.mjs",
+    "qa:browser": "playwright test",
     "package:release": "node scripts/release.mjs package",
     "verify:release": "node scripts/release.mjs verify",
     "release:check": "npm run validate:release && npm run qa:graphics && npm run qa:gameplay && npm run qa:runtime && npm run package:release && npm run verify:release"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.0",
+    "three": "0.166.1"
   }
 }

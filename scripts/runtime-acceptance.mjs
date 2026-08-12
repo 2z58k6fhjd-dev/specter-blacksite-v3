@@ -22,7 +22,12 @@ const paths = Object.freeze({
   world: resolve(ROOT, 'src/world-overhaul.js'),
   audio: resolve(ROOT, 'src/audio-overhaul.js'),
   tactical: resolve(ROOT, 'src/tactical-animation.js'),
-  index: resolve(ROOT, 'index.html')
+  index: resolve(ROOT, 'index.html'),
+  browser: resolve(ROOT, 'tests/browser-acceptance.spec.mjs'),
+  browserConfig: resolve(ROOT, 'playwright.config.mjs'),
+  browserServer: resolve(ROOT, 'scripts/browser-acceptance-server.mjs'),
+  workflow: resolve(ROOT, '.github/workflows/pages-release.yml'),
+  package: resolve(ROOT, 'package.json')
 });
 
 let checks = 0;
@@ -100,7 +105,7 @@ function functionBody(source, name) {
   throw new Error(`Function ${name} has no closing brace.`);
 }
 
-const [main, world, audio, tactical, index] = await Promise.all(
+const [main, world, audio, tactical, index, browserTest, browserConfig, browserServer, workflow, packageJson] = await Promise.all(
   Object.values(paths).map(path => readFile(path, 'utf8'))
 );
 
@@ -141,6 +146,20 @@ await test('graphics panel exposes every persistent user-facing control', () => 
   check(/renderGraphicsMemoryEstimate\(graphicsCustomDraft\(\)\)/.test(main), 'The GPU estimate must update while the render-scale slider is adjusted.');
 });
 
+await test('Chromium acceptance is a required Pages pre-deploy gate', () => {
+  check(/"qa:browser"\s*:\s*"playwright test"/.test(packageJson), 'Package scripts must expose the Chromium acceptance command.');
+  check(/@playwright\/test/.test(packageJson) && /"three"\s*:\s*"0\.166\.1"/.test(packageJson), 'Browser acceptance must pin Playwright and the exact runtime Three.js version.');
+  check(/pnpm install --frozen-lockfile/.test(workflow) && /playwright install --with-deps chromium/.test(workflow), 'Pages CI must install its pinned browser test stack and Chromium.');
+  check(/Run Chromium mission acceptance[\s\S]*npm run qa:browser/.test(workflow), 'Browser acceptance must run before the release package and Pages deployment.');
+  check(/actions\/upload-artifact@v4/.test(workflow) && /playwright-report/.test(workflow), 'Pages CI must preserve browser diagnostics for failed releases.');
+  check(/mirrorPinnedThree/.test(browserTest) && /cdn\.jsdelivr\.net\/npm\/three@0\.166\.1/.test(browserTest), 'Browser tests must mirror the exact pinned CDN module locally for deterministic execution.');
+  check(/SM-A166B/.test(browserTest) && browserTest.includes('[data-touch-action="use"]'), 'Browser tests must include a Galaxy A16-style touch and breaker flow.');
+  check(/qa=voice/.test(browserTest) && /enemySubtitle/.test(browserTest), 'Browser tests must observe a real scheduled enemy radio subtitle.');
+  check(/qa=victory/.test(browserTest) && /victoryPanel/.test(browserTest), 'Browser tests must observe the grounded-death extraction path reaching victory.');
+  check(/matching GitHub Pages path behavior/.test(browserServer) && /cache-control/.test(browserServer), 'Browser acceptance must serve the same static-root shape as Pages.');
+  check(/timeout: 240_000/.test(browserConfig) && /workers: 1/.test(browserConfig), 'Browser acceptance must retain a stable bounded CI timing budget.');
+});
+
 await test('AUTO evaluates real capability inputs and keeps a conservative fallback', () => {
   const recommendSource = functionBody(main, 'recommendedGraphicsQuality');
   const recommend = Function(`"use strict";${recommendSource};return recommendedGraphicsQuality;`)();
@@ -162,13 +181,14 @@ await test('AUTO evaluates real capability inputs and keeps a conservative fallb
 await test('localhost-only QA routes drive the real breaker, exterior, forest, and victory entries', () => {
   check(/const localQAMode=\(location\.hostname==='127\.0\.0\.1'\|\|location\.hostname==='localhost'\)\?new URLSearchParams\(location\.search\)\.get\('qa'\):null/.test(main), 'QA routes must remain unavailable on the published game.');
   const applyQA = functionBody(main, 'applyLocalQA');
-  for (const mode of ['exterior', 'forest', 'breaker', 'storage', 'utility', 'victory']) {
+  for (const mode of ['exterior', 'forest', 'breaker', 'storage', 'utility', 'voice', 'victory']) {
     check(applyQA.includes(`localQAMode==='${mode}'`), `Local QA route ${mode} is missing.`);
   }
   check(/startButton\.onclick=.*?ensureAudio\(\);applyLocalQA\(\);/s.test(main), 'QA setup must run only after the actual mission start path and audio activation.');
   const interact = functionBody(main, 'interact');
   check(/raycaster\.setFromCamera\(new THREE\.Vector2\(\),camera\)/.test(interact), 'Breaker use must raycast from the first-person center view.');
   check(/h&&h\.distance<2\.7/.test(interact), 'Breaker use must retain a close-range constraint.');
+  check(/localQAMode==='voice'[\s\S]*queueEnemyVoice\(speaker,\{type:'contact',radio:true/.test(applyQA), 'Voice QA must use the real enemy voice scheduler and radio route after audio activation.');
   const restore = functionBody(main, 'restorePower');
   check(/worldOverhaul\.setPowered\(true\)/.test(restore), 'Breaker use must power the environment.');
   check(/EXIT UNLOCKING/.test(restore), 'Breaker use must advance the mission objective.');
