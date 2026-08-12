@@ -1,0 +1,17 @@
+S.W.A.T. OPERATOR — METADATA-ONLY LICENSE RECORD
+
+Status: NO ORIGINAL BINARY, TEXTURE, MESH, RIG, OR DERIVATIVE IS STORED HERE.
+
+Source page:
+https://sketchfab.com/3d-models/swat-operator-9e82fabf26194896b5ad4a364d864eab
+
+Creator shown on the source page: SpatialNeglect
+Observed source-page license record: Creative Commons Attribution 4.0 / CC BY
+4.0, recorded in SPECTER's existing research catalog and pending direct archive
+confirmation.
+
+This is an eligibility signal, not a substitute for the original archive's
+license or dependency credits. Promotion requires a preserved archive, hash,
+archive-provided license/credit text, and review of all textures/materials and
+any third-party components. Reject the candidate if that review does not retain
+an unbroken CC0/CC-BY attribution chain.
