@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'specter-blacksite-overhaul-foundation-';
-const CACHE_VERSION = 'v580-fir-lod';
+const CACHE_VERSION = 'v510-graphics-resolution-fps';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 
 // The application shell is deliberately small and atomic: if any of these files
@@ -139,6 +139,10 @@ const OPTIONAL_PRECACHE_URLS = [
   './assets/audio/cc-by-3.0-tabasco/LICENSE.txt',
   './assets/audio/cc-by-3.0-tabasco/rifle-sks-01.wav',
   './assets/audio/cc-by-3.0-tabasco/pistol-cz-01.wav',
+  './assets/audio/cc0-zer0-sol-handgun-reload/LICENSE.txt',
+  './assets/audio/cc0-zer0-sol-handgun-reload/README.md',
+  './assets/audio/cc0-zer0-sol-handgun-reload/ORIGINAL.sha256',
+  './assets/audio/cc0-zer0-sol-handgun-reload/reload.wav',
   './assets/audio/cc0-kenney-voiceover/README.md',
   './assets/audio/cc0-kenney-voiceover/License.txt',
   './assets/audio/cc0-kenney-voiceover/Credits.txt',

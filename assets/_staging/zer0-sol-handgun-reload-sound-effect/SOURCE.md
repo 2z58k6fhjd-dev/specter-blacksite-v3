@@ -2,8 +2,10 @@
 
 ## State
 
-**Metadata-only CC0 audio candidate.** No `reload.wav`, archive, trimmed stem,
-transcode, or runtime import is stored in this directory.
+**Promoted source record.** This staging directory remains metadata-only; the
+unmodified original `reload.wav` is stored and used from
+`assets/audio/cc0-zer0-sol-handgun-reload/`. Its local provenance record retains
+the direct URL, CC0 receipt, and SHA-256.
 
 ## Source-page record
 
@@ -17,16 +19,14 @@ transcode, or runtime import is stored in this directory.
 | Page-reported file | `reload.wav` (280.6 KB) |
 | Page description | Handgun magazine drop, new magazine insertion, and slide rack |
 | Page attribution note | No attribution required; optional credit welcomed |
-| Intended SPECTER use | M9-style empty-reload timing/mix study only, pending waveform and mechanism review |
+| Intended SPECTER use | Quiet full-sequence layer for the M9-style empty reload only; marker-timed magazine and slide feedback remains active beneath it |
 
 ## Required evidence before promotion
 
-1. Preserve the untouched `reload.wav`, source URL/date, upstream license record,
-   and SHA-256 before opening it in an editor.
-2. Confirm whether the page description matches audible event boundaries.  A
-   single recorded sequence must not be arbitrarily split if it creates clicks,
-   false timing, or unnatural tails.
-3. If layers are derived, document every edit point, fade, gain/peak target,
-   codec, source/output hash, and animation marker.
-4. Test the chosen result against actual M9 magazine and slide events; its source
-   description is not proof of a specific firearm, mechanism, or animation.
+1. Preserve the untouched source, URL/date, upstream license record, and SHA-256
+   before opening it in an editor. This promotion keeps the source unmodified.
+2. Keep the sequence intact unless a later edit is explicitly documented with
+   edit points, fade/gain targets, codec, and source/output hashes.
+3. Keep the layer restricted to M9-style empty reloads and preserve the authored
+   magazine/slide marker feedback; the page description is not proof of a
+   specific firearm, mechanism, or animation.

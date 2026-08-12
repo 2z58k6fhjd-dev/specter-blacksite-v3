@@ -120,9 +120,12 @@ function addForestBackdrop(scene,groundMaterial,firCards=[]){
   const forest=new THREE.Group();forest.name='pnw-perimeter-forest';
   // Dense instancing owns the broad canopy. These six sparse, fully authored
   // CC0 fir saplings are a close-range detail layer only: each uses a real
-  // PBR glTF LOD0/LOD1 pair and falls through to the shared card LOD2.
+  // PBR glTF LOD0/LOD1 pair and falls through to the shared card LOD2.  A
+  // second, bounded LOD1-only instanced band adds genuine mesh detail through
+  // the mid distance without turning the perimeter into a raw-tree-mesh wall.
   const heroSaplingGroup=new THREE.Group();heroSaplingGroup.name='cc0-fir-sapling-hero-lods';forest.add(heroSaplingGroup);
-  const heroSaplings=[];let heroEnabled=false,forestShadows=true;
+  const instancedSaplingGroup=new THREE.Group();instancedSaplingGroup.name='cc0-fir-sapling-instanced-lod1-details';instancedSaplingGroup.visible=false;forest.add(instancedSaplingGroup);
+  const heroSaplings=[],instancedSaplingLayers=[];let heroEnabled=false,instancedSaplingsEnabled=false,forestShadows=true;
   // These are deliberately set behind the perimeter rather than directly on
   // it.  Each one gets a small scenic clearing so the real sapling silhouette
   // is not visually buried in the inexpensive cone/card canopy.  The first
@@ -133,9 +136,37 @@ function addForestBackdrop(scene,groundMaterial,firCards=[]){
     {x:-51.8,z:-114.6,rotation:.71,height:9.4,clearance:11.2},{x:51.7,z:-138.4,rotation:-.29,height:8.8,clearance:10.5},
     {x:-13.6,z:-191.6,rotation:.47,height:9.1,clearance:10.8},{x:15.8,z:-195.2,rotation:-.64,height:8.5,clearance:10.2}
   ];
+  // The first eight positions deliberately frame the close exterior sightline
+  // rather than sitting downrange behind the simple fallback canopy.  This
+  // lets High use six genuine LOD1 silhouettes around the first hero fir;
+  // Ultra and Extreme then add the rear and side rows. All are visual-only,
+  // outside the playable fence, and use the same screened Fir Sapling LOD1
+  // geometry in two instanced draws (one draw per glTF material part).
+  const instancedSaplingPlacements=[
+    {x:-58.4,z:-51.8,rotation:.21,height:7.8,clearance:5.1},{x:-58.7,z:-69.2,rotation:-.47,height:7.4,clearance:5},
+    {x:-67.8,z:-49.5,rotation:.66,height:7.9,clearance:5.2},{x:-68.4,z:-71.8,rotation:-.31,height:7.5,clearance:5},
+    {x:-75.2,z:-55.2,rotation:.49,height:7.2,clearance:4.8},{x:-75.8,z:-66.5,rotation:-.71,height:7.6,clearance:5},
+    {x:-83,z:-57.8,rotation:.32,height:7.3,clearance:5.1},{x:-83.4,z:-64.2,rotation:-.57,height:7.1,clearance:5},
+    {x:-58.4,z:-96.2,rotation:.74,height:6.9,clearance:4.7},{x:58.1,z:-118.7,rotation:-.18,height:7.2,clearance:4.8},
+    {x:-58.8,z:-150.7,rotation:.51,height:7,clearance:4.8},{x:57.9,z:-174.5,rotation:-.63,height:7.4,clearance:4.9},
+    {x:-43.5,z:-211.6,rotation:.13,height:6.8,clearance:4.6},{x:43.9,z:-215.8,rotation:-.82,height:7,clearance:4.7},
+    {x:-7.3,z:-213.4,rotation:.42,height:6.7,clearance:4.5},{x:8.4,z:-217.7,rotation:-.38,height:6.9,clearance:4.6}
+  ];
   const isHeroPresentationClear=(x,z,padding=0)=>heroPlacements.some(placement=>{
     const radius=placement.clearance+padding,dx=x-placement.x,dz=z-placement.z;return dx*dx+dz*dz<radius*radius;
   });
+  const isDetailedFirPresentationClear=(x,z,padding=0)=>isHeroPresentationClear(x,z,padding)||instancedSaplingPlacements.some(placement=>{
+    const radius=placement.clearance+padding,dx=x-placement.x,dz=z-placement.z;return dx*dx+dz*dz<radius*radius;
+  });
+  // The primary High-tier test/exterior view has a deliberate scenic window:
+  // compact cones remain a useful all-tier far-forest fallback, but they are
+  // not allowed to cover the real fir and card-based detail directly around
+  // this close composition. Those few cones are retained in a separate,
+  // lightweight fallback batch for Low/Intel and if optional card art fails.
+  const isHighTierScenicWindow=(x,z,padding=0)=>{
+    const width=30+padding,depth=23+padding,dx=(x+63)/width,dz=(z+60.5)/depth;
+    return dx*dx+dz*dz<1;
+  };
   // Reuse the already-loaded grass/soil PBR set, but scale this geometry's UVs
   // independently. The exterior's close-detail texel density therefore carries
   // into the much larger non-explorable forest floor without cloning texture
@@ -148,26 +179,32 @@ function addForestBackdrop(scene,groundMaterial,firCards=[]){
   const lowerNeedleMaterial=new THREE.MeshStandardMaterial({color:0x2e7139,emissive:0x0b2110,emissiveIntensity:.3,roughness:.97,metalness:0,flatShading:false});
   const upperNeedleMaterial=lowerNeedleMaterial.clone();upperNeedleMaterial.color.setHex(0x3d8145);upperNeedleMaterial.emissive.setHex(0x102912);
   const trunkGeometry=new THREE.CylinderGeometry(.28,.42,1,10,2),needleGeometry=new THREE.ConeGeometry(1,1,12,3);
-  const random=mulberry32(7716),nearTrees=[],midTrees=[],farTrees=[];
+  const random=mulberry32(7716),nearTrees=[],nearFallbackTrees=[],midTrees=[],midFallbackTrees=[],farTrees=[];
   const makeTree=(x,z,height)=>({x,z,height,crown:.78+random()*.52,rotation:random()*Math.PI*2,hue:.27+random()*.045,saturation:.22+random()*.18,lightness:.15+random()*.11});
   // The closest row sits beyond the physical fence. No tree mesh is added to
   // collision, so the existing readable combat boundary remains authoritative.
   for(let index=0;index<176;index++){
     const side=index%2?-1:1,x=side*(50+random()*18),z=-51-random()*132;
     const tree=makeTree(x,z,12+random()*12);
-    if(!isHeroPresentationClear(tree.x,tree.z,tree.crown*2.2))nearTrees.push(tree);
+    if(isHighTierScenicWindow(tree.x,tree.z,tree.crown*2.2))nearFallbackTrees.push(tree);
+    else if(!isDetailedFirPresentationClear(tree.x,tree.z,tree.crown*2.2))nearTrees.push(tree);
   }
   for(let index=0;index<348;index++){
     const x=(random()-.5)*204,z=-190-random()*104;
     const tree=makeTree(x,z,14+random()*15);
-    if(!isHeroPresentationClear(tree.x,tree.z,tree.crown*2.2))midTrees.push(tree);
+    if(isHighTierScenicWindow(tree.x,tree.z,tree.crown*2.2))midFallbackTrees.push(tree);
+    else if(!isDetailedFirPresentationClear(tree.x,tree.z,tree.crown*2.2))midTrees.push(tree);
   }
   for(let index=0;index<560;index++){
     const x=(random()-.5)*352,z=-286-random()*152;
     farTrees.push(makeTree(x,z,16+random()*19));
   }
-  const layers=[];
+  const layers=[],highTierFallbackLayers=[];
   const addLayer=(name,geometry,material,trees,transform,options={})=>{const mesh=addForestInstanceLayer(name,geometry,material,trees,transform,options);forest.add(mesh);layers.push(mesh);return mesh};
+  const addHighTierFallbackLayer=(name,geometry,material,trees,transform,options={})=>{
+    if(!trees.length)return null;
+    const mesh=addForestInstanceLayer(name,geometry,material,trees,transform,options);mesh.userData.highTierFallback=true;mesh.visible=false;forest.add(mesh);highTierFallbackLayers.push(mesh);return mesh;
+  };
   const trunkTransform=(tree,position,scale)=>{position.set(tree.x,tree.height*.36,tree.z);scale.set(tree.crown*.88,tree.height*.72,tree.crown*.88)};
   const lowerNeedleTransform=(tree,position,scale)=>{position.set(tree.x,tree.height*.42,tree.z);scale.set(tree.crown*2.75,tree.height*.56,tree.crown*2.75)};
   const middleNeedleTransform=(tree,position,scale)=>{position.set(tree.x,tree.height*.64,tree.z);scale.set(tree.crown*2.08,tree.height*.48,tree.crown*2.08)};
@@ -180,9 +217,16 @@ function addForestBackdrop(scene,groundMaterial,firCards=[]){
   addLayer('forest-near-lower-needles',needleGeometry,lowerNeedleMaterial,nearTrees,lowerNeedleTransform,{castShadow:true,receiveShadow:true,...lowerNeedleColor});
   addLayer('forest-near-middle-needles',needleGeometry,upperNeedleMaterial,nearTrees,middleNeedleTransform,{castShadow:true,receiveShadow:true,...upperNeedleColor});
   addLayer('forest-near-top-needles',needleGeometry,upperNeedleMaterial,nearTrees,topNeedleTransform,{castShadow:true,receiveShadow:true,...upperNeedleColor,colorOffset:.18});
+  addHighTierFallbackLayer('forest-near-scenic-fallback-trunks',trunkGeometry,trunkMaterial,nearFallbackTrees,trunkTransform,{castShadow:true,receiveShadow:true,...trunkColor});
+  addHighTierFallbackLayer('forest-near-scenic-fallback-lower-needles',needleGeometry,lowerNeedleMaterial,nearFallbackTrees,lowerNeedleTransform,{castShadow:true,receiveShadow:true,...lowerNeedleColor});
+  addHighTierFallbackLayer('forest-near-scenic-fallback-middle-needles',needleGeometry,upperNeedleMaterial,nearFallbackTrees,middleNeedleTransform,{castShadow:true,receiveShadow:true,...upperNeedleColor});
+  addHighTierFallbackLayer('forest-near-scenic-fallback-top-needles',needleGeometry,upperNeedleMaterial,nearFallbackTrees,topNeedleTransform,{castShadow:true,receiveShadow:true,...upperNeedleColor,colorOffset:.18});
   addLayer('forest-mid-trunks',trunkGeometry,trunkMaterial,midTrees,trunkTransform,trunkColor);
   addLayer('forest-mid-lower-needles',needleGeometry,lowerNeedleMaterial,midTrees,lowerNeedleTransform,lowerNeedleColor);
   addLayer('forest-mid-top-needles',needleGeometry,upperNeedleMaterial,midTrees,middleNeedleTransform,upperNeedleColor);
+  addHighTierFallbackLayer('forest-mid-scenic-fallback-trunks',trunkGeometry,trunkMaterial,midFallbackTrees,trunkTransform,trunkColor);
+  addHighTierFallbackLayer('forest-mid-scenic-fallback-lower-needles',needleGeometry,lowerNeedleMaterial,midFallbackTrees,lowerNeedleTransform,lowerNeedleColor);
+  addHighTierFallbackLayer('forest-mid-scenic-fallback-top-needles',needleGeometry,upperNeedleMaterial,midFallbackTrees,middleNeedleTransform,upperNeedleColor);
   addLayer('forest-far-needles',needleGeometry,upperNeedleMaterial,farTrees,farNeedleTransform,{...upperNeedleColor,colorOffset:.1});
 
   // The optional PBR card layer adds a detailed High/Ultra/Extreme silhouette
@@ -203,7 +247,7 @@ function addForestBackdrop(scene,groundMaterial,firCards=[]){
     // Preserve the detailed hero's silhouette at High+ while still consuming
     // the deterministic candidate sequence.  Low/Intel never build these
     // cards and keep their existing lightweight cone-only path.
-    if(!isHeroPresentationClear(tree.x,tree.z,tree.width*.5))photoTrees.push(tree);
+    if(!isDetailedFirPresentationClear(tree.x,tree.z,tree.width*.5))photoTrees.push(tree);
   };
   // Keep these scenic cards just outside the perimeter and clear of the
   // extraction gate's sightline. They are never inserted into collision.
@@ -241,7 +285,22 @@ function addForestBackdrop(scene,groundMaterial,firCards=[]){
     if(typeof value==='number'&&Number.isFinite(value))return THREE.MathUtils.clamp(value,0,1);
     return ({off:0,low:.24,medium:.58,high:.84,ultra:.94,extreme:1}[String(value||'').toLowerCase()]??.84);
   };
-  const activeTreeCounts={near:0,mid:0,far:0,photo:0,hero:0};
+  const DETAIL_SAPLING_MAX_DISTANCE=124,DETAIL_SAPLING_RECHECK_DISTANCE=1.75;
+  const activeTreeCounts={near:0,mid:0,far:0,photo:0,hero:0,detail:0};
+  const instancedSaplingLastCameraPosition=new THREE.Vector3();
+  let instancedSaplingDesiredCount=0,instancedSaplingLastSelection='',instancedSaplingHasCameraPosition=false,instancedSaplingSelectionDirty=true;
+  function highTierFirStats(){
+    return {
+      source:'Poly Haven Fir Sapling (CC0)',highTierOnly:true,
+      heroLodInstances:heroSaplings.length,instancedLod1Capacity:instancedSaplingLayers.length?instancedSaplingPlacements.length:0,
+      instancedLod1Desired:instancedSaplingDesiredCount,instancedLod1Active:activeTreeCounts.detail,
+      instancedLod1MaxDistance:DETAIL_SAPLING_MAX_DISTANCE,enabled:instancedSaplingsEnabled
+    };
+  }
+  function publishHighTierFirStats(){
+    const stats=highTierFirStats();forest.userData.cc0FirSaplingLodStats=stats;
+    instancedSaplingGroup.userData={...stats,forestLod:'lod1-detail-band',usesInstancing:true};
+  }
   function setHeroShadows(){
     for(const lod of heroSaplings){
       for(const [level,entry] of lod.levels.entries())entry.object.traverse?.(object=>{
@@ -254,6 +313,31 @@ function addForestBackdrop(scene,groundMaterial,firCards=[]){
   function setHeroVisibility(){
     for(const lod of heroSaplings)lod.visible=Boolean(heroEnabled&&forest.visible);
     activeTreeCounts.hero=heroEnabled?heroSaplings.length:0;
+  }
+  function setInstancedSaplingSelection(camera=null,{force=false}={}){
+    if(!instancedSaplingLayers.length){activeTreeCounts.detail=0;publishHighTierFirStats();return}
+    if(!instancedSaplingsEnabled||!forest.visible){
+      instancedSaplingGroup.visible=false;activeTreeCounts.detail=0;instancedSaplingLastSelection='';instancedSaplingSelectionDirty=false;publishHighTierFirStats();return;
+    }
+    const position=camera?.position;
+    const moved=position&&(!instancedSaplingHasCameraPosition||instancedSaplingLastCameraPosition.distanceToSquared(position)>=DETAIL_SAPLING_RECHECK_DISTANCE*DETAIL_SAPLING_RECHECK_DISTANCE);
+    if(!force&&!instancedSaplingSelectionDirty&&!moved)return;
+    if(position){instancedSaplingLastCameraPosition.copy(position);instancedSaplingHasCameraPosition=true}
+    const candidates=instancedSaplingPlacements.map((placement,index)=>{
+      const dx=(position?.x??0)-placement.x,dz=(position?.z??0)-placement.z;
+      return {index,distanceSquared:dx*dx+dz*dz};
+    }).filter(candidate=>!position||candidate.distanceSquared<=DETAIL_SAPLING_MAX_DISTANCE*DETAIL_SAPLING_MAX_DISTANCE)
+      .sort((left,right)=>left.distanceSquared-right.distanceSquared||left.index-right.index)
+      .slice(0,instancedSaplingDesiredCount);
+    const selection=candidates.map(candidate=>candidate.index),selectionKey=selection.join(',');
+    if(force||instancedSaplingSelectionDirty||selectionKey!==instancedSaplingLastSelection){
+      for(const layer of instancedSaplingLayers){
+        for(const [slot,index] of selection.entries())layer.mesh.setMatrixAt(slot,layer.matrices[index]);
+        layer.mesh.count=selection.length;layer.mesh.visible=selection.length>0;layer.mesh.instanceMatrix.needsUpdate=true;
+      }
+      instancedSaplingLastSelection=selectionKey;
+    }
+    instancedSaplingGroup.visible=selection.length>0;activeTreeCounts.detail=selection.length;instancedSaplingSelectionDirty=false;publishHighTierFirStats();
   }
   function normalizeHeroLevel(object){
     object.updateWorldMatrix(true,true);
@@ -273,17 +357,37 @@ function addForestBackdrop(scene,groundMaterial,firCards=[]){
     const mesh=new THREE.Mesh(createConiferCardGeometry(),material);mesh.name='cc0-fir-sapling-lod2-pbr-card';
     mesh.scale.set(Math.max(size.x,size.z)*1.15,size.y,Math.max(size.x,size.z)*1.15);return mesh;
   }
+  function installInstancedSaplingDetails(lod1Source){
+    if(instancedSaplingLayers.length||!lod1Source)return instancedSaplingPlacements.length;
+    const source=lod1Source.clone(true),size=normalizeHeroLevel(source),matrix=new THREE.Matrix4(),placementMatrix=new THREE.Matrix4(),position=new THREE.Vector3(),scale=new THREE.Vector3(),quaternion=new THREE.Quaternion();
+    source.updateWorldMatrix(true,true);
+    let part=0;
+    source.traverse(object=>{
+      if(!object.isMesh||!object.geometry||!object.material)return;
+      const layer=new THREE.InstancedMesh(object.geometry,object.material,instancedSaplingPlacements.length),matrices=[];
+      layer.name=`cc0-fir-sapling-instanced-lod1-part-${++part}`;layer.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+      layer.userData={source:'polyhaven-fir-sapling',highTierOnly:true,forestLod:'lod1-detail-band',maxInstances:instancedSaplingPlacements.length,maxDistance:DETAIL_SAPLING_MAX_DISTANCE,usesInstancing:true};
+      for(const placement of instancedSaplingPlacements){
+        const instanceScale=placement.height/size.y;position.set(placement.x,0,placement.z);scale.setScalar(instanceScale);quaternion.setFromAxisAngle(up,placement.rotation);placementMatrix.compose(position,quaternion,scale);
+        matrix.multiplyMatrices(placementMatrix,object.matrixWorld);matrices.push(matrix.clone());layer.setMatrixAt(matrices.length-1,matrix);
+      }
+      layer.instanceMatrix.needsUpdate=true;layer.computeBoundingSphere();layer.castShadow=false;layer.receiveShadow=true;layer.visible=false;instancedSaplingGroup.add(layer);instancedSaplingLayers.push({mesh:layer,matrices});
+    });
+    instancedSaplingGroup.userData={source:'polyhaven-fir-sapling',highTierOnly:true,forestLod:'lod1-detail-band',usesInstancing:true,maxInstances:instancedSaplingPlacements.length,maxDistance:DETAIL_SAPLING_MAX_DISTANCE};
+    instancedSaplingSelectionDirty=true;setInstancedSaplingSelection(null,{force:true});return instancedSaplingPlacements.length;
+  }
   function installHeroSaplings(lod0Source,lod1Source){
     if(heroSaplings.length||!lod0Source||!lod1Source)return heroSaplings.length;
     const sourceLod0=lod0Source.clone(true),sourceLod1=lod1Source.clone(true),lod0Size=normalizeHeroLevel(sourceLod0),lod1Size=normalizeHeroLevel(sourceLod1);
     for(const [index,placement] of heroPlacements.entries()){
       const lod=new THREE.LOD();lod.name=`cc0-fir-sapling-hero-${index+1}`;lod.position.set(placement.x,0,placement.z);lod.rotation.y=placement.rotation;lod.autoUpdate=false;
-      const scale=placement.height/lod0Size.y,full=sourceLod0.clone(true),reduced=sourceLod1.clone(true),card=createHeroCard(lod0Size),hidden=new THREE.Object3D();
-      full.scale.multiplyScalar(scale);reduced.scale.multiplyScalar(scale);card.scale.multiplyScalar(scale);hidden.name='cc0-fir-sapling-lod3-hidden';
+      lod.userData={source:'polyhaven-fir-sapling',highTierOnly:true,lod0MaxDistance:42,lod1MaxDistance:88,lod2MaxDistance:150};
+      const fullScale=placement.height/lod0Size.y,reducedScale=placement.height/lod1Size.y,full=sourceLod0.clone(true),reduced=sourceLod1.clone(true),card=createHeroCard(lod0Size),hidden=new THREE.Object3D();
+      full.scale.multiplyScalar(fullScale);reduced.scale.multiplyScalar(reducedScale);card.scale.multiplyScalar(fullScale);hidden.name='cc0-fir-sapling-lod3-hidden';
       lod.addLevel(full,0);lod.addLevel(reduced,42);lod.addLevel(card,88);lod.addLevel(hidden,150);
       heroSaplingGroup.add(lod);heroSaplings.push(lod);
     }
-    setHeroShadows();setHeroVisibility();return heroSaplings.length;
+    installInstancedSaplingDetails(lod1Source);setHeroShadows();setHeroVisibility();setInstancedSaplingSelection(null,{force:true});return heroSaplings.length;
   }
   function setDensity(value,{photoEnabled=true}={}){
     const density=densityValue(value),fractions=density<=0?{near:0,mid:0,far:0}:{near:THREE.MathUtils.clamp((density-.24)/.76,0,1),mid:THREE.MathUtils.clamp((density-.08)/.92,0,1),far:Math.max(.18,density)};
@@ -295,19 +399,37 @@ function addForestBackdrop(scene,groundMaterial,firCards=[]){
     for(const layer of photoTreeLayers){
       const count=Math.round(layer.userData.maxInstances*photoFraction);layer.count=count;layer.visible=count>0;layer.material.opacity=.48+.52*photoFraction;photoTreeCount+=count;
     }
-    activeTreeCounts.near=Math.round(nearTrees.length*fractions.near);activeTreeCounts.mid=Math.round(midTrees.length*fractions.mid);activeTreeCounts.far=Math.round(farTrees.length*fractions.far);activeTreeCounts.photo=photoTreeCount;forest.visible=density>0;
+    // Keep the scenic-window cones for every lightweight tier and any
+    // fallback where cards are unavailable. High+ swaps the small batch out
+    // only after the optional real-fir geometry has actually installed: card
+    // art may arrive first (or the glTF may fail), and the cones must then
+    // remain as a stable scenic fallback rather than leaving a cleared gap.
+    const scenicDetailEnabled=Boolean(coniferCards.length&&photoEnabled&&density>=.72&&heroSaplings.length&&instancedSaplingLayers.length);
+    let nearFallbackCount=0,midFallbackCount=0;
+    for(const mesh of highTierFallbackLayers){
+      const lod=mesh.userData.forestLod,count=Math.round(mesh.userData.maxInstances*fractions[lod]);mesh.count=count;mesh.visible=Boolean(!scenicDetailEnabled&&count>0);
+      if(!scenicDetailEnabled&&lod==='near')nearFallbackCount+=count;
+      if(!scenicDetailEnabled&&lod==='mid')midFallbackCount+=count;
+    }
+    activeTreeCounts.near=Math.round(nearTrees.length*fractions.near)+nearFallbackCount;activeTreeCounts.mid=Math.round(midTrees.length*fractions.mid)+midFallbackCount;activeTreeCounts.far=Math.round(farTrees.length*fractions.far);activeTreeCounts.photo=photoTreeCount;forest.visible=density>0;
     heroEnabled=Boolean(photoEnabled&&density>=.72);setHeroVisibility();
-    return {density,near:activeTreeCounts.near,mid:activeTreeCounts.mid,far:activeTreeCounts.far,photo:activeTreeCounts.photo,hero:activeTreeCounts.hero,total:activeTreeCounts.near+activeTreeCounts.mid+activeTreeCounts.far+activeTreeCounts.photo+activeTreeCounts.hero};
+    // This is deliberately capped at sixteen LOD1 trees (about 636K source
+    // triangles in the worst all-visible case). High starts with a compact
+    // subset; Ultra and Extreme progressively reveal the rest.
+    instancedSaplingsEnabled=Boolean(photoEnabled&&density>=.72);instancedSaplingDesiredCount=instancedSaplingsEnabled?Math.round(instancedSaplingPlacements.length*THREE.MathUtils.smoothstep(density,.72,1)):0;
+    instancedSaplingSelectionDirty=true;setInstancedSaplingSelection(null,{force:true});
+    return {density,near:activeTreeCounts.near,mid:activeTreeCounts.mid,far:activeTreeCounts.far,photo:activeTreeCounts.photo,hero:activeTreeCounts.hero,detail:activeTreeCounts.detail,total:activeTreeCounts.near+activeTreeCounts.mid+activeTreeCounts.far+activeTreeCounts.photo+activeTreeCounts.hero+activeTreeCounts.detail};
   }
-  function setShadows(enabled){forestShadows=Boolean(enabled);for(const mesh of layers)mesh.castShadow=Boolean(forestShadows&&mesh.userData.forestCastsShadow);setHeroShadows()}
+  function setShadows(enabled){forestShadows=Boolean(enabled);for(const mesh of [...layers,...highTierFallbackLayers])mesh.castShadow=Boolean(forestShadows&&mesh.userData.forestCastsShadow);setHeroShadows()}
   function updateHeroLods(camera){
-    if(!heroEnabled||!camera)return;
+    if(!camera)return;
     // LOD selection happens before the renderer's scene traversal.  Keep the
     // camera matrix current so an input-frame movement cannot show a stale
     // level during the close forest inspection route.
-    camera.updateMatrixWorld?.();for(const lod of heroSaplings)lod.update(camera);
+    camera.updateMatrixWorld?.();if(heroEnabled)for(const lod of heroSaplings)lod.update(camera);setInstancedSaplingSelection(camera);
   }
-  return {group:forest,layers,setDensity,setShadows,installHeroSaplings,updateHeroLods,get activeTreeCounts(){return {...activeTreeCounts}}};
+  publishHighTierFirStats();
+  return {group:forest,layers,setDensity,setShadows,installHeroSaplings,updateHeroLods,get activeTreeCounts(){return {...activeTreeCounts}},get highTierFirStats(){return highTierFirStats()}};
 }
 
 function createBarrier(material,x,z,rotation=0){

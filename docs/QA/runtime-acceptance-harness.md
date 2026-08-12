@@ -12,6 +12,9 @@ mission wiring. It complements, rather than replaces, `qa:graphics` and
 - It proves the input-to-action connections for firing, reload, chamber check,
   inspect, fire-mode selection, and the M9 switch; voice/subtitle routing; and
   the grounded enemy-death to pooled weapon/gear-drop handoff.
+- It protects the optional CC0 M9 empty-reload foley path: the full sequence
+  must decode through the mechanism loader, sustain through its terminal fade,
+  and remain layered under the marker-synced magazine/slide fallback.
 - It verifies that normal extraction remains gated by power, cleared hostiles,
   and arrival, then ends at the victory panel.
 
@@ -68,3 +71,11 @@ On 2026-08-11, the local browser run completed all five spot checks:
 This evidence is scoped to the local in-app browser and does not claim real
 Intel HD 4600 hardware measurement, authored-animation visual fidelity, or
 mass-forest asset quality. Those require the separate visual/hardware checks.
+
+## 5.9.0 audio follow-up
+
+On 2026-08-11, a clean local 5.9.0-FOREST-RUNTIME-AUDIO run reported
+`2 reports + 1 reload layer` after audio activation. The M9 empty-reload path
+completed with no console warnings or errors after the v590 cache update. This
+confirms fetch/decode/wiring and fallback continuity; final subjective mix and
+clipping evaluation remains a real-speaker/headphone check.

@@ -2,12 +2,12 @@ import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.8.0-fir-lod';
-import { buildWorldOverhaul } from './world-overhaul.js?v=5.8.0-fir-lod';
-import { EnemyAISystem } from './enemy-ai.js?v=5.8.0-fir-lod';
-import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS } from './graphics-pipeline.js?v=5.8.0-fir-lod';
-import { createAudioDirector } from './audio-overhaul.js?v=5.8.0-fir-lod';
-import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.8.0-fir-lod';
+import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.10.0-graphics-resolution-fps';
+import { buildWorldOverhaul } from './world-overhaul.js?v=5.10.0-graphics-resolution-fps';
+import { EnemyAISystem } from './enemy-ai.js?v=5.10.0-graphics-resolution-fps';
+import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS,SPATIAL_UPSCALE_FALLBACK_SCALE } from './graphics-pipeline.js?v=5.10.0-graphics-resolution-fps';
+import { createAudioDirector } from './audio-overhaul.js?v=5.10.0-graphics-resolution-fps';
+import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.10.0-graphics-resolution-fps';
 
 const graphicsCustomStorageKey='specter-custom-graphics';
 const voiceSettingsStorageKey='specter-voice-settings';
@@ -68,6 +68,7 @@ const assetProgress={ar15:0,m9:0,soldier:0,environment:0,props:0,audio:0};
 let requiredAssetFailure=false;
 const environmentTextures={};
 const weaponSamplePayloads={};
+const mechanismSamplePayloads={};
 const enemyVoiceSamplePayloads={};
 const footstepSamplePayloads={};
 let worldOverhaul=null;
@@ -85,7 +86,7 @@ const lowWeaponTextureCache=new WeakMap();
 const startButton=document.getElementById('startButton'),startPanel=document.getElementById('startPanel'),promptEl=document.getElementById('prompt');
 const graphicsButton=document.getElementById('graphicsButton'),graphicsQuickButton=document.getElementById('graphicsQuickButton');
 const graphicsPanel=document.getElementById('graphicsPanel'),graphicsCloseButton=document.getElementById('graphicsCloseButton'),graphicsHint=document.getElementById('graphicsHint');
-const graphicsResetButton=document.getElementById('graphicsResetButton'),graphicsRenderScale=document.getElementById('graphicsRenderScale'),graphicsRenderScaleValue=document.getElementById('graphicsRenderScaleValue'),graphicsTextureTier=document.getElementById('graphicsTextureTier'),graphicsShadowQuality=document.getElementById('graphicsShadowQuality'),graphicsVegetationDensity=document.getElementById('graphicsVegetationDensity'),graphicsSSAO=document.getElementById('graphicsSSAO'),graphicsSSR=document.getElementById('graphicsSSR'),graphicsBloom=document.getElementById('graphicsBloom'),graphicsAntialias=document.getElementById('graphicsAntialias'),graphicsGrass=document.getElementById('graphicsGrass'),graphicsFog=document.getElementById('graphicsFog'),graphicsVramEstimate=document.getElementById('graphicsVramEstimate');
+const graphicsResetButton=document.getElementById('graphicsResetButton'),graphicsRenderScale=document.getElementById('graphicsRenderScale'),graphicsRenderScaleValue=document.getElementById('graphicsRenderScaleValue'),graphicsResolution=document.getElementById('graphicsResolution'),graphicsTextureTier=document.getElementById('graphicsTextureTier'),graphicsShadowQuality=document.getElementById('graphicsShadowQuality'),graphicsVegetationDensity=document.getElementById('graphicsVegetationDensity'),graphicsSSAO=document.getElementById('graphicsSSAO'),graphicsSSR=document.getElementById('graphicsSSR'),graphicsBloom=document.getElementById('graphicsBloom'),graphicsAntialias=document.getElementById('graphicsAntialias'),graphicsGrass=document.getElementById('graphicsGrass'),graphicsFog=document.getElementById('graphicsFog'),graphicsRTR=document.getElementById('graphicsRTR'),graphicsRTShadows=document.getElementById('graphicsRTShadows'),graphicsRTGI=document.getElementById('graphicsRTGI'),graphicsFSR2=document.getElementById('graphicsFSR2'),graphicsRayStatus=document.getElementById('graphicsRayStatus'),graphicsVramEstimate=document.getElementById('graphicsVramEstimate');
 const enemySubtitle=document.getElementById('enemySubtitle'),voiceVolumeControl=document.getElementById('voiceVolume'),voiceVolumeValue=document.getElementById('voiceVolumeValue'),extractionFade=document.getElementById('extractionFade');
 const loadBar=document.getElementById('loadBar'),loadPercent=document.getElementById('loadPercent'),loadMessage=document.getElementById('loadMessage');
 const startupQualityKey='specter-graphics-quality';
@@ -138,10 +139,13 @@ try{startupRememberedQuality=localStorage.getItem(startupQualityKey)||''}catch{ 
 const startupGraphicsPreference=isGraphicsQualityChoice(startupQualityQuery)?startupQualityQuery:(isGraphicsQualityChoice(startupRememberedQuality)?startupRememberedQuality:AUTO_GRAPHICS_QUALITY);
 const startupGraphicsQuality=startupGraphicsPreference===AUTO_GRAPHICS_QUALITY?recommendedGraphicsQuality(startupGraphicsCapabilities):startupGraphicsPreference;
 const startupRuntimeGraphicsQuality=runtimeGraphicsQuality(startupGraphicsQuality);
+const startupTextureTier=bootGraphicsCustomSettings.textureTier||GRAPHICS_QUALITY_PRESETS[startupGraphicsQuality]?.textureTier||'standard';
 // Low is a true payload choice on a fresh load, not just a late material
 // downgrade. Keep the compact source images in use before GLTFLoader or the
 // environment texture loader gets a chance to decode their 2K/4K originals.
-const startupLowPayloadMode=startupGraphicsQuality==='intel'||bootGraphicsCustomSettings.textureTier==='low';
+const startupLowPayloadMode=startupGraphicsQuality==='intel'||startupTextureTier==='low';
+const startupMediumPayloadMode=startupTextureTier==='medium'&&!startupLowPayloadMode;
+const startupReducedTextureMode=startupLowPayloadMode||startupMediumPayloadMode;
 const environmentPbrEntries=Object.freeze([
   ['concreteAlbedo','concrete-albedo.webp'],['concreteNormal','concrete-normal.webp'],['concreteOrm','concrete-orm.webp'],
   ['paintedMetalAlbedo','painted-metal-albedo.webp'],['paintedMetalNormal','painted-metal-normal.webp'],['paintedMetalOrm','painted-metal-orm.webp'],
@@ -153,16 +157,18 @@ const environmentPbrEntries=Object.freeze([
   ['grassSoilAlbedo','grass-soil-albedo.webp'],['grassSoilNormal','grass-soil-normal.webp'],['grassSoilOrm','grass-soil-orm.webp']
 ]);
 let nativeEnvironment4KLoaded=false,nativeEnvironment4KManifestPromise=null,nativeEnvironment4KLoadPromise=null;
-function lowPayloadModelTextureUrl(url){
-  if(!startupLowPayloadMode)return url;
+function reducedPayloadModelTextureUrl(url){
+  if(!startupReducedTextureMode)return url;
   try{
     const absolute=new URL(url,location.href),path=decodeURIComponent(absolute.pathname);
     const match=path.match(/\/(assets\/(?:ar15|m9|soldier)\/textures\/[^?#]+|assets\/environment\/polyhaven-(?:concrete-road-barrier-02|plastic-container|power-box-01|steel-frame-shelves-01)\/textures\/[^?#]+)$/);
     if(!match)return url;
-    return new URL(`./assets/low-textures/${match[1].slice('assets/'.length)}`,location.href).href;
+    const root=startupLowPayloadMode?'low-textures':'medium-textures';
+    return new URL(`./assets/${root}/${match[1].slice('assets/'.length)}`,location.href).href;
   }catch{return url}
 }
-loader.manager.setURLModifier(lowPayloadModelTextureUrl);
+const lowPayloadModelTextureUrl=reducedPayloadModelTextureUrl;
+loader.manager.setURLModifier(reducedPayloadModelTextureUrl);
 function updateLoading(){
   const values=Object.values(assetProgress),value=values.reduce((a,b)=>a+b,0)/values.length;
   const pct=Math.round(value*100);
@@ -224,7 +230,7 @@ async function loadHighTierTreeCards(textureLoader){
 async function loadEnvironmentAssets(){
   status('environment','LOADING');
   const textureLoader=new THREE.TextureLoader();
-  let pbrRoot=startupLowPayloadMode?'./assets/low-textures/environment/pbr-v2':'./assets/environment/pbr-v2';
+  let pbrRoot=startupLowPayloadMode?'./assets/low-textures/environment/pbr-v2':startupMediumPayloadMode?'./assets/medium-textures/environment/pbr-v2':'./assets/environment/pbr-v2';
   const entries=environmentPbrEntries.map(([name,file])=>[name,`${pbrRoot}/${file}`]);
   let completed=0;
   try{
@@ -235,12 +241,12 @@ async function loadEnvironmentAssets(){
     // Required 2K (or Low) maps always arrive first. A malformed optional 4K
     // pack can therefore never strand the loading screen; its all-or-nothing
     // upgrade is attempted only after a complete base environment exists.
-    if(!startupLowPayloadMode&&startupRuntimeGraphicsQuality==='extreme')await ensureNativeEnvironment4K();
+    if(!startupReducedTextureMode&&startupRuntimeGraphicsQuality==='extreme')await ensureNativeEnvironment4K();
     // This generated foliage set is non-critical. A transient fetch must never
     // block the map or turn the low-end preset into an asset failure.
-    if(!startupLowPayloadMode)await loadHighTierTreeCards(textureLoader);
+    if(!startupReducedTextureMode)await loadHighTierTreeCards(textureLoader);
     environmentTextures.native4K=nativeEnvironment4KLoaded;
-    status('environment','LOADED',nativeEnvironment4KLoaded?'8 PBR families · native 4K maps':startupLowPayloadMode?'8 PBR families · 512px low payload':'8 PBR families · 23 maps');
+    status('environment','LOADED',nativeEnvironment4KLoaded?'8 PBR families · native 4K maps':startupLowPayloadMode?'8 PBR families · 512px low payload':startupMediumPayloadMode?'8 PBR families · 1K medium payload':'8 PBR families · 23 maps');
   }catch(error){
     console.error(error);requiredAssetFailure=true;assetProgress.environment=1;updateLoading();status('environment','FAILED',error.message);
   }
@@ -318,6 +324,7 @@ async function loadAudioAssets(){
   const entries=[
     {kind:'weapon',id:'rifle',url:'./assets/audio/cc-by-3.0-tabasco/rifle-sks-01.wav'},
     {kind:'weapon',id:'pistol',url:'./assets/audio/cc-by-3.0-tabasco/pistol-cz-01.wav'},
+    {kind:'mechanism',id:'pistol-empty-reload',url:'./assets/audio/cc0-zer0-sol-handgun-reload/reload.wav'},
     {kind:'voice',id:'contact:male',url:'./assets/audio/cc0-kenney-voiceover/Male-war_target_engaged.ogg'},
     {kind:'voice',id:'contact:female',url:'./assets/audio/cc0-kenney-voiceover/Female-war_target_engaged.ogg'},
     {kind:'voice',id:'investigate:male',url:'./assets/audio/cc0-kenney-voiceover/Male-war_look_out.ogg'},
@@ -338,14 +345,14 @@ async function loadAudioAssets(){
   const results=await Promise.allSettled(entries.map(async({kind,id,url})=>{
       const response=await fetch(url);
       if(!response.ok)throw new Error(`${id} returned ${response.status}`);
-      const target=kind==='weapon'?weaponSamplePayloads:kind==='voice'?enemyVoiceSamplePayloads:footstepSamplePayloads;
+      const target=kind==='weapon'?weaponSamplePayloads:kind==='mechanism'?mechanismSamplePayloads:kind==='voice'?enemyVoiceSamplePayloads:footstepSamplePayloads;
       target[id]=await response.arrayBuffer();
       completed++;assetProgress.audio=completed/entries.length;updateLoading();
   }));
   const failures=results.filter(result=>result.status==='rejected').length;
   assetProgress.audio=1;updateLoading();
-  const reports=Object.keys(weaponSamplePayloads).length,voices=Object.keys(enemyVoiceSamplePayloads).length,footsteps=Object.keys(footstepSamplePayloads).length;
-  if(reports||voices||footsteps)status('audio','LOADED',`${reports} reports + ${voices} CC0 voice lines + ${footsteps} footsteps${failures?` + ${failures} fallback`:''}`);
+  const reports=Object.keys(weaponSamplePayloads).length,mechanisms=Object.keys(mechanismSamplePayloads).length,voices=Object.keys(enemyVoiceSamplePayloads).length,footsteps=Object.keys(footstepSamplePayloads).length;
+  if(reports||mechanisms||voices||footsteps)status('audio','LOADED',`${reports} reports + ${mechanisms} reload layer + ${voices} CC0 voice lines + ${footsteps} footsteps${failures?` + ${failures} fallback`:''}`);
   else status('audio','LOADED','procedural fallback');
 }
 async function loadSetDressAsset(name,url,label='CC0 set-dressing prop'){
@@ -507,7 +514,7 @@ function graphicsRenderTargetEstimate(){
   }
   return {bytes,count:targets.size};
 }
-function graphicsMemoryEstimate(preset){
+function graphicsMemoryEstimate(preset,diagnostics=graphics?.getDiagnostics?.()){
   const textures=new Set(),geometries=new Set(),instanceBuffers=new Set(),skeletonBuffers=new Set();let textureBytes=0,geometryBytes=0,instanceBytes=0,skeletonBytes=0;
   scene.traverse(object=>{
     if(object.isMesh&&object.geometry&&!geometries.has(object.geometry)){
@@ -523,18 +530,22 @@ function graphicsMemoryEstimate(preset){
       if(texture?.isTexture&&!textures.has(texture)){textures.add(texture);textureBytes+=(image?.width||0)*(image?.height||0)*4*1.333}
     }
   });
-  const ratio=Math.min(devicePixelRatio||1,preset.pixelRatioCap||1),pixels=Math.max(1,innerWidth*innerHeight*ratio*ratio);
+  // Keep the estimate aligned with the active spatial fallback. Native FSR2 is
+  // not available on this WebGL renderer; selecting the compatibility control
+  // really does reduce renderer/composer resolution before browser upscale.
+  const outputWidth=Math.max(1,Number(diagnostics?.effectiveOutputWidth)||Math.round(innerWidth*Math.min(devicePixelRatio||1,preset.pixelRatioCap||1))),outputHeight=Math.max(1,Number(diagnostics?.effectiveOutputHeight)||Math.round(innerHeight*Math.min(devicePixelRatio||1,preset.pixelRatioCap||1))),pixels=outputWidth*outputHeight;
   const actualTargets=graphicsRenderTargetEstimate();
-  const targetCount=preset.postProcessing===false?0:2+(preset.ambientOcclusion?1:0)+(preset.screenSpaceReflections?5:0)+(preset.bloom?2:0);
+  const indirectLighting=Boolean(preset.ambientOcclusion||preset.rayTracedGlobalIllumination),reflections=Boolean(preset.screenSpaceReflections||preset.rayTracedReflections);
+  const targetCount=preset.postProcessing===false?0:2+(indirectLighting?1:0)+(reflections?5:0)+(preset.bloom?2:0);
   const targetBytes=actualTargets.bytes||pixels*8*targetCount;
   const shadowBytes=preset.shadows&&preset.shadowMapSize?(preset.shadowMapSize*preset.shadowMapSize*4*1.333):0;
   const totalBytes=textureBytes+geometryBytes+instanceBytes+skeletonBytes+targetBytes+shadowBytes;
-  return {textureMB:textureBytes/1048576,geometryMB:geometryBytes/1048576,instanceMB:instanceBytes/1048576,skeletonMB:skeletonBytes/1048576,targetMB:targetBytes/1048576,targetCount:actualTargets.count||targetCount,shadowMB:shadowBytes/1048576,totalMB:totalBytes/1048576};
+  return {textureMB:textureBytes/1048576,geometryMB:geometryBytes/1048576,instanceMB:instanceBytes/1048576,skeletonMB:skeletonBytes/1048576,targetMB:targetBytes/1048576,targetCount:actualTargets.count||targetCount,shadowMB:shadowBytes/1048576,totalMB:totalBytes/1048576,outputWidth,outputHeight};
 }
 function renderGraphicsMemoryEstimate(preset=graphics?.getDiagnostics?.().preset){
   if(!preset||!graphicsVramEstimate)return;
-  const estimate=graphicsMemoryEstimate(preset),total=estimate.totalMB>=1024?`${(estimate.totalMB/1024).toFixed(2)} GB`:`${Math.round(estimate.totalMB)} MB`;
-  graphicsVramEstimate.textContent=`EST. GPU MEMORY: ${total} · textures ${Math.round(estimate.textureMB)} MB · geometry ${Math.round(estimate.geometryMB)} MB · targets ${Math.round(estimate.targetMB)} MB · shadows ${Math.round(estimate.shadowMB)} MB`;
+  const diagnostics=graphics?.getDiagnostics?.(),estimate=graphicsMemoryEstimate(preset,diagnostics),total=estimate.totalMB>=1024?`${(estimate.totalMB/1024).toFixed(2)} GB`:`${Math.round(estimate.totalMB)} MB`,internal=`${estimate.outputWidth}×${estimate.outputHeight}`;
+  graphicsVramEstimate.textContent=`EST. GPU MEMORY: ${total} · internal ${internal} · textures ${Math.round(estimate.textureMB)} MB · geometry ${Math.round(estimate.geometryMB)} MB · targets ${Math.round(estimate.targetMB)} MB · shadows ${Math.round(estimate.shadowMB)} MB`;
 }
 function applyGraphicsHardwareBudget(quality,effectivePreset=null){
   const requestedPreset=effectivePreset||GRAPHICS_QUALITY_PRESETS[quality]||GRAPHICS_QUALITY_PRESETS.high;
@@ -542,10 +553,11 @@ function applyGraphicsHardwareBudget(quality,effectivePreset=null){
   // original 2K/4K images from decoding at all.  Preserve the currently loaded
   // material maps during a live High-to-Low change and make the reload need
   // explicit instead of replacing the world with blank stand-in materials.
-  const lowTexturesReloadPending=requestedPreset.textureTier==='low'&&!startupLowPayloadMode;
-  const highTexturesReloadPending=requestedPreset.textureTier!=='low'&&startupLowPayloadMode;
-  const textureReloadPending=lowTexturesReloadPending||highTexturesReloadPending;
-  const activeTextureTier=textureReloadPending?(startupLowPayloadMode?'low':'standard'):requestedPreset.textureTier;
+  const lowTexturesReloadPending=requestedPreset.textureTier==='low'&&startupTextureTier!=='low';
+  const mediumTexturesReloadPending=requestedPreset.textureTier==='medium'&&startupTextureTier!=='medium';
+  const highTexturesReloadPending=!['low','medium'].includes(requestedPreset.textureTier)&&startupReducedTextureMode;
+  const textureReloadPending=lowTexturesReloadPending||mediumTexturesReloadPending||highTexturesReloadPending;
+  const activeTextureTier=textureReloadPending?startupTextureTier:requestedPreset.textureTier;
   const preset=activeTextureTier===requestedPreset.textureTier?requestedPreset:{...requestedPreset,textureTier:activeTextureTier};
   const maxAnisotropy=renderer.capabilities.getMaxAnisotropy?.()||1;
   const anisotropy=Math.min(maxAnisotropy,requestedPreset.textureAnisotropy||1);
@@ -563,7 +575,7 @@ function applyGraphicsHardwareBudget(quality,effectivePreset=null){
     for(const material of materials)applyMaterialTextureTier(material,preset.textureTier,anisotropy,Boolean(object.userData.specterViewmodel)||keepLowPayloadTextures,releasedTextures);
   });
   const environmentIs4K=environmentPbrEntries.every(([name])=>Math.max(environmentTextures[name]?.image?.width||0,environmentTextures[name]?.image?.height||0)>=4096);
-  graphicsTextureStatus=lowTexturesReloadPending?'LOW 512 PBR ON RELOAD':highTexturesReloadPending?'HIGH TEXTURES ON RELOAD':preset.textureTier==='4k-preferred'?(environmentIs4K?'NATIVE 4K PBR':'2K PBR FALLBACK'):(preset.textureTier==='low'?'LOW-PAYLOAD 512 PBR':'2K PBR');
+  graphicsTextureStatus=lowTexturesReloadPending?'LOW 512 PBR ON RELOAD':mediumTexturesReloadPending?'MEDIUM 1K PBR ON RELOAD':highTexturesReloadPending?'HIGH TEXTURES ON RELOAD':preset.textureTier==='4k-preferred'?(environmentIs4K?'NATIVE 4K PBR':'2K PBR FALLBACK'):(preset.textureTier==='low'?'LOW-PAYLOAD 512 PBR':preset.textureTier==='medium'?'MEDIUM 1K PBR':'2K PBR');
   worldOverhaul?.setGraphicsQuality(quality,preset);
   updateForestFernsForGraphics(preset);
   updateForestHeroFirsForGraphics(preset);
@@ -590,25 +602,29 @@ status('graphics','LOADED',`${graphicsDiagnostics.preset.label} · ${graphicsDia
 function graphicsSummary(diagnostics=graphics.getDiagnostics()){
   const preset=diagnostics.preset;
   const mode=activeGraphicsPreference===AUTO_GRAPHICS_QUALITY?`AUTO → ${preset.label.toUpperCase()}`:activeGraphicsPreference!==diagnostics.quality?`${activeGraphicsPreference.toUpperCase()} SAFE FALLBACK → ${preset.label.toUpperCase()}`:preset.label.toUpperCase();
-  return `${mode} · ${diagnostics.ambientOcclusionEnabled?'SSAO':'DIRECT'}${diagnostics.screenSpaceReflectionsEnabled?' + SSR':''}${diagnostics.bloomEnabled?' + BLOOM':''} · ${graphicsTextureStatus}`;
+  const ray=diagnostics.rayTracing?.requestedReflections||diagnostics.rayTracing?.requestedShadows||diagnostics.rayTracing?.requestedGlobalIllumination?' · SCREEN-SPACE RT':'';
+  const fsr=diagnostics.upscaler?.spatialFallbackActive?' · SPATIAL UPSCALE':'';
+  return `${mode} · ${diagnostics.ambientOcclusionEnabled?'SSAO':'DIRECT'}${diagnostics.screenSpaceReflectionsEnabled?' + SSR':''}${diagnostics.bloomEnabled?' + BLOOM':''}${ray}${fsr} · ${graphicsTextureStatus}`;
 }
 function graphicsCustomDraft(){
   const shadowMapSize=Number(graphicsShadowQuality.value)||0,textureTier=graphicsTextureTier.value;
-  const requestedPostEffects=graphicsSSAO.checked||graphicsSSR.checked||graphicsBloom.checked;
+  const requestedPostEffects=graphicsSSAO.checked||graphicsSSR.checked||graphicsBloom.checked||graphicsRTR.checked||graphicsRTGI.checked;
   const basePostProcessing=GRAPHICS_QUALITY_PRESETS[graphicsDiagnostics?.quality]?.postProcessing!==false;
   return {
-    pixelRatioCap:Number(graphicsRenderScale.value),textureTier,textureAnisotropy:{low:1,standard:4,high:8,'4k-preferred':16}[textureTier]||4,
-    shadows:shadowMapSize>0,shadowMapSize,postProcessing:basePostProcessing||requestedPostEffects,ambientOcclusion:graphicsSSAO.checked,
-    screenSpaceReflections:graphicsSSR.checked,bloom:graphicsBloom.checked,grassEnabled:graphicsGrass.checked,
+    pixelRatioCap:Number(graphicsRenderScale.value),outputResolution:Number(graphicsResolution.value)||0,textureTier,textureAnisotropy:{low:1,medium:2,standard:4,high:8,'4k-preferred':16}[textureTier]||4,
+    shadows:shadowMapSize>0||graphicsRTShadows.checked,shadowMapSize:graphicsRTShadows.checked?Math.max(shadowMapSize,2048):shadowMapSize,postProcessing:basePostProcessing||requestedPostEffects,ambientOcclusion:graphicsSSAO.checked,
+    screenSpaceReflections:graphicsSSR.checked,bloom:graphicsBloom.checked,rayTracedReflections:graphicsRTR.checked,rayTracedShadows:graphicsRTShadows.checked,rayTracedGlobalIllumination:graphicsRTGI.checked,fsr2:graphicsFSR2.checked,grassEnabled:graphicsGrass.checked,
     forestDensity:graphicsVegetationDensity.value,fogEnabled:graphicsFog.checked
   };
 }
 function syncGraphicsCustomControls(diagnostics=graphics.getDiagnostics()){
   const preset=diagnostics.preset;
   graphicsRenderScale.value=String(preset.pixelRatioCap);graphicsRenderScaleValue.textContent=`${Number(preset.pixelRatioCap).toFixed(2)}×`;
+  graphicsResolution.value=String(Number(preset.outputResolution)||0);
   graphicsTextureTier.value=preset.textureTier||'standard';graphicsShadowQuality.value=String(preset.shadows?preset.shadowMapSize:0);
   graphicsVegetationDensity.value=['off','low','medium','high','ultra','extreme'].includes(preset.forestDensity)?preset.forestDensity:'medium';
   graphicsSSAO.checked=Boolean(preset.ambientOcclusion);graphicsSSR.checked=Boolean(preset.screenSpaceReflections);graphicsBloom.checked=Boolean(preset.bloom);
+  graphicsRTR.checked=Boolean(preset.rayTracedReflections);graphicsRTShadows.checked=Boolean(preset.rayTracedShadows);graphicsRTGI.checked=Boolean(preset.rayTracedGlobalIllumination);graphicsFSR2.checked=Boolean(preset.fsr2);
   graphicsGrass.checked=Boolean(preset.grassEnabled);graphicsFog.checked=preset.fogEnabled!==false;
   graphicsAntialias.checked=bootGraphicsCustomSettings.antialiasing!=='off';renderGraphicsMemoryEstimate(graphicsCustomDraft());
 }
@@ -616,8 +632,18 @@ function renderGraphicsControls(diagnostics=graphics.getDiagnostics()){
   graphicsDiagnostics=diagnostics;
   const summary=graphicsSummary(diagnostics);
   graphicsButton.textContent=`GRAPHICS: ${summary}`;
-  graphicsHint.textContent=`${summary} · ${diagnostics.effectivePixelRatio.toFixed(2)}× RENDER SCALE`;
+  const internalResolution=`${diagnostics.effectiveOutputWidth}×${diagnostics.effectiveOutputHeight}`;
+  const resolutionMode=diagnostics.outputResolutionMode==='fixed-height'?`${diagnostics.requestedOutputHeight}P LOCK`:'AUTO RESOLUTION';
+  graphicsHint.textContent=`${summary} · ${internalResolution} INTERNAL · ${resolutionMode}${diagnostics.outputResolutionLimited?' · GPU CLAMPED':''}`;
   graphicsQuickButton.textContent=`GFX · ${diagnostics.quality.toUpperCase()}`;
+  if(graphicsRayStatus){
+    const ray=diagnostics.rayTracing,upscaler=diagnostics.upscaler;
+    const reflection=ray.requestedReflections?`REFLECTIONS: ${ray.reflectionsMode.toUpperCase()}`:'REFLECTIONS: OFF';
+    const indirect=ray.requestedGlobalIllumination?`INDIRECT: ${ray.globalIlluminationMode.toUpperCase()}`:'INDIRECT: OFF';
+    const shadows=ray.requestedShadows?`SHADOWS: ${ray.shadowsMode.toUpperCase()}`:'SHADOWS: OFF';
+    const upscale=upscaler.spatialFallbackActive?`UPSCALE: SPATIAL ${Math.round(upscaler.spatialScale*100)}% (NOT FSR2)`:upscaler.spatialFallbackBypassed?'UPSCALE: FIXED RESOLUTION (NOT FSR2)':'UPSCALE: NATIVE SCALE';
+    graphicsRayStatus.textContent=`WEBGL COMPATIBILITY - ${reflection} - ${indirect} - ${shadows} - ${upscale}`;
+  }
   document.querySelectorAll('[data-quality]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.quality===activeGraphicsPreference)));
   syncGraphicsCustomControls(diagnostics);
   status('graphics','LOADED',summary);
@@ -687,7 +713,7 @@ graphicsQuickButton.onclick=()=>toggleGraphicsPanel();
 graphicsCloseButton.onclick=()=>toggleGraphicsPanel(false);
 document.querySelectorAll('[data-quality]').forEach(button=>button.onclick=()=>setGraphicsQuality(button.dataset.quality));
 graphicsRenderScale.oninput=()=>{graphicsRenderScaleValue.textContent=`${Number(graphicsRenderScale.value).toFixed(2)}×`;renderGraphicsMemoryEstimate(graphicsCustomDraft())};
-for(const control of [graphicsRenderScale,graphicsTextureTier,graphicsShadowQuality,graphicsVegetationDensity,graphicsSSAO,graphicsSSR,graphicsBloom,graphicsAntialias,graphicsGrass,graphicsFog])control.onchange=applyCustomGraphicsSettings;
+for(const control of [graphicsRenderScale,graphicsResolution,graphicsTextureTier,graphicsShadowQuality,graphicsVegetationDensity,graphicsSSAO,graphicsSSR,graphicsBloom,graphicsAntialias,graphicsGrass,graphicsFog,graphicsRTR,graphicsRTShadows,graphicsRTGI,graphicsFSR2])control.onchange=applyCustomGraphicsSettings;
 graphicsResetButton.onclick=resetCustomGraphicsSettings;
 renderGraphicsControls(graphicsDiagnostics);
 if(activeGraphicsPreference===AUTO_GRAPHICS_QUALITY)beginAutoGraphicsBenchmark();
@@ -851,7 +877,10 @@ function installRoadBarriers(){
 }
 function forestFernsEnabledForPreset(preset={}){
   const density=String(preset.forestDensity||'').toLowerCase();
-  return preset.textureTier!=='low'&&['high','ultra','extreme'].includes(density);
+  // Fern 02 uses raw 4K source maps. Keep the new Medium 1K profile honest:
+  // its dense forest remains procedural rather than silently streaming a 4K
+  // optional asset merely because the user raises vegetation density.
+  return ['high','4k-preferred'].includes(preset.textureTier)&&['high','ultra','extreme'].includes(density);
 }
 function installForestFerns(){
   if(forestFernsRoot)return forestFernsRoot.children.length;
@@ -904,7 +933,9 @@ function updateForestFernsForGraphics(preset={}){
 }
 function forestHeroFirsEnabledForPreset(preset={}){
   const density=String(preset.forestDensity||'').toLowerCase();
-  return preset.textureTier!=='low'&&['high','ultra','extreme'].includes(density);
+  // The hero LOD2 handoff uses the high-tier PBR card maps, which Medium
+  // intentionally does not fetch. Avoid loading a partial LOD chain there.
+  return ['standard','high','4k-preferred'].includes(preset.textureTier)&&['high','ultra','extreme'].includes(density);
 }
 async function loadForestHeroFirAssets(){
   const [lod0,lod1]=await Promise.all([
@@ -1717,16 +1748,17 @@ function updateEnemies(dt,t){
 
 function prepareRecordedAudio(){
   if(recordedAudioDecodePromise)return;
-  const reportCount=Object.keys(weaponSamplePayloads).length,voiceCount=Object.keys(enemyVoiceSamplePayloads).length,footstepCount=Object.keys(footstepSamplePayloads).length;
-  if(!reportCount&&!voiceCount&&!footstepCount)return;
+  const reportCount=Object.keys(weaponSamplePayloads).length,mechanismCount=Object.keys(mechanismSamplePayloads).length,voiceCount=Object.keys(enemyVoiceSamplePayloads).length,footstepCount=Object.keys(footstepSamplePayloads).length;
+  if(!reportCount&&!mechanismCount&&!voiceCount&&!footstepCount)return;
   recordedAudioDecodePromise=Promise.all([
     reportCount?audio.loadWeaponSamples(weaponSamplePayloads):Promise.resolve({loaded:[]}),
+    mechanismCount?audio.loadMechanismSamples(mechanismSamplePayloads):Promise.resolve({loaded:[]}),
     voiceCount?audio.loadEnemyVoiceSamples(enemyVoiceSamplePayloads):Promise.resolve({loaded:[]}),
     footstepCount?audio.loadFootstepSamples(footstepSamplePayloads):Promise.resolve({loaded:[]})
-  ]).then(([reports,voices,footsteps])=>{
-    if(reports.loaded.length||voices.loaded.length||footsteps.loaded.length)status('audio','LOADED',`${reports.loaded.length} reports + ${voices.loaded.length} CC0 voice lines + ${footsteps.loaded.length} footsteps`);
+  ]).then(([reports,mechanisms,voices,footsteps])=>{
+    if(reports.loaded.length||mechanisms.loaded.length||voices.loaded.length||footsteps.loaded.length)status('audio','LOADED',`${reports.loaded.length} reports + ${mechanisms.loaded.length} reload layer + ${voices.loaded.length} CC0 voice lines + ${footsteps.loaded.length} footsteps`);
     else status('audio','LOADED','procedural fallback');
-    return {reports,voices,footsteps};
+    return {reports,mechanisms,voices,footsteps};
   }).catch(error=>{console.warn('Recorded audio unavailable; procedural fallbacks remain active.',error);status('audio','LOADED','procedural fallback');return null});
 }
 function ensureAudio(){
@@ -1877,6 +1909,8 @@ function reload(){
   const reloadDuration=profile.reloadSeconds?.[empty?'empty':'tactical']??profile.reloadSeconds;
   viewmodelActionTimeline.start(action,{weapon:profile.family,duration:reloadDuration});
   viewmodelActionKind='reload';pendingReload={kind,cap,empty,loaded:false};reloadAnimationDuration=viewmodelActionTimeline.duration;reloadAnimationTime=0;reloading=true;
+  ensureAudio();
+  if(profile.family==='pistol'&&empty)audio.playRecordedMechanism('pistol-empty-reload',{gain:.34,targetDuration:reloadDuration});
   toast(empty?'EMPTY RELOAD':'TACTICAL RELOAD');
 }
 function chamberCheck(){
@@ -2043,7 +2077,19 @@ function hud(){
   ammoEl.textContent=`${ammo[currentWeapon]}/${reserve[currentWeapon]}`;
   lightState.textContent=lightOn?'ON':'OFF';powerState.textContent=powerOn?'ONLINE':'OFFLINE';secure.textContent=`${kills}/${enemies.length||3}`;
 }
-const hpEl=document.getElementById('hp'),armorEl=document.getElementById('armor'),weaponName=document.getElementById('weaponName'),ammoEl=document.getElementById('ammo'),lightState=document.getElementById('lightState'),powerState=document.getElementById('powerState'),secure=document.getElementById('secure');
+const hpEl=document.getElementById('hp'),armorEl=document.getElementById('armor'),weaponName=document.getElementById('weaponName'),ammoEl=document.getElementById('ammo'),lightState=document.getElementById('lightState'),powerState=document.getElementById('powerState'),secure=document.getElementById('secure'),fpsCounter=document.getElementById('fpsCounter');
+const fpsMeter={frames:0,seconds:0,lastFrameMs:0};
+function sampleFrameRate(rawDeltaSeconds){
+  if(!fpsCounter||!Number.isFinite(rawDeltaSeconds)||rawDeltaSeconds<=0)return;
+  // Do not let a tab-resume stall poison the displayed gameplay frame rate.
+  if(rawDeltaSeconds>.5){fpsMeter.frames=0;fpsMeter.seconds=0;return}
+  fpsMeter.frames++;fpsMeter.seconds+=rawDeltaSeconds;fpsMeter.lastFrameMs=rawDeltaSeconds*1000;
+  if(fpsMeter.seconds<.25)return;
+  const fps=Math.max(0,Math.round(fpsMeter.frames/fpsMeter.seconds));
+  fpsCounter.textContent=`${fps} · ${fpsMeter.lastFrameMs.toFixed(1)} MS`;
+  fpsCounter.dataset.performance=fps>=55?'good':fps>=30?'warn':'low';
+  fpsMeter.frames=0;fpsMeter.seconds=0;
+}
 const collisionPoint=new THREE.Vector3(),moveNext=new THREE.Vector3(),moveAxisX=new THREE.Vector3(),moveAxisZ=new THREE.Vector3();
 function canMove(next){
   const indoors=next.z>-44.45;
@@ -2235,6 +2281,7 @@ if(requiredAssetFailure){
 function animate(){
   requestAnimationFrame(animate);
   const rawDt=clock.getDelta(),dt=Math.min(rawDt,.05),t=clock.elapsedTime;
+  sampleFrameRate(rawDt);
   if(started){
     if(extractionSequence)updateExtractionSequence(dt,t);else move(dt);worldOverhaul.update(dt,camera);renderer.toneMappingExposure=THREE.MathUtils.lerp(1.02,.8,worldOverhaul.outdoorBlend);weaponFill.intensity=THREE.MathUtils.lerp(4.8,1.45,worldOverhaul.outdoorBlend);
     if(!exteriorEntered&&camera.position.z<-47){exteriorEntered=true;objective.textContent='OBJECTIVE: CLEAR THE CHECKPOINT AND PERIMETER';toast('EXTERIOR COMBAT ZONE ENTERED')}

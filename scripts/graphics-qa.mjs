@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const MAIN_PATH = resolve(ROOT, 'src/main.js');
 const PIPELINE_PATH = resolve(ROOT, 'src/graphics-pipeline.js');
+const RELEASE_PATH = resolve(ROOT, 'scripts/release.mjs');
 const LOW_MANIFEST_PATH = resolve(ROOT, 'assets/low-textures/manifest.json');
 const NATIVE_4K_MANIFEST_PATH = resolve(ROOT, 'assets/environment/pbr-v2-4k/manifest.json');
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp']);
@@ -116,9 +117,10 @@ function manifestMapFiles(manifest) {
     .filter(file => typeof file === 'string' && file.length));
 }
 
-const [main, pipeline] = await Promise.all([
+const [main, pipeline, release] = await Promise.all([
   readFile(MAIN_PATH, 'utf8'),
-  readFile(PIPELINE_PATH, 'utf8')
+  readFile(PIPELINE_PATH, 'utf8'),
+  readFile(RELEASE_PATH, 'utf8')
 ]);
 const environmentPbrFiles = sourceFileNameList(main);
 
@@ -157,7 +159,7 @@ await test('custom graphics controls remain clamped to supported settings', () =
   for (const [fieldName, range] of Object.entries(requiredRanges)) {
     check(pipeline.includes(`${fieldName}: ${range}`), `Custom range ${fieldName}: ${range} is missing.`);
   }
-  for (const tier of ['low', 'standard', 'high', '4k-preferred']) {
+  for (const tier of ['low', 'medium', 'standard', 'high', '4k-preferred']) {
     check(pipeline.includes(`'${tier}'`), `Custom texture tier ${tier} is missing.`);
   }
   for (const density of ['off', 'low', 'medium', 'high', 'ultra', 'extreme']) {
@@ -165,6 +167,45 @@ await test('custom graphics controls remain clamped to supported settings', () =
   }
   check(/THREE\.MathUtils\.clamp\(numeric,\s*range\[0\],\s*range\[1\]\)/.test(pipeline), 'Custom numeric settings must be clamped before use.');
   check(/graphicsCustomDraft\(\)/.test(main) && /applyCustomGraphicsSettings\(\)/.test(main), 'The UI must draft and apply custom settings.');
+  for (const field of ['rayTracedReflections', 'rayTracedShadows', 'rayTracedGlobalIllumination', 'fsr2']) {
+    check(pipeline.includes(`'${field}'`) && main.includes(field), `Experimental graphics control ${field} must be persisted and wired.`);
+  }
+  check(/nativeRayTracing: false/.test(pipeline) && /reflectionFallback: 'screen-space reflections'/.test(pipeline), 'WebGL must report honest ray-tracing fallback capability.');
+  check(/nativeFSR2: false/.test(pipeline) && /fsr2Fallback: 'spatial output scaling at 77% of selected render scale \(not FSR2\)'/.test(pipeline), 'FSR2 must not be falsely reported as native on WebGL.');
+  check(/export const SPATIAL_UPSCALE_FALLBACK_SCALE = 0\.77/.test(pipeline), 'The browser-compatible spatial upscale factor must remain explicit.');
+  check(/export const OUTPUT_RESOLUTION_HEIGHTS = Object\.freeze\(\[0, 240, 360, 480, 720, 900, 1080, 1440, 2160\]\)/.test(pipeline), 'The render-resolution ladder must cover Auto through 240p-4K.');
+  check(/CUSTOM_OUTPUT_RESOLUTIONS\.has\(outputResolution\)/.test(pipeline), 'Custom render resolution must be sanitized against the supported ladder.');
+  check(/export function resolveOutputResolution/.test(pipeline) && /spatialFallbackBypassed/.test(pipeline), 'Fixed resolution must resolve independently and not silently change under the FSR2 fallback.');
+  check(/effectivePixelRatio = outputResolutionState\(preset\)\.pixelRatio/.test(pipeline), 'Resolution selection must alter actual renderer/composer resolution.');
+  check(/renderer\.getDrawingBufferSize/.test(pipeline) && /effectiveOutputWidth/.test(pipeline), 'Diagnostics must report the renderer’s real internal drawing buffer.');
+  check(/function activeReflectionSettings\(preset = activePreset\(\)\)/.test(pipeline) && /maxDistance: Math\.max\(1, Number\(preset\.ssrMaxDistance\) \|\| SSR_FALLBACK_PROFILE\.maxDistance\)/.test(pipeline), 'Enabled reflection requests must receive a nonzero SSR fallback profile.');
+  check(/ssrPass\.maxDistance = reflectionSettings\.maxDistance/.test(pipeline) && /ssrPass\.opacity = reflectionSettings\.opacity/.test(pipeline), 'SSR must consume the active fallback settings rather than zero-valued preset defaults.');
+  check(/graphicsResolution=document\.getElementById\('graphicsResolution'\)/.test(main) && /outputResolution:Number\(graphicsResolution\.value\)\|\|0/.test(main), 'The render-resolution selector must be bound and persisted with custom settings.');
+  check(/graphicsMemoryEstimate\(preset,diagnostics=graphics\?\.getDiagnostics\?\.\(\)\)/.test(main) && /diagnostics\?\.effectiveOutputWidth/.test(main), 'The GPU estimate must use the graphics pipeline’s actual internal buffer.');
+  check(/rayTracedGlobalIllumination/.test(main) && /rayTracedReflections/.test(main), 'The GPU estimate must account for indirect-light and reflection fallback render targets.');
+});
+
+await test('fixed internal resolution preserves player intent within browser limits', () => {
+  const resolverStart = pipeline.indexOf('export function resolveOutputResolution({');
+  const resolverEnd = pipeline.indexOf('\n\nfunction sanitizeCustomSettings', resolverStart);
+  check(resolverStart >= 0 && resolverEnd > resolverStart, 'resolveOutputResolution must have a stable source boundary.');
+  const resolverSource = pipeline.slice(resolverStart, resolverEnd).replace('export function', 'function');
+  const resolveOutput = Function(`
+    const DEFAULT_WIDTH=1280,DEFAULT_HEIGHT=720;
+    const SPATIAL_UPSCALE_FALLBACK_SCALE=.77;
+    const OUTPUT_RESOLUTION_HEIGHTS=Object.freeze([0,240,360,480,720,900,1080,1440,2160]);
+    const CUSTOM_OUTPUT_RESOLUTIONS=new Set(OUTPUT_RESOLUTION_HEIGHTS);
+    function positiveDimension(value,fallback){const numeric=Number(value);return Number.isFinite(numeric)&&numeric>0?Math.max(1,Math.floor(numeric)):fallback}
+    function positiveRatio(value,fallback=1){const numeric=Number(value);return Number.isFinite(numeric)&&numeric>0?numeric:fallback}
+    ${resolverSource};return resolveOutputResolution;
+  `)();
+  const fixed240 = resolveOutput({width:1920,height:1080,requestedPixelRatio:2,preset:{pixelRatioCap:.65,outputResolution:240,fsr2:true},maxSurfaceDimension:4096});
+  check(fixed240.selected && fixed240.height === 240 && fixed240.width === 427, 'A requested fixed 240p buffer must preserve aspect and not be silently altered by the FSR fallback.');
+  check(fixed240.spatialFallbackBypassed && fixed240.spatialScale === 1, 'Fixed resolution must disclose that the non-native FSR fallback is bypassed.');
+  const autoSpatial = resolveOutput({width:1920,height:1080,requestedPixelRatio:2,preset:{pixelRatioCap:1.25,outputResolution:0,fsr2:true},maxSurfaceDimension:4096});
+  check(autoSpatial.spatialScale === .77 && autoSpatial.height === 1040, 'Auto resolution with the compatibility request must actually reduce the internal buffer.');
+  const clamped4K = resolveOutput({width:1920,height:1080,requestedPixelRatio:2,preset:{pixelRatioCap:.65,outputResolution:2160},maxSurfaceDimension:2048});
+  check(clamped4K.limitedByHardware && clamped4K.width === 2048 && clamped4K.height === 1152, 'A fixed 4K request must clamp to the browser’s real render-target limit while preserving aspect.');
 });
 
 await test('AUTO benchmark samples raw gameplay timing only', () => {
@@ -219,13 +260,26 @@ await test('AUTO falls back to Intel for generic constrained or very slow hardwa
   check(recommend(capableGeneric, 16) !== 'intel', 'A capable generic device must not be demoted by a healthy benchmark.');
 });
 
-await test('low-payload manifest and URL-selection contract are complete', async () => {
+await test('low and medium texture manifests and URL-selection contracts are complete', async () => {
   check(await pathExists(LOW_MANIFEST_PATH), 'assets/low-textures/manifest.json is missing. Run scripts/build-low-textures.py.');
   const manifest = JSON.parse(await readFile(LOW_MANIFEST_PATH, 'utf8'));
   check(manifest?.schemaVersion === 1, 'Low-payload manifest schemaVersion must be 1.');
   check(manifest?.maxDimension === 512, 'Low-payload manifest must declare a 512px maximum.');
   check(Array.isArray(manifest?.records) && manifest.records.length > 0, 'Low-payload manifest must contain texture records.');
   check(Number(manifest.runtimeBytes) > 0, 'Low-payload manifest must declare a positive runtime byte budget.');
+
+  const mediumManifestPath = resolve(ROOT, 'assets/medium-textures/manifest.json');
+  check(await pathExists(mediumManifestPath), 'assets/medium-textures/manifest.json is missing. Run scripts/build-medium-textures.py.');
+  const mediumManifest = JSON.parse(await readFile(mediumManifestPath, 'utf8'));
+  check(mediumManifest?.schemaVersion === 1 && mediumManifest?.maxDimension === 1024, 'Medium manifest must declare a 1024px schema.');
+  check(Array.isArray(mediumManifest?.records) && mediumManifest.records.length === manifest.records.length, 'Medium manifest must cover the same source texture set as Low.');
+  check(Number(mediumManifest.runtimeBytes) > manifest.runtimeBytes, 'Medium derivatives should retain more detail than Low derivatives.');
+  for (const record of mediumManifest.records ?? []) {
+    check(record.file === `assets/medium-textures/${record.source.slice('assets/'.length)}`, `Medium target does not mirror ${record.source}.`);
+    check(Array.isArray(record.dimensions) && Math.max(...record.dimensions) <= 1024, `Medium image exceeds 1024px: ${record.file}.`);
+    check(await pathExists(resolve(ROOT, record.file)), `Medium output is missing: ${record.file}.`);
+    check((await sha256(resolve(ROOT, record.file))) === record.sha256, `Medium output hash mismatch: ${record.file}.`);
+  }
 
   const sourceRecords = new Map();
   const targetRecords = new Set();
@@ -263,12 +317,12 @@ await test('low-payload manifest and URL-selection contract are complete', async
     check(sourceRecords.has(sourceName), `Low-payload manifest is missing ${sourceName}.`);
   }
 
-  check(/const startupLowPayloadMode=startupGraphicsQuality==='intel'\|\|bootGraphicsCustomSettings\.textureTier==='low'/.test(main), 'Intel and saved Low custom paths must select low payloads before decode.');
-  check(/loader\.manager\.setURLModifier\(lowPayloadModelTextureUrl\)/.test(main), 'GLTFLoader must install the low-payload URL modifier.');
-  check(/assets\/low-textures\/\$\{match\[1\]\.slice\('assets\/'\.length\)\}/.test(main), 'Model texture URL modifier must mirror files into assets/low-textures.');
-  check(/let pbrRoot=startupLowPayloadMode\?'\.\/assets\/low-textures\/environment\/pbr-v2':'\.\/assets\/environment\/pbr-v2'/.test(main), 'Environment PBR loading must choose the low-payload tree before fetch/decode.');
-  check(/if\(!startupLowPayloadMode\)await loadHighTierTreeCards\(textureLoader\)/.test(main), 'Low payload mode must skip optional high-tier foliage fetches.');
-  check(/const highTexturesReloadPending=requestedPreset\.textureTier!=='low'&&startupLowPayloadMode/.test(main), 'A Low session moving back to higher texture quality must truthfully require a reload.');
+  check(/const startupLowPayloadMode=startupGraphicsQuality==='intel'\|\|startupTextureTier==='low'/.test(main), 'Intel and saved Low custom paths must select low payloads before decode.');
+  check(/loader\.manager\.setURLModifier\(reducedPayloadModelTextureUrl\)/.test(main), 'GLTFLoader must install the reduced-payload URL modifier.');
+  check(/const root=startupLowPayloadMode\?'low-textures':'medium-textures'/.test(main), 'Model texture URL modifier must select the real Low or Medium derivative tree.');
+  check(/let pbrRoot=startupLowPayloadMode\?'\.\/assets\/low-textures\/environment\/pbr-v2':startupMediumPayloadMode\?'\.\/assets\/medium-textures\/environment\/pbr-v2':'\.\/assets\/environment\/pbr-v2'/.test(main), 'Environment PBR loading must choose Low, Medium, or full maps before fetch/decode.');
+  check(/if\(!startupReducedTextureMode\)await loadHighTierTreeCards\(textureLoader\)/.test(main), 'Reduced texture modes must skip optional high-tier foliage fetches.');
+  check(/const mediumTexturesReloadPending=requestedPreset\.textureTier==='medium'&&startupTextureTier!=='medium'/.test(main), 'A Medium texture request must truthfully require a reload when the boot tier differs.');
 });
 
 await test('native 4K pack is verified or safely falls back', async () => {
@@ -303,10 +357,19 @@ await test('embedded preview protects itself from unsupported Extreme SSR', () =
 });
 
 await test('GPU-memory estimate refreshes after resize', () => {
-  check(/function graphicsMemoryEstimate\(preset\)/.test(main), 'Graphics memory estimator is missing.');
-  check(/innerWidth\*innerHeight\*ratio\*ratio/.test(main), 'Graphics memory estimate must include the live render target dimensions.');
+  check(/function graphicsMemoryEstimate\(preset,diagnostics=graphics\?\.getDiagnostics\?\.\(\)\)/.test(main), 'Graphics memory estimator is missing.');
+  check(/diagnostics\?\.effectiveOutputWidth/.test(main) && /pixels=outputWidth\*outputHeight/.test(main), 'Graphics memory estimate must use the live renderer drawing-buffer dimensions.');
   check(/function graphicsRenderTargetEstimate\(\)/.test(main) && /object\.isInstancedMesh/.test(main) && /object\.isSkinnedMesh/.test(main), 'Graphics memory estimate must include compositor targets, instancing, and skeleton buffers.');
   check(/addEventListener\('resize',\(\)=>\{graphics\.resize\(innerWidth,innerHeight,devicePixelRatio\);renderGraphicsMemoryEstimate\(graphics\.getDiagnostics\(\)\.preset\)\}\)/.test(main), 'Resize must refresh both graphics dimensions and the visible GPU-memory estimate.');
+});
+
+await test('release packaging cannot archive a stale committed snapshot', () => {
+  check(/async function requireCommittedReleaseTree\(\)/.test(release), 'Release packaging must define a committed-tree guard.');
+  check(/git\('status', '--porcelain=v1', '--untracked-files=all'\)/.test(release), 'Release packaging must inspect tracked and untracked worktree changes.');
+  const packageStart = release.indexOf('async function packageRelease()');
+  const packageEnd = release.indexOf('\n\nasync function readZipEntries', packageStart);
+  const packageBody = release.slice(packageStart, packageEnd);
+  check(packageBody.indexOf('await requireCommittedReleaseTree()') >= 0 && packageBody.indexOf('await requireCommittedReleaseTree()') < packageBody.indexOf("await git('archive'"), 'Release packaging must reject a dirty tree before git archive creates the ZIP.');
 });
 
 console.log(`\nGraphics QA: ${checks} checks, ${failures.length} failure${failures.length === 1 ? '' : 's'}.`);

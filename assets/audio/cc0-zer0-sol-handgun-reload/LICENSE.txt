@@ -1,0 +1,9 @@
+CC0 1.0 Universal (CC0 1.0) Public Domain Dedication
+
+Source page: https://opengameart.org/content/handgun-reload-sound-effect
+Author: zer0_sol
+Canonical license: https://creativecommons.org/publicdomain/zero/1.0/
+
+The source page identifies this recording as CC0. This local copy preserves the
+original unmodified reload.wav source file. CC0 does not require attribution,
+but the author and source are retained here for provenance.

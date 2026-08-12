@@ -1,9 +1,10 @@
 # ORIGINAL BINARY HASH STATUS
 
-STATUS: NO ORIGINAL BINARY OR DERIVATIVE IS STORED IN THIS DIRECTORY.
-source_file: NOT ACQUIRED (reload.wav)
-source_sha256: NOT AVAILABLE
+STATUS: NO ORIGINAL BINARY OR DERIVATIVE IS STORED IN THIS STAGING DIRECTORY.
+runtime_source_file: assets/audio/cc0-zer0-sol-handgun-reload/reload.wav
+source_sha256: 091399145b174ac3b2e0df245b4712a13ce85df072e37256b0fc32658718be53
 reviewed_on: 2026-08-11
 
-The future hash must be calculated from the untouched source WAV, before any
-split, edit, normalization, resample, encode, or mix operation.
+The runtime source is the untouched original WAV. Its standalone runtime
+receipt is `assets/audio/cc0-zer0-sol-handgun-reload/ORIGINAL.sha256`; the
+release validator re-hashes it before packaging.

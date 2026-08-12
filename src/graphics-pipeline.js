@@ -43,7 +43,7 @@ export const GRAPHICS_QUALITY_PRESETS = Object.freeze({
     shadows: true,
     shadowMapSize: 1024,
     textureAnisotropy: 2,
-    textureTier: 'standard',
+    textureTier: 'medium',
     ambientOcclusion: false,
     screenSpaceReflections: false,
     ssrMaxDistance: 0,
@@ -68,7 +68,7 @@ export const GRAPHICS_QUALITY_PRESETS = Object.freeze({
     shadows: true,
     shadowMapSize: 1536,
     textureAnisotropy: 4,
-    textureTier: 'standard',
+    textureTier: 'medium',
     ambientOcclusion: true,
     screenSpaceReflections: false,
     ssrMaxDistance: 0,
@@ -167,6 +167,16 @@ export const GRAPHICS_QUALITY_PRESETS = Object.freeze({
 const DEFAULT_QUALITY = 'high';
 const DEFAULT_WIDTH = 1280;
 const DEFAULT_HEIGHT = 720;
+// WebGL has no native FSR 2 backend in this build. When the compatibility
+// control is requested, render below the selected output scale and let the
+// browser present the full canvas. This is deliberately a spatial fallback,
+// not a claim of FSR 2's temporal reconstruction.
+export const SPATIAL_UPSCALE_FALLBACK_SCALE = 0.77;
+const SSR_FALLBACK_PROFILE = Object.freeze({
+  maxDistance: 72,
+  thickness: 0.055,
+  opacity: 0.17
+});
 
 function positiveDimension(value, fallback) {
   const numeric = Number(value);
@@ -182,15 +192,65 @@ function qualityName(value) {
   return Object.hasOwn(GRAPHICS_QUALITY_PRESETS, value) ? value : DEFAULT_QUALITY;
 }
 
-const CUSTOM_BOOLEAN_FIELDS = new Set(['postProcessing', 'shadows', 'ambientOcclusion', 'screenSpaceReflections', 'bloom', 'grassEnabled', 'fogEnabled']);
+const CUSTOM_BOOLEAN_FIELDS = new Set(['postProcessing', 'shadows', 'ambientOcclusion', 'screenSpaceReflections', 'bloom', 'grassEnabled', 'fogEnabled', 'rayTracedReflections', 'rayTracedShadows', 'rayTracedGlobalIllumination', 'fsr2']);
 const CUSTOM_NUMBER_FIELDS = Object.freeze({
   pixelRatioCap: [0.45, 2], shadowMapSize: [0, 4096], textureAnisotropy: [1, 16],
   aoKernelRadius: [0, 16], aoMinDistance: [0.001, 0.02], aoMaxDistance: [0.03, 0.3],
   ssrMaxDistance: [0, 140], ssrThickness: [0.01, 0.12], ssrOpacity: [0, 0.35],
   bloomStrength: [0, 0.25], bloomRadius: [0, 0.35], bloomThreshold: [0.7, 1]
 });
-const CUSTOM_TEXTURE_TIERS = new Set(['low', 'standard', 'high', '4k-preferred']);
+const CUSTOM_TEXTURE_TIERS = new Set(['low', 'medium', 'standard', 'high', '4k-preferred']);
 const CUSTOM_FOREST_DENSITIES = new Set(['off', 'low', 'medium', 'high', 'ultra', 'extreme']);
+// Values are vertical internal render heights.  They deliberately describe the
+// render buffer, not the display panel's native resolution: a browser canvas
+// always fills the viewport after the renderer chooses its internal size.
+export const OUTPUT_RESOLUTION_HEIGHTS = Object.freeze([0, 240, 360, 480, 720, 900, 1080, 1440, 2160]);
+const CUSTOM_OUTPUT_RESOLUTIONS = new Set(OUTPUT_RESOLUTION_HEIGHTS);
+
+/**
+ * Resolves the true internal canvas scale shared by the renderer and the UI
+ * memory estimate. A fixed height is a manual player override; it only yields
+ * to actual browser render-target limits, not a preset's default scale cap.
+ */
+export function resolveOutputResolution({
+  width,
+  height,
+  requestedPixelRatio = 1,
+  preset = {},
+  maxSurfaceDimension = Infinity,
+  nativeFSR2 = false
+} = {}) {
+  const safeWidth = positiveDimension(width, DEFAULT_WIDTH);
+  const safeHeight = positiveDimension(height, DEFAULT_HEIGHT);
+  const selectedHeight = CUSTOM_OUTPUT_RESOLUTIONS.has(Number(preset.outputResolution)) ? Number(preset.outputResolution) : 0;
+  const selected = selectedHeight > 0;
+  const requestedRatio = selected
+    ? selectedHeight / safeHeight
+    : Math.min(positiveRatio(requestedPixelRatio, 1), positiveRatio(preset.pixelRatioCap, 1));
+  const safeLimit = Number.isFinite(maxSurfaceDimension) && maxSurfaceDimension > 0 ? maxSurfaceDimension : Infinity;
+  const maximumRatio = Number.isFinite(safeLimit)
+    ? Math.max(1 / Math.max(safeWidth, safeHeight), Math.min(safeLimit / safeWidth, safeLimit / safeHeight))
+    : Infinity;
+  const limitedBaseRatio = Math.min(requestedRatio, maximumRatio);
+  // A fixed resolution is already an explicit internal-buffer target. Do not
+  // secretly turn the requested 240p/4K target into a different height merely
+  // because the non-native FSR compatibility switch was also selected.
+  const spatialFallbackBypassed = Boolean(preset.fsr2 && !nativeFSR2 && selected);
+  const spatialScale = preset.fsr2 && !nativeFSR2 && !selected ? SPATIAL_UPSCALE_FALLBACK_SCALE : 1;
+  const pixelRatio = Math.max(1 / Math.max(safeWidth, safeHeight), limitedBaseRatio * spatialScale);
+  return Object.freeze({
+    selectedHeight,
+    selected,
+    requestedRatio,
+    maximumRatio,
+    limitedByHardware: limitedBaseRatio < requestedRatio,
+    spatialScale,
+    spatialFallbackBypassed,
+    pixelRatio,
+    width: Math.max(1, Math.round(safeWidth * pixelRatio)),
+    height: Math.max(1, Math.round(safeHeight * pixelRatio))
+  });
+}
 
 function sanitizeCustomSettings(value) {
   if (!value || typeof value !== 'object') return null;
@@ -202,6 +262,8 @@ function sanitizeCustomSettings(value) {
   }
   if (CUSTOM_TEXTURE_TIERS.has(value.textureTier)) result.textureTier = value.textureTier;
   if (CUSTOM_FOREST_DENSITIES.has(value.forestDensity)) result.forestDensity = value.forestDensity;
+  const outputResolution = Number(value.outputResolution);
+  if (CUSTOM_OUTPUT_RESOLUTIONS.has(outputResolution)) result.outputResolution = outputResolution;
   return Object.keys(result).length ? Object.freeze(result) : null;
 }
 
@@ -262,17 +324,61 @@ export async function createGraphicsPipeline({
   let runtimeFallback = false;
   let disposed = false;
   let fallbackReason = null;
+  const rayTracingCapabilities = Object.freeze({
+    backend: 'webgl',
+    webgpuDetected: Boolean(globalThis.navigator?.gpu),
+    nativeRayTracing: false,
+    nativeFSR2: false,
+    reflectionFallback: 'screen-space reflections',
+    shadowFallback: 'PCF/standard shadow maps',
+    globalIlluminationFallback: 'screen-space ambient occlusion + ambient light',
+    fsr2Fallback: 'spatial output scaling at 77% of selected render scale (not FSR2)'
+  });
   const warnings = [];
   const warned = new Set();
   const initialSize = viewportSize(renderer, width, height);
   let currentWidth = initialSize.width;
   let currentHeight = initialSize.height;
   let effectivePixelRatio = renderer.getPixelRatio?.() || 1;
+  let effectiveOutputWidth = Math.max(1, Math.floor(currentWidth * effectivePixelRatio));
+  let effectiveOutputHeight = Math.max(1, Math.floor(currentHeight * effectivePixelRatio));
   const clearColorBeforeRender = new THREE.Color();
+  const drawingBufferSize = new THREE.Vector2();
 
   function activePreset() {
     const base = GRAPHICS_QUALITY_PRESETS[currentQuality];
     return customSettings ? Object.freeze({ ...base, ...customSettings, label: `${base.label} Custom` }) : base;
+  }
+
+  function activeReflectionSettings(preset = activePreset()) {
+    const enabled = Boolean(preset.screenSpaceReflections || preset.rayTracedReflections);
+    if (!enabled) return { enabled: false, maxDistance: 0, thickness: SSR_FALLBACK_PROFILE.thickness, opacity: 0 };
+    return {
+      enabled: true,
+      // High/Balanced intentionally ship with reflections off and therefore
+      // retain zero SSR values. A user enabling either reflections control
+      // must get a visible, bounded SSR profile instead of an enabled no-op.
+      maxDistance: Math.max(1, Number(preset.ssrMaxDistance) || SSR_FALLBACK_PROFILE.maxDistance),
+      thickness: Math.max(0.01, Number(preset.ssrThickness) || SSR_FALLBACK_PROFILE.thickness),
+      opacity: Math.max(0.01, Number(preset.ssrOpacity) || SSR_FALLBACK_PROFILE.opacity)
+    };
+  }
+
+  function outputResolutionState(preset = activePreset()) {
+    const gl = renderer.getContext?.();
+    const limits = [
+      Number(gl?.getParameter?.(gl.MAX_RENDERBUFFER_SIZE) || 0),
+      Number(renderer.capabilities?.maxTextureSize || 0)
+    ].filter(limit => Number.isFinite(limit) && limit > 0);
+    const maxSurfaceDimension = limits.length ? Math.min(...limits) : Infinity;
+    return resolveOutputResolution({
+      width: currentWidth,
+      height: currentHeight,
+      requestedPixelRatio,
+      preset,
+      maxSurfaceDimension,
+      nativeFSR2: rayTracingCapabilities.nativeFSR2
+    });
   }
 
   function warnOnce(code, message, error) {
@@ -386,8 +492,8 @@ export async function createGraphicsPipeline({
 
   const initialPreset = activePreset();
   if (initialPreset.postProcessing !== false && ensureComposer()) {
-    if (initialPreset.ambientOcclusion) await ensureSSAOPass();
-    if (initialPreset.screenSpaceReflections) await ensureSSRPass();
+    if (initialPreset.ambientOcclusion || initialPreset.rayTracedGlobalIllumination) await ensureSSAOPass();
+    if (initialPreset.screenSpaceReflections || initialPreset.rayTracedReflections) await ensureSSRPass();
     if (initialPreset.bloom) await ensureBloomPass();
   }
 
@@ -397,7 +503,11 @@ export async function createGraphicsPipeline({
     currentHeight = positiveDimension(nextHeight, currentHeight);
     requestedPixelRatio = positiveRatio(nextPixelRatio, requestedPixelRatio);
     const preset = activePreset();
-    effectivePixelRatio = Math.min(requestedPixelRatio, preset.pixelRatioCap);
+    // An explicit output resolution overrides the normal render-scale slider.
+    // Its internal buffer still obeys browser-reported render-target limits and
+    // may be spatially reduced by the clearly-labelled non-FSR compatibility
+    // path before the canvas is presented at CSS size.
+    effectivePixelRatio = outputResolutionState(preset).pixelRatio;
 
     if (updateCameraOnResize && camera.isPerspectiveCamera) {
       camera.aspect = currentWidth / currentHeight;
@@ -410,6 +520,13 @@ export async function createGraphicsPipeline({
       composer.setPixelRatio(effectivePixelRatio);
       composer.setSize(currentWidth, currentHeight);
     }
+    const drawingBuffer = renderer.getDrawingBufferSize?.(drawingBufferSize) || drawingBufferSize.set(
+      Math.max(1, Math.floor(currentWidth * effectivePixelRatio)),
+      Math.max(1, Math.floor(currentHeight * effectivePixelRatio))
+    );
+    effectiveOutputWidth = Math.max(1, Math.round(drawingBuffer.x));
+    effectiveOutputHeight = Math.max(1, Math.round(drawingBuffer.y));
+    effectivePixelRatio = effectiveOutputHeight / Math.max(1, currentHeight);
     return getDiagnostics();
   }
 
@@ -418,12 +535,13 @@ export async function createGraphicsPipeline({
     if (!preserveCustom) customSettings = null;
     const preset = activePreset();
 
+    const reflectionSettings = activeReflectionSettings(preset);
     // Add expensive passes only when a user elects a tier that needs them.
     // This keeps an Intel-HD boot free of SSAO, bloom, and SSR allocations.
     if (preset.postProcessing !== false && ensureComposer()) {
-      if (ambientOcclusion && preset.ambientOcclusion && !ssaoPass && !ssaoUnavailable) Promise.resolve(ensureSSAOPass()).then(() => applyQuality(currentQuality, { preserveCustom: true }));
+      if (ambientOcclusion && (preset.ambientOcclusion || preset.rayTracedGlobalIllumination) && !ssaoPass && !ssaoUnavailable) Promise.resolve(ensureSSAOPass()).then(() => applyQuality(currentQuality, { preserveCustom: true }));
       if (bloom && preset.bloom && !bloomPass && !bloomUnavailable) Promise.resolve(ensureBloomPass()).then(() => applyQuality(currentQuality, { preserveCustom: true }));
-      if (preset.screenSpaceReflections && !ssrPass && !ssrUnavailable) Promise.resolve(ensureSSRPass()).then(() => applyQuality(currentQuality, { preserveCustom: true }));
+      if (reflectionSettings.enabled && !ssrPass && !ssrUnavailable) Promise.resolve(ensureSSRPass()).then(() => applyQuality(currentQuality, { preserveCustom: true }));
     } else if (preset.postProcessing === false && composer) {
       // Competitive Low must really relinquish composer/pass render targets on
       // a live down-switch, rather than merely disable their visual output.
@@ -431,7 +549,7 @@ export async function createGraphicsPipeline({
     }
 
     if (ssaoPass) {
-      ssaoPass.enabled = preset.postProcessing !== false && ambientOcclusion && preset.ambientOcclusion;
+      ssaoPass.enabled = preset.postProcessing !== false && ambientOcclusion && (preset.ambientOcclusion || preset.rayTracedGlobalIllumination);
       ssaoPass.kernelRadius = preset.aoKernelRadius;
       ssaoPass.minDistance = preset.aoMinDistance;
       ssaoPass.maxDistance = preset.aoMaxDistance;
@@ -443,10 +561,10 @@ export async function createGraphicsPipeline({
       bloomPass.threshold = preset.bloomThreshold;
     }
     if (ssrPass) {
-      ssrPass.enabled = preset.postProcessing !== false && Boolean(preset.screenSpaceReflections);
-      ssrPass.maxDistance = preset.ssrMaxDistance;
-      ssrPass.thickness = preset.ssrThickness;
-      ssrPass.opacity = preset.ssrOpacity;
+      ssrPass.enabled = preset.postProcessing !== false && reflectionSettings.enabled;
+      ssrPass.maxDistance = reflectionSettings.maxDistance;
+      ssrPass.thickness = reflectionSettings.thickness;
+      ssrPass.opacity = reflectionSettings.opacity;
     }
     resize(currentWidth, currentHeight, requestedPixelRatio);
     return getDiagnostics();
@@ -512,6 +630,9 @@ export async function createGraphicsPipeline({
 
   function getDiagnostics() {
     const preset = activePreset();
+    const reflectionSettings = activeReflectionSettings(preset);
+    const outputState = outputResolutionState(preset);
+    const spatialScale = outputState.spatialScale;
     return {
       mode: !disposed && enabled && preset.postProcessing !== false && composer && !runtimeFallback ? 'composer' : 'renderer',
       enabled,
@@ -523,6 +644,12 @@ export async function createGraphicsPipeline({
       height: currentHeight,
       requestedPixelRatio,
       effectivePixelRatio,
+      outputResolutionMode: outputState.selected ? 'fixed-height' : 'auto',
+      requestedOutputHeight: outputState.selectedHeight,
+      effectiveOutputWidth,
+      effectiveOutputHeight,
+      outputResolutionLimited: outputState.limitedByHardware,
+      maximumOutputPixelRatio: outputState.maximumRatio,
       composerAvailable: Boolean(composer),
       postProcessingEnabled: preset.postProcessing !== false,
       ambientOcclusionAvailable: Boolean(ssaoPass),
@@ -533,7 +660,25 @@ export async function createGraphicsPipeline({
       bloomEnabled: Boolean(bloomPass?.enabled),
       fallback: runtimeFallback || !composer,
       fallbackReason: fallbackReason instanceof Error ? fallbackReason.message : fallbackReason ? String(fallbackReason) : null,
-      warnings: warnings.map(entry => ({ ...entry }))
+      warnings: warnings.map(entry => ({ ...entry })),
+      screenSpaceReflectionSettings: reflectionSettings,
+      rayTracing: {
+        ...rayTracingCapabilities,
+        requestedReflections: Boolean(preset.rayTracedReflections),
+        requestedShadows: Boolean(preset.rayTracedShadows),
+        requestedGlobalIllumination: Boolean(preset.rayTracedGlobalIllumination),
+        reflectionsMode: preset.rayTracedReflections ? rayTracingCapabilities.reflectionFallback : 'off',
+        shadowsMode: preset.rayTracedShadows ? rayTracingCapabilities.shadowFallback : 'off',
+        globalIlluminationMode: preset.rayTracedGlobalIllumination ? rayTracingCapabilities.globalIlluminationFallback : 'off'
+      },
+      upscaler: {
+        requestedFSR2: Boolean(preset.fsr2),
+        nativeAvailable: rayTracingCapabilities.nativeFSR2,
+        mode: preset.fsr2 ? rayTracingCapabilities.fsr2Fallback : 'off',
+        spatialFallbackActive: spatialScale !== 1,
+        spatialScale,
+        spatialFallbackBypassed: outputState.spatialFallbackBypassed
+      }
     };
   }
 

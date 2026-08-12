@@ -131,6 +131,7 @@ export class AudioDirector {
     this._powerGain = null;
     this._noiseBuffer = null;
     this._weaponSamples = Object.create(null);
+    this._mechanismSamples = Object.create(null);
     this._enemyVoiceSamples = Object.create(null);
     this._footstepSamples = [];
     this._zoneBlend = zoneValue(this.options.outdoorBlend);
@@ -154,6 +155,7 @@ export class AudioDirector {
   get powerOn() { return this._powerOn; }
   get volumes() { return { ...this._volumes }; }
   get weaponSamples() { return Object.keys(this._weaponSamples); }
+  get mechanismSamples() { return Object.keys(this._mechanismSamples); }
   get enemyVoiceSamples() {
     return Object.freeze(Object.fromEntries(Object.entries(this._enemyVoiceSamples)
       .map(([type, samples]) => [type, samples.length])));
@@ -210,6 +212,27 @@ export class AudioDirector {
       } catch (error) {
         this._lastError = error;
         failed.push(weapon);
+      }
+    }
+    return Object.freeze({ loaded: Object.freeze(loaded), failed: Object.freeze(failed) });
+  }
+
+  /** Decode optional full-sequence weapon handling foley. Per-marker procedural
+   * layers remain active so interaction timing is still exact if a recording is
+   * missing or cannot decode. */
+  async loadMechanismSamples(payloads = {}) {
+    if (!this.ready) return Object.freeze({ loaded: [], failed: ['context-not-ready'] });
+    const loaded = [];
+    const failed = [];
+    for (const [id, payload] of Object.entries(payloads)) {
+      if (!id || !(payload instanceof ArrayBuffer)) { failed.push(id); continue; }
+      try {
+        const buffer = await this._context.decodeAudioData(payload.slice(0));
+        this._mechanismSamples[id] = buffer;
+        loaded.push(id);
+      } catch (error) {
+        this._lastError = error;
+        failed.push(id);
       }
     }
     return Object.freeze({ loaded: Object.freeze(loaded), failed: Object.freeze(failed) });
@@ -670,9 +693,13 @@ export class AudioDirector {
     node.connect(gain).connect(event.input);
     const duration = Math.max(0.02, Math.min(settings.duration || buffer.duration / rate, buffer.duration / rate));
     const end = start + duration;
+    const fullSequence = settings.fullSequence === true;
+    const fadeStart = fullSequence
+      ? Math.max(start + Math.min(0.004, duration * 0.08), end - Math.min(0.085, duration * 0.12))
+      : start + duration * 0.48;
     gain.gain.setValueAtTime(EPSILON, start);
     gain.gain.linearRampToValueAtTime(Math.max(EPSILON, settings.gain ?? 0.45), start + Math.min(0.004, duration * 0.08));
-    gain.gain.setValueAtTime(Math.max(EPSILON, settings.gain ?? 0.45), start + duration * 0.48);
+    gain.gain.setValueAtTime(Math.max(EPSILON, settings.gain ?? 0.45), fadeStart);
     gain.gain.exponentialRampToValueAtTime(EPSILON, end);
     this._trackTransient(source, event, [source, ...filters, gain]);
     source.start(start);
@@ -889,6 +916,35 @@ export class AudioDirector {
         charge(now + (weapon === 'rifle' ? 0.82 : 0.58));
       }
     }
+    return true;
+  }
+
+  /**
+   * Plays a quiet, local full-sequence foley layer under marker-synced handling
+   * sounds. `targetDuration` keeps a source recording aligned with an authored
+   * weapon timeline without changing the game action's completion timing.
+   */
+  playRecordedMechanism(id, options = {}) {
+    if (!this.ready) return false;
+    const sample = this._mechanismSamples[id];
+    if (!sample) return false;
+    const targetDuration = Number(options.targetDuration);
+    const rate = Number.isFinite(targetDuration) && targetDuration > 0
+      ? clamp(sample.duration / targetDuration, 0.78, 1.22)
+      : 1;
+    const duration = sample.duration / rate;
+    const event = this._createEvent(null, { gain: options.gain ?? 0.3 });
+    this._sampleLayer(event, sample, {
+      start: this._context.currentTime + 0.006,
+      duration,
+      rate,
+      gain: 1,
+      fullSequence: true,
+      filters: [
+        { type: 'highpass', frequency: 72, q: 0.45 },
+        { type: 'lowpass', frequency: 9000, q: 0.5 }
+      ]
+    });
     return true;
   }
 
@@ -1177,6 +1233,7 @@ export class AudioDirector {
     this._powerGain = null;
     this._noiseBuffer = null;
     this._weaponSamples = Object.create(null);
+    this._mechanismSamples = Object.create(null);
     this._enemyVoiceSamples = Object.create(null);
     this._footstepSamples = [];
   }

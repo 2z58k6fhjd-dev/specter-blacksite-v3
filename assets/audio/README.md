@@ -22,3 +22,13 @@ Runtime behavior:
   procedural fallback and reports that state in Asset Status.
 
 Source page: <https://opengameart.org/content/gunshot-sounds>
+
+## M9A4 empty-reload layer
+
+`cc0-zer0-sol-handgun-reload/reload.wav` is an unmodified 1.5906-second
+44.1 kHz stereo WAV from zer0_sol's OpenGameArt
+[Handgun Reload Sound Effect](https://opengameart.org/content/handgun-reload-sound-effect).
+The original source is CC0 1.0 Universal; the local folder preserves its
+license, source receipt, and SHA-256. It plays quietly only under the M9A4
+empty-reload timeline. The marker-timed procedural magazine and slide sounds
+remain active and are the complete fallback if this optional recording fails.

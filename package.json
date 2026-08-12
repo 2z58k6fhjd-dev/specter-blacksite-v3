@@ -1,13 +1,14 @@
 {
   "name": "specter-blacksite",
   "private": true,
-  "version": "5.8.0",
+  "version": "5.10.0",
   "type": "module",
   "description": "Static SPECTER: Blacksite release verification and GitHub Pages packaging.",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
+    "build:textures:medium": "python scripts/build-medium-textures.py",
     "validate:release": "node scripts/release.mjs validate",
     "qa:graphics": "node scripts/graphics-qa.mjs",
     "qa:gameplay": "node scripts/gameplay-qa.mjs",

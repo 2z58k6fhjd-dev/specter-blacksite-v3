@@ -1,6 +1,6 @@
 # SPECTER: Blacksite - Asset Provenance and License Manifest
 
-This manifest distinguishes assets that ship with build `5.8.0-FIR-LOD` from links retained
+This manifest distinguishes assets that ship with build `5.10.0-GRAPHICS-RESOLUTION-FPS` from links retained
 only for research. A source appearing in a research table does not mean its
 files were downloaded, integrated, or redistributed.
 
@@ -88,7 +88,7 @@ retained locally at `textures/fern_02_alpha_4k.png`; its verified MD5 is
 `520e194db987df18fd73b49d979ada0c`.
 The runtime streams sparse, non-colliding Fern 02 dressing only after the core
 mission is playable, when vegetation density is High, Ultra, or Extreme and the
-texture tier is not Low. It uses Fern 02's official alpha mask at runtime for
+texture tier is High or 4K-preferred. It uses Fern 02's official alpha mask at runtime for
 leaf cutouts. Competitive Low does not request or render Fern 02. The raw 4K
 maps remain excluded from lower vegetation budgets, and no Fern file is
 service-worker precached.
@@ -100,13 +100,15 @@ publishes the source under **CC0 1.0**. The local `README.md`, `LICENSE.txt`, an
 `manifest.json` retain the official source links, source MD5 values, output
 SHA-256 values, and conversion record. The runtime keeps one source variation as
 a 157,402-triangle PBR LOD0 (0-42 m) and a 39,760-triangle PBR LOD1 (42-88 m),
-then uses the project PBR crossed-card LOD2 from 88-150 m. Only six sparse,
-non-colliding perimeter/extraction placements are installed; they stream after
-core mission readiness only at High, Ultra, or Extreme vegetation with a
-non-Low texture tier. Competitive Low/Intel neither requests nor renders them,
-and the folder is not service-worker precached. These derivatives add bounded
-close detail; they do not make the procedural/card mass forest a full authored
-3D or AAA forest.
+then uses the project PBR crossed-card LOD2 from 88-150 m. Six sparse,
+non-colliding hero placements use that full chain. A separate LOD1-only
+instanced detail band uses the same screened mesh in two shared material draws:
+up to 6 nearest placements at High, 14 at Ultra, and 16 at Extreme within 124 m.
+Both layers stream after core mission readiness only at High, Ultra, or Extreme
+vegetation with a Standard, High, or 4K-preferred texture tier. Competitive Low/Intel neither requests
+nor renders them, and the folder is not service-worker precached. These
+derivatives add bounded close/mid detail; they do not make the procedural/card
+mass forest a full authored 3D or AAA forest.
 
 ## Project-authored and derived runtime assets
 
@@ -119,7 +121,7 @@ close detail; they do not make the procedural/card mass forest a full authored
 | MCR-300 Suppressed | Full high-resolution clone of the bundled AR-15 source with a project-authored suppressor, material tint, handling data, and anchors | Bundled and player-selectable; CC BY-NC 4.0 applies through the source clone |
 | Facility, exterior compound, vehicles, props, extraction zone, and non-explorable PNW perimeter forest | Project-authored procedural Three.js geometry; its baseline forest is a texture-free instanced fallback beyond the boundary, with no collision or explorable terrain | Bundled |
 | High-tier fir-tree photo-tree impostors | Project-generated optional `assets/environment/generated/fir-tree-billboard-v1.png` plus the Douglas-fir v2 albedo/normal/roughness card maps; loaded into `environmentTextures.firCards` and used through shared instanced PBR materials | High/Ultra/Extreme vegetation only; absent when the non-critical texture fetch fails; these remain 2D impostors, not photogrammetric or AAA forest geometry. The separate bounded CC0 Fir Sapling derivative is documented above. |
-| Bounded high-tier Fir Sapling derivatives | One CC0 Poly Haven 1K source variation (`fir_sapling_a`) is converted into local PBR LOD0 and LOD1 glTF derivatives, then hands off to the project crossed-card LOD2 | Six sparse, non-colliding hero placements only; LOD0: 157,402 triangles at 0-42 m, LOD1: 39,760 triangles at 42-88 m, LOD2 card: 88-150 m. Lazy post-readiness at High/Ultra/Extreme with a non-Low texture tier; no Competitive Low/Intel request or service-worker precache. This is close-detail augmentation, not a dense authored 3D forest. |
+| Bounded high-tier Fir Sapling derivatives | One CC0 Poly Haven 1K source variation (`fir_sapling_a`) is converted into local PBR LOD0 and LOD1 glTF derivatives, then hands off to the project crossed-card LOD2 | Six sparse, non-colliding hero LOD0/1/2 placements plus an LOD1-only instanced detail band: 6 nearest at High, 14 at Ultra, and 16 at Extreme within 124 m, sharing two material-part draws. Hero LOD0: 157,402 triangles at 0-42 m; LOD1: 39,760 triangles at 42-88 m; LOD2 card: 88-150 m. Lazy post-readiness at High/Ultra/Extreme with a Standard, High, or 4K-preferred texture tier; no Competitive Low/Intel request or service-worker precache. This is bounded close/mid-detail augmentation, not a dense authored 3D forest. |
 | Weapon action timelines | Project-authored marker choreography for reload, equip, and chamber/bolt-check actions; markers synchronize magazine/action/ready events, visual motion, and existing sound cues | Bundled; not imported mocap or a third-party animation pack |
 | Tactical death drops | Project-authored detach, throw, settle, and cleanup behavior for each defeated enemy's existing carried rifle and role equipment | Bundled presentation only; no pickup, inventory, or loot assets/system |
 | Forest-gate pursuit extraction | Project-authored gate, camera/controller handoff, pursuit audio/visual cues, subtitles, and victory transition | Bundled controlled end beat; no additional licensed scenario asset or post-gate combat space |
@@ -137,7 +139,7 @@ every enemy weapon clone.
 
 `src/modern-arsenal.js` is preserved as an optional project-authored prototype
 module. It contains compact-carbine, marksman-rifle, and procedural T12 tactical
-autoloader factories plus metadata and animation anchors. Build 5.8.0-FIR-LOD does not
+autoloader factories plus metadata and animation anchors. Build 5.10.0-GRAPHICS-RESOLUTION-FPS does not
 import, execute, or precache this module, and no runtime weapon slot selects it.
 In particular, the procedural T12 failed the final close-up art-quality gate and
 has no selectable slot; slot 5 is the full-source MCR-300 suppressed rifle
@@ -183,12 +185,18 @@ manifest. It is a quality/performance derivative only: it adds no new model,
 texture, or audio license and does not replace the attribution requirements of
 the original source folders.
 
+`assets/medium-textures/` is the matching project-generated 1024px-max derivative
+tier produced by `scripts/build-medium-textures.py`. Performance/Balanced and
+custom Medium startup can select it before the original 2K images decode. It is
+not a new third-party source and inherits the licenses of the source asset
+folders; `manifest.json` records the source and derivative hashes.
+
 ### Preserved legacy generated materials
 
 The original `concrete-wall.webp`, `metal-floor.webp`, `utility-panels.webp`, and
 `grass-field-v1.webp` files were generated specifically for this project with
 OpenAI image generation on 2026-08-08. They are preserved with their records in
-`assets/environment/README.txt`, but build 5.8.0-FIR-LOD uses the PBR v2 set for its main
+`assets/environment/README.txt`, but build 5.10.0-GRAPHICS-RESOLUTION-FPS uses the PBR v2 set for its main
 runtime materials.
 
 ## Bundled recorded weapon reports
@@ -202,6 +210,16 @@ recorded transient layers while the project-authored Web Audio system keeps
 spatial tails, suppression, and fallback behavior. Attribution to Vincent
 Sevedge / Tabasco and the CC BY 3.0 notice must remain with redistributions.
 
+## Bundled M9A4 reload foley
+
+`assets/audio/cc0-zer0-sol-handgun-reload/reload.wav` is the unmodified
+1.5906-second stereo WAV from [Handgun Reload Sound Effect](https://opengameart.org/content/handgun-reload-sound-effect)
+by zer0_sol. The source declares **CC0 1.0 Universal**; the local
+`LICENSE.txt`, `README.md`, and SHA-256 receipt preserve that provenance. It
+plays as a low-gain full-sequence layer only on the M9A4 empty reload, while
+the project's marker-synced magazine/slide sounds remain present and supply a
+complete fallback if the recording cannot fetch or decode.
+
 ## Research-only 3D candidates - not bundled
 
 For a license-screened, non-runtime candidate list with model, animation, sound,
@@ -209,7 +227,7 @@ and browser-budget acceptance gates, see [`ASSET_CATALOG.md`](ASSET_CATALOG.md).
 It does not alter the attributions or local license records in this manifest.
 
 The following links are retained for future evaluation. None of these candidate
-archives or models should be described as included in build 5.8.0-FIR-LOD unless a future
+archives or models should be described as included in build 5.10.0-GRAPHICS-RESOLUTION-FPS unless a future
 commit adds the source files, local license receipt, author, conversion notes,
 optimization record, and runtime integration.
 
@@ -267,7 +285,7 @@ links only and are not bundled:
 
 The [Ural 4320](https://sketchfab.com/3d-models/ural-4320-f953c51a5dbc4a15949f4dcc0905c4e8)
 by Brout was identified as a CC BY 4.0 present-day military truck candidate. It
-is not bundled; build 5.8.0-FIR-LOD uses project-authored procedural vehicle geometry.
+is not bundled; build 5.10.0-GRAPHICS-RESOLUTION-FPS uses project-authored procedural vehicle geometry.
 
 ## Bundled tactical voice callouts
 
@@ -298,16 +316,16 @@ procedural fallback remains available if a clip cannot download or decode.
 
 ## Research-only audio candidates - not bundled
 
-Build 5.8.0-FIR-LOD uses project-authored procedural Web Audio, the separately
-documented CC BY 3.0 recorded report derivatives above, and the documented
-Kenney CC0 tactical callouts and player footsteps. The following pages remain research links only;
+Build 5.10.0-GRAPHICS-RESOLUTION-FPS uses project-authored procedural Web Audio,
+the separately documented CC BY 3.0 recorded report derivatives, zer0_sol CC0
+M9 empty-reload layer, and Kenney CC0 tactical callouts and player footsteps.
+The following pages remain research links only;
 no additional source master or runtime derivative from them ships in this
 repository:
 
 - [AR15 rifle shot](https://freesound.org/people/michorvath/sounds/427596/) and
   [9 mm pistol shot](https://freesound.org/people/michorvath/sounds/427592/) - close transients.
-- [M4 rifle reload](https://freesound.org/people/Freeman213SG/sounds/326042/) and
-  [handgun reload](https://opengameart.org/content/handgun-reload-sound-effect) - possible animation-synced mechanisms.
+- [M4 rifle reload](https://freesound.org/people/Freeman213SG/sounds/326042/) - possible animation-synced mechanism.
 - [Equipment clicks III](https://opengameart.org/content/equipment-clicks-iii) - selector, magazine, and action sweeteners.
 - [Bouncing shell casings](https://freesound.org/people/GryffDavid/sounds/318964/) - rifle/pistol casing variations.
 - [Kenney Impact Sounds](https://www.kenney.nl/assets/impact-sounds) - concrete, metal, wood, and prop impacts.
@@ -322,7 +340,7 @@ author, exact license receipt, source URL, editing notes, and runtime derivative
 
 ## Explicitly rejected and excluded content
 
-Build 5.8.0-FIR-LOD does not integrate sci-fi, futuristic, fantasy, anachronistic,
+Build 5.10.0-GRAPHICS-RESOLUTION-FPS does not integrate sci-fi, futuristic, fantasy, anachronistic,
 cartoon, stylized, or visibly low-detail research assets. Small or stylized
 soldier and vehicle downloads used during research were rejected as final art
 and are not part of the runtime repository. Earlier rejected experimental
@@ -357,6 +375,20 @@ license does not override the visual-quality, technical, or provenance review.
 - AUTO uses browser-reported capabilities plus a short runtime benchmark only;
   it is a conservative starting estimate, not a precise measure of available
   VRAM. Manual profiles and custom settings remain available to the player.
+- The custom panel exposes an independent fixed internal-resolution ladder
+  from Auto through 240p, 360p, 480p, 720p, 900p, 1080p, 1440p, and 2160p/4K,
+  plus Low 512px, Medium 1K, Standard/High 2K, and 4K-preferred texture tiers.
+  Fixed resolution controls internal rendering rather than a monitor mode and
+  remains subject to browser render-target limits. Texture-tier changes remain reload-bound so the
+  game never blanks already-loaded materials while a larger or smaller pack is
+  being selected.
+- The experimental ray-tracing controls are capability-gated. On the current
+  WebGL backend, reflection requests use a visible bounded SSR profile,
+  indirect-light requests use SSAO plus ambient light, and shadow requests use
+  the selected PCF shadow-map path. The FSR2 request actively renders at 77% of
+  the selected render scale before browser output scaling. These are explicitly
+  labeled approximations, not claims of native hardware ray tracing or AMD
+  FSR2 temporal reconstruction.
 - Competitive Low selects a project-generated 512px-max derivative of bundled
   weapon, soldier, set-dressing, and PBR texture files before decode on a fresh
   Low launch, while deliberately reducing grass, dense foliage, shadows, and
@@ -373,7 +405,8 @@ license does not override the visual-quality, technical, or provenance review.
   card as scanned/modelled 3D trees or an AAA foliage asset. If optional texture
   data is unavailable, omit the batch and retain the procedural forest fallback.
 - The bounded CC0 Fir Sapling derivatives may stream only after core mission
-  readiness at High, Ultra, or Extreme vegetation with a non-Low texture tier.
+  readiness at High, Ultra, or Extreme vegetation with a Standard, High, or
+  4K-preferred texture tier.
   Keep the six non-colliding 1K PBR LOD0/LOD1 placements outside the collision
   boundary, preserve their 0-42 m / 42-88 m / 88-150 m LOD handoff, and exclude
   them from Competitive Low/Intel and service-worker precaching. They are sparse
@@ -381,6 +414,6 @@ license does not override the visual-quality, technical, or provenance review.
   forest as a dense, fully authored 3D or AAA forest.
 - Fern 02's bundled raw 4K glTF/JPG source set streams only after the core
   mission is playable, at High, Ultra, or Extreme vegetation density with a
-  non-Low texture tier. Its official alpha mask is used at runtime for leaf
+  High or 4K-preferred texture tier. Its official alpha mask is used at runtime for leaf
   cutouts, and Competitive Low does not request or render it. Keep Fern files
   out of the service-worker precache list.

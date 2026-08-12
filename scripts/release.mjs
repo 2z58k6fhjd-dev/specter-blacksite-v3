@@ -65,6 +65,7 @@ const REQUIRED_LICENSE_RECORDS = [
   'assets/audio/cc-by-3.0-tabasco/LICENSE.txt',
   'assets/audio/cc0-kenney-rpg-footsteps/License.txt',
   'assets/audio/cc0-kenney-voiceover/License.txt',
+  'assets/audio/cc0-zer0-sol-handgun-reload/LICENSE.txt',
   'assets/environment/polyhaven-concrete-road-barrier-02/LICENSE.txt',
   'assets/environment/polyhaven-fern-02/LICENSE.txt',
   'assets/environment/polyhaven-plastic-container/LICENSE.txt',
@@ -78,6 +79,12 @@ const OPTIONAL_LOCAL_PATHS = new Set([
   'assets/environment/pbr-v2-4k',
   'assets/environment/pbr-v2-4k/manifest.json'
 ]);
+const CC0_PISTOL_RELOAD = Object.freeze({
+  file: 'assets/audio/cc0-zer0-sol-handgun-reload/reload.wav',
+  receipt: 'assets/audio/cc0-zer0-sol-handgun-reload/ORIGINAL.sha256',
+  sha256: '091399145b174ac3b2e0df245b4712a13ce85df072e37256b0fc32658718be53',
+  runtimeUrl: './assets/audio/cc0-zer0-sol-handgun-reload/reload.wav'
+});
 
 function fail(message) {
   throw new Error(message);
@@ -342,6 +349,35 @@ async function validateAssetProvenance(errors) {
   }
 }
 
+async function validateRecordedAudioProvenance(errors) {
+  const sourcePath = resolve(ROOT, CC0_PISTOL_RELOAD.file);
+  const receiptPath = resolve(ROOT, CC0_PISTOL_RELOAD.receipt);
+  if (!(await pathExists(sourcePath)) || !(await pathExists(receiptPath))) {
+    errors.push('CC0 pistol reload source or SHA-256 receipt is missing');
+    return;
+  }
+  const receipt = await readFile(receiptPath, 'utf8');
+  const receiptMatch = receipt.match(/^([a-f0-9]{64})\s+reload\.wav\s*$/mi);
+  if (!receiptMatch) {
+    errors.push('CC0 pistol reload SHA-256 receipt is malformed');
+  } else if (receiptMatch[1].toLowerCase() !== CC0_PISTOL_RELOAD.sha256) {
+    errors.push('CC0 pistol reload SHA-256 receipt does not retain the approved source hash');
+  } else if ((await hashFile(sourcePath)) !== CC0_PISTOL_RELOAD.sha256) {
+    errors.push('CC0 pistol reload source does not match its approved SHA-256 receipt');
+  }
+
+  const [main, serviceWorker] = await Promise.all([
+    readFile(resolve(ROOT, 'src/main.js'), 'utf8'),
+    readFile(resolve(ROOT, 'service-worker.js'), 'utf8')
+  ]);
+  if (!main.includes(`url:'${CC0_PISTOL_RELOAD.runtimeUrl}'`)) {
+    errors.push('CC0 pistol reload source is not wired to the runtime mechanism loader');
+  }
+  if (!serviceWorker.includes(`'${CC0_PISTOL_RELOAD.runtimeUrl}'`)) {
+    errors.push('CC0 pistol reload source is missing from the service-worker cache list');
+  }
+}
+
 async function validateNonRuntimeStaging(errors) {
   const stagingRoot = resolve(ROOT, 'assets/_staging');
   if (!(await pathExists(stagingRoot))) return;
@@ -362,6 +398,21 @@ async function validateNonRuntimeStaging(errors) {
       const hasSourceHash = /source(?:_archive(?:_or_root)?)?_sha256\s*:\s*[a-f0-9]{64}\b/i.test(status);
       if (!hasNoBinaryState && !hasSourceHash) {
         errors.push(`Staging candidate ${entry.name} must explicitly record its no-binary state or an original source SHA-256`);
+      }
+    }
+    const licenseRecord = resolve(candidateRoot, 'LICENSE.txt');
+    if (await pathExists(licenseRecord)) {
+      const licenseText = await readFile(licenseRecord, 'utf8');
+      const hasApprovedLicense = /(?:\bCC0(?:\s*1\.0)?\b|Creative Commons Zero|\bCC\s*BY(?:\s*[0-9.]+)?\b|Creative Commons Attribution)/i.test(licenseText);
+      if (!hasApprovedLicense) {
+        errors.push(`Staging candidate ${entry.name} does not explicitly declare an allowed CC0 or CC BY license`);
+      }
+    }
+    const sourceRecord = resolve(candidateRoot, 'SOURCE.md');
+    if (await pathExists(sourceRecord)) {
+      const sourceText = await readFile(sourceRecord, 'utf8');
+      if (!/https?:\/\/\S+/i.test(sourceText)) {
+        errors.push(`Staging candidate ${entry.name} must retain at least one source URL`);
       }
     }
     const files = await listFiles(candidateRoot);
@@ -488,6 +539,45 @@ async function validateLowPayloadManifest(errors) {
   }
 }
 
+async function validateMediumTextureManifest(errors) {
+  const manifestPath = resolve(ROOT, 'assets/medium-textures/manifest.json');
+  let manifest;
+  try {
+    manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+  } catch (error) {
+    errors.push(`Medium texture manifest is invalid: ${error.message}`);
+    return;
+  }
+  if (manifest.maxDimension !== 1024 || !Array.isArray(manifest.records) || manifest.records.length === 0) {
+    errors.push('Medium texture manifest must declare nonempty 1024px-max records');
+    return;
+  }
+  const expectedFiles = new Set();
+  let recordedBytes = 0;
+  for (const record of manifest.records) {
+    if (!record?.source || !record?.file || !Array.isArray(record.dimensions)) {
+      errors.push('Medium texture manifest contains an incomplete record');
+      continue;
+    }
+    const source = resolve(ROOT, record.source);
+    const file = resolve(ROOT, record.file);
+    if (!isInside(resolve(ROOT, 'assets'), source) || !(await pathExists(source))) errors.push(`Medium texture source is missing: ${record.source}`);
+    if (!isInside(resolve(ROOT, 'assets/medium-textures'), file) || !(await pathExists(file))) {
+      errors.push(`Medium texture derivative is missing: ${record.file}`);
+      continue;
+    }
+    expectedFiles.add(file);
+    recordedBytes += (await stat(file)).size;
+    if ((await stat(file)).size !== record.bytes) errors.push(`Medium texture byte count mismatch for ${record.file}`);
+    if (record.sha256 && (await hashFile(file)) !== record.sha256) errors.push(`Medium texture SHA-256 mismatch for ${record.file}`);
+    if (record.dimensions.some((dimension) => !Number.isInteger(dimension) || dimension < 1 || dimension > 1024)) errors.push(`Medium texture dimensions exceed 1024px for ${record.file}`);
+  }
+  if (recordedBytes !== manifest.runtimeBytes) errors.push('Medium texture manifest runtime byte total is incorrect');
+  for (const file of (await listFiles(resolve(ROOT, 'assets/medium-textures'))).filter((entry) => MEDIA_EXTENSIONS.has(extname(entry).toLowerCase()))) {
+    if (!expectedFiles.has(file)) errors.push(`Medium texture tree contains an unrecorded derivative: ${relativeToRoot(file)}`);
+  }
+}
+
 async function validateOptionalNativePbrManifest(errors) {
   const manifestPath = resolve(ROOT, 'assets/environment/pbr-v2-4k/manifest.json');
   if (!(await pathExists(manifestPath))) return;
@@ -557,8 +647,8 @@ async function validateForestFoliagePolicy(errors) {
   if (!main.includes('missionAssetsReady') || !main.includes('loadForestFernAsset')) {
     errors.push('Forest foliage must wait until required mission assets are ready.');
   }
-  if (!main.includes("preset.textureTier!=='low'") || !main.includes('fern_02_alpha_4k.png')) {
-    errors.push('Forest foliage must retain the Low texture-tier guard and official Fern alpha mask.');
+  if (!main.includes("['high','4k-preferred'].includes(preset.textureTier)") || !main.includes('fern_02_alpha_4k.png')) {
+    errors.push('Raw 4K Forest Fern foliage must retain its High/4K texture-tier guard and official alpha mask.');
   }
   if (!main.includes('loadHighTierTreeCards') || !main.includes('douglas-fir-card-v2-normal.png')) {
     errors.push('High-tier forest cards must retain their albedo, normal, and roughness loading path.');
@@ -635,10 +725,12 @@ async function validateRelease() {
   await validateServiceWorkerReferences(errors);
   await validateGltfClosure(errors);
   await validateAssetProvenance(errors);
+  await validateRecordedAudioProvenance(errors);
   await validateNonRuntimeStaging(errors);
   await validateForestFoliagePolicy(errors);
   await validatePbrManifest(errors);
   await validateLowPayloadManifest(errors);
+  await validateMediumTextureManifest(errors);
   await validateOptionalNativePbrManifest(errors);
   if (errors.length) {
     for (const error of errors) console.error(`ERROR: ${error}`);
@@ -680,6 +772,19 @@ async function gitMetadata() {
   return { commit, committedAt };
 }
 
+async function requireCommittedReleaseTree() {
+  // The ZIP is deliberately built with git archive so it has a stable,
+  // reproducible repository-root layout. That only represents the tested
+  // source tree when there are no tracked or untracked release changes left in
+  // the worktree. Refuse instead of attaching an old HEAD archive to a newer
+  // Pages copy or release label.
+  const status = await git('status', '--porcelain=v1', '--untracked-files=all');
+  if (!status) return;
+  const entries = status.split(/\r?\n/).filter(Boolean);
+  const preview = entries.slice(0, 8).join(', ');
+  fail(`Refusing to package a dirty worktree: commit the verified release tree first (${preview}${entries.length > 8 ? ', …' : ''}).`);
+}
+
 async function githubRepositoryUrl() {
   const repository = process.env.GITHUB_REPOSITORY;
   if (repository && /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) {
@@ -702,8 +807,9 @@ function escapeHtml(value) {
 
 async function packageRelease() {
   const version = safeReleaseVersion();
+  await requireCommittedReleaseTree();
   const { commit, committedAt } = await gitMetadata();
-  const archiveName = 'specter-blacksite-latest.zip';
+  const archiveName = `specter-blacksite-${version}.zip`;
   const notesName = `specter-blacksite-${version}-release-notes.md`;
   const archivePath = resolve(ARTIFACTS_ROOT, archiveName);
   const notesPath = resolve(ARTIFACTS_ROOT, notesName);
@@ -717,7 +823,7 @@ async function packageRelease() {
   const releaseTag = `build-${commit}`;
   const releasePage = repositoryUrl ? `${repositoryUrl}/releases/tag/${releaseTag}` : null;
   const latestRelease = repositoryUrl ? `${repositoryUrl}/releases/latest` : null;
-  const releaseAsset = repositoryUrl ? `${repositoryUrl}/releases/latest/download/${archiveName}` : null;
+  const releaseAsset = repositoryUrl ? `${repositoryUrl}/releases/download/${releaseTag}/${archiveName}` : null;
   const sourceArchive = repositoryUrl ? `${repositoryUrl}/archive/${commit}.zip` : null;
   const notes = [
     '# SPECTER: Blacksite release',

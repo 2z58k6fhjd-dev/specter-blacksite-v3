@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#06100c">
   <title>SPECTER: Blacksite — Overhaul Foundation</title>
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./styles.css?v=5.8.0-fir-lod">
+  <link rel="stylesheet" href="./styles.css?v=5.10.0-graphics-resolution-fps">
 </head>
 <body>
   <div id="game"></div>
@@ -32,7 +32,7 @@
     </div>
   </section>
   <div id="extractionFade" aria-hidden="true"></div>
-  <div id="build">BUILD 5.8.0-FIR-LOD</div>
+  <div id="build">BUILD 5.10.0-GRAPHICS-RESOLUTION-FPS</div>
   <button id="graphicsQuickButton" type="button" aria-expanded="false">GFX</button>
   <section id="graphicsPanel" aria-label="Graphics quality" aria-hidden="true">
     <div class="graphicsHeader"><strong>GRAPHICS QUALITY</strong><button id="graphicsCloseButton" type="button" aria-label="Close graphics settings">×</button></div>
@@ -49,19 +49,25 @@
     <div class="graphicsCustom" aria-label="Custom graphics settings">
       <div class="graphicsCustomHeader"><strong>CUSTOM TUNING</strong><button id="graphicsResetButton" type="button">RESET</button></div>
       <label>RENDER SCALE <output id="graphicsRenderScaleValue">1.25×</output><input id="graphicsRenderScale" type="range" min="0.5" max="2" step="0.05" value="1.25"></label>
-      <label>TEXTURE TIER<select id="graphicsTextureTier"><option value="low">Low · 512px pack (reload)</option><option value="standard">Standard</option><option value="high">High</option><option value="4k-preferred">4K preferred</option></select></label>
+      <label>RENDER RESOLUTION<select id="graphicsResolution"><option value="0">Auto · use render scale</option><option value="240">240p · maximum speed</option><option value="360">360p · very low</option><option value="480">480p · low</option><option value="720">720p · performance</option><option value="900">900p · balanced</option><option value="1080">1080p · Full HD</option><option value="1440">1440p · Quad HD</option><option value="2160">2160p · 4K internal</option></select></label>
+      <label>TEXTURE TIER<select id="graphicsTextureTier"><option value="low">Low · 512px pack (reload)</option><option value="medium">Medium · 1K pack (reload)</option><option value="standard">Standard · 2K</option><option value="high">High · 2K detail</option><option value="4k-preferred">4K preferred</option></select></label>
       <label>SHADOW QUALITY<select id="graphicsShadowQuality"><option value="0">Off</option><option value="1024">Low · 1024</option><option value="2048">High · 2048</option><option value="3072">Ultra · 3072</option><option value="4096">Extreme · 4096</option></select></label>
       <label>VEGETATION DENSITY<select id="graphicsVegetationDensity"><option value="off">Off · bare exterior</option><option value="low">Low · clear sightlines</option><option value="medium">Medium</option><option value="high">High · dense forest</option><option value="ultra">Ultra · very dense</option><option value="extreme">Extreme · maximum</option></select></label>
       <div class="graphicsToggles">
         <label><input id="graphicsSSAO" type="checkbox"> Ambient occlusion</label>
         <label><input id="graphicsSSR" type="checkbox"> Reflections</label>
+        <label><input id="graphicsRTR" type="checkbox"> RT reflections request (SSR fallback)*</label>
+        <label><input id="graphicsRTShadows" type="checkbox"> RT shadows request (PCF fallback)*</label>
+        <label><input id="graphicsRTGI" type="checkbox"> RT indirect-light request (SSAO fallback)*</label>
+        <label><input id="graphicsFSR2" type="checkbox"> AMD FSR 2 request (spatial fallback)*</label>
         <label><input id="graphicsBloom" type="checkbox"> Bloom</label>
         <label><input id="graphicsAntialias" type="checkbox"> Anti-aliasing*</label>
         <label><input id="graphicsGrass" type="checkbox"> Ground grass</label>
         <label><input id="graphicsFog" type="checkbox"> Atmospheric fog</label>
       </div>
+      <div id="graphicsRayStatus" class="graphicsVramEstimate" role="status" aria-live="polite">WEBGL COMPATIBILITY: checking renderer...</div>
       <div id="graphicsVramEstimate" class="graphicsVramEstimate">EST. GPU MEMORY: calculating…</div>
-      <small>*Anti-aliasing and a newly selected texture tier apply on the next reload. A fresh Low launch uses the real 512px model and PBR texture pack; live changes keep current textures visible until that reload. Estimates include loaded textures, geometry (including instancing/skinning), post-process targets, and shadows; browser APIs cannot reveal exact VRAM.</small>
+      <small>*Render Resolution fixes the vertical internal render height from 240p through 2160p/4K, then scales the canvas to the browser viewport rather than changing a monitor’s native resolution. It controls pixels, not texture detail; it may be GPU-clamped. This WebGL renderer does not expose native hardware ray tracing or native AMD FSR 2. The RT requests select working approximations: reflections use view-limited SSR, indirect light uses SSAO plus ambient light, and shadows use the selected PCF shadow-map path. The FSR 2 request actively renders at 77% of the selected internal scale, then uses browser output scaling; it is not temporal FSR 2. Anti-aliasing and a newly selected texture tier apply on the next reload. A fresh Low launch uses the real 512px model and PBR texture pack; Medium uses the generated 1K pack. Live changes keep current textures visible until reload. Estimates include loaded textures, geometry (including instancing/skinning), post-process targets, and shadows; browser APIs cannot reveal exact VRAM.</small>
     </div>
     <div class="audioTuning" aria-label="Enemy voice settings">
       <div class="graphicsCustomHeader"><strong>ENEMY COMMUNICATIONS</strong></div>
@@ -89,6 +95,7 @@
     <span>LIGHT <b id="lightState">ON</b></span>
     <span>POWER <b id="powerState">OFFLINE</b></span>
     <span>SECURE <b id="secure">0/3</b></span>
+    <span>FPS <b id="fpsCounter">--</b></span>
   </footer>
   <aside id="diagnostics">
     <strong>ASSET STATUS</strong>
@@ -110,6 +117,6 @@
     }
   }
   </script>
-  <script type="module" src="./src/main.js?v=5.8.0-fir-lod"></script>
+  <script type="module" src="./src/main.js?v=5.10.0-graphics-resolution-fps"></script>
 </body>
 </html>

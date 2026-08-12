@@ -1,2 +1,5 @@
 # Generated locally by scripts/release.mjs and rebuilt in CI.
 .release/
+
+# Python bytecode is produced only while rebuilding local texture derivatives.
+scripts/__pycache__/

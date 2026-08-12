@@ -106,11 +106,20 @@ const [main, world, audio, tactical, index] = await Promise.all(
 
 await test('graphics panel exposes every persistent user-facing control', () => {
   for (const id of [
-    'graphicsButton', 'graphicsQuickButton', 'graphicsPanel', 'graphicsRenderScale',
+    'graphicsButton', 'graphicsQuickButton', 'graphicsPanel', 'graphicsRenderScale', 'graphicsResolution',
     'graphicsTextureTier', 'graphicsShadowQuality', 'graphicsVegetationDensity',
-    'graphicsSSAO', 'graphicsSSR', 'graphicsBloom', 'graphicsAntialias',
-    'graphicsGrass', 'graphicsFog', 'graphicsVramEstimate', 'voiceVolume'
+    'graphicsSSAO', 'graphicsSSR', 'graphicsRTR', 'graphicsRTShadows',
+    'graphicsRTGI', 'graphicsFSR2', 'graphicsRayStatus', 'graphicsBloom',
+    'graphicsAntialias', 'graphicsGrass', 'graphicsFog', 'graphicsVramEstimate',
+    'voiceVolume'
   ]) check(index.includes(`id="${id}"`), `Missing visible graphics/audio control #${id}.`);
+  check(index.includes('RT reflections request (SSR fallback)') && index.includes('RT shadows request (PCF fallback)') && index.includes('RT indirect-light request (SSAO fallback)'), 'WebGL ray-tracing requests must disclose their concrete fallback techniques.');
+  check(index.includes('AMD FSR 2 request (spatial fallback)') && index.includes('it is not temporal FSR 2'), 'The FSR2 compatibility control must not be presented as a native temporal implementation.');
+  for (const option of ['240', '360', '480', '720', '900', '1080', '1440', '2160']) check(index.includes(`value="${option}"`), `Missing ${option}p render-resolution option.`);
+  check(index.includes('internal render height') && index.includes('rather than changing a monitor'), 'The resolution selector must explain its internal-render meaning.');
+  check(index.includes('id="fpsCounter"'), 'The HUD must expose a live FPS counter.');
+  check(/function sampleFrameRate\(rawDeltaSeconds\)/.test(main) && /sampleFrameRate\(rawDt\)/.test(main), 'The FPS counter must consume real render-loop timing.');
+  check(/fpsMeter\.seconds<\.25/.test(main) && /rawDeltaSeconds>\.5/.test(main), 'The FPS counter must be bounded and ignore tab-resume stalls.');
   for (const quality of ['auto', 'intel', 'performance', 'balanced', 'high', 'ultra', 'extreme']) {
     check(index.includes(`data-quality="${quality}"`), `Missing ${quality} graphics preset button.`);
   }
@@ -162,6 +171,12 @@ await test('localhost-only QA routes drive the real breaker, exterior, forest, a
   check(/breaker-wall-recess/.test(breakerFactory) && /breaker-lever-interaction-target/.test(breakerFactory), 'The breaker must retain its visible recessed cabinet and dedicated lever target.');
 });
 
+await test('high-tier fir detail improves the scenic view without taxing low-end shadows', () => {
+  check(/cc0-fir-sapling-instanced-lod1-details/.test(world) && /new THREE\.InstancedMesh\(object\.geometry,object\.material,instancedSaplingPlacements\.length\)/.test(world), 'High vegetation must retain its bounded instanced real-fir LOD1 band.');
+  check(/const scenicDetailEnabled=Boolean\(coniferCards\.length&&photoEnabled&&density>=\.72&&heroSaplings\.length&&instancedSaplingLayers\.length\)/.test(world) && /mesh\.visible=Boolean\(!scenicDetailEnabled&&count>0\)/.test(world), 'High card detail must hide the close scenic cone fallback only after real fir geometry installs, while preserving a reliable lower-tier and load-failure fallback.');
+  check(/for\(const mesh of \[\.\.\.layers,\.\.\.highTierFallbackLayers\]\)mesh\.castShadow=Boolean\(forestShadows&&mesh\.userData\.forestCastsShadow\)/.test(world), 'Fallback conifers must obey the active shadow tier instead of retaining shadows on Intel.');
+});
+
 await test('player weapon controls remain connected to authored action, visual, and sound paths', () => {
   const keyboard = /addEventListener\('keydown',e=>\{([\s\S]*?)\}\);/.exec(main)?.[1] || '';
   for (const [code, action] of [['KeyR', 'reload'], ['KeyC', 'chamberCheck'], ['KeyI', 'inspectWeapon'], ['KeyB', 'toggleMode'], ['Digit2', "switchWeapon('pistol')"]]) {
@@ -171,9 +186,12 @@ await test('player weapon controls remain connected to authored action, visual, 
   check(/triggerFireAnimation\(currentWeapon\);gunshot\(currentWeapon\);muzzleFlash\(\);ejectCasing\(currentWeapon\)/.test(shoot), 'A shot must jointly trigger animation, audio, muzzle flash, and casing ejection.');
   const reload = functionBody(main, 'reload');
   check(/TacticalWeaponAction\.RELOAD_EMPTY/.test(reload) && /TacticalWeaponAction\.TACTICAL_RELOAD/.test(reload), 'Reload must select the appropriate authored action timeline.');
+  check(/profile\.family==='pistol'&&empty\)audio\.playRecordedMechanism\('pistol-empty-reload'/.test(reload), 'M9 empty reload must start the licensed full-sequence foley layer.');
   const actionUpdate = functionBody(main, 'updateViewmodelAction');
   check(/updateRifleReloadMechanics/.test(actionUpdate) && /updatePistolReloadMechanics/.test(actionUpdate), 'Weapon actions must drive captured physical rifle and M9 magazine mechanics.');
   check(/marker\.name==='magOut'/.test(actionUpdate) && /marker\.name==='ready'/.test(actionUpdate), 'Reload marker events must remain connected to the action timeline.');
+  check(/async loadMechanismSamples/.test(audio) && /playRecordedMechanism\(id, options = \{\}\)/.test(audio), 'Recorded mechanism foley must retain optional decode and playback paths.');
+  check(/fullSequence: true/.test(audio), 'Recorded reload foley must preserve late timeline events through its terminal fade.');
   check(/TacticalWeaponAction\.INSPECT/.test(tactical) && /TacticalWeaponAction\.CHAMBER/.test(tactical), 'Tactical action definitions must retain inspect and chamber support.');
 });
 

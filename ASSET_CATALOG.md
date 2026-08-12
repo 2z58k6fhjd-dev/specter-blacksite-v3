@@ -65,6 +65,30 @@ acceptance.
 | [Lightning Pump Action Rifle — LonesomeDucky](https://opengameart.org/content/lightning-pump-action-rifle) | CC0 | ZIP contains `.blend` and `.glb`; low-poly GLB is 3,058 triangles / 2,356 vertices with 2048px PBR textures; basic pump and trigger animations. | **Technical reference only.** It is a useful GLB, PBR, and moving-part import test but its explicitly low-poly presentation is not approved final SPECTER weapon art. | Use only to validate part-pivot and animation import. Do not upgrade it into a hero asset merely with sharpness/upscaling. |
 | [Revolver Game Asset — loafbrr_1](https://opengameart.org/content/revolver-game-asset) | CC0 | Archive advertises FBX, glTF, and Blend; 4,028 triangles; 1K textures; shoot and reload animation. | **Technical reference only.** Useful for validating an asset-owned reload clip and animation import. | Historic and visibly light-weight: never substitute for a modern AAA-style player weapon. Confirm baked texture/material behavior after GLB conversion. |
 
+### Follow-up search: 2026-08-11
+
+This short list is intentionally conservative. The sources below are useful for
+the next asset pass, but none is promoted automatically into runtime. The high-
+detail gate still requires an original download, dependency audit, conversion,
+LOD work, and an Intel/Low network and memory test.
+
+| Candidate and source | License shown by source | What it adds | Current decision |
+| --- | --- | --- | --- |
+| [Tactical Soldier Model Textured - Hady](https://sketchfab.com/3d-models/tactical-soldier-model-textured-b4a734c23d3e42d5a7b64849a0b9ecb2) | CC Attribution (CC BY) | Page reports a modern PBR soldier with albedo, normal, roughness, and metallic maps; 468.7k triangles. | **Research only.** The source is far above the browser character budget and its dependency/originality chain must be audited. Consider only as a source for a retopologized hero or reference, never as a direct glTF. |
+| [S.W.A.T. Operator - Remastered - SpatialNeglect](https://sketchfab.com/3d-models/swat-operator-remastered-732d2eec5a0c456bafedd08af35134c3) | Page says Free Standard and credits multiple CC-BY contributors | Page reports 71.8k triangles and a contemporary tactical operator. | **Not approved for runtime.** The mixed license/dependency chain and source ownership need a complete audit before staging; keep it as research only. |
+| [FSB Operator - SpatialNeglect](https://sketchfab.com/3d-models/fsb-operator-43a561e941704eefb1ab0614be4f0049) | CC Attribution (CC BY) | Page reports a 114.3k-triangle rigged operator with modern equipment. | **Research only.** Promising detail, but too heavy for a repeated enemy without authored LODs and full dependency attribution; the current single-soldier runtime remains the approved fallback. |
+| [Modern Sniper Rifle - Vlasov Daniil](https://sketchfab.com/3d-models/modern-sniper-rifle-free-lowpoly-45c99509f1ee4c2a8c9c3336d3e2ff5a) | CC Attribution (CC BY) | Page reports a 19.7k-triangle modern scoped rifle. | **Research only.** Candidate for a future marksman slot if the source archive includes independent scope, bolt, magazine, ejection, and muzzle nodes plus usable PBR maps. |
+| [Low Poly Weapon Pack - byzmod3d](https://opengameart.org/content/low-poly-weapon-pack) | CC0 | Direct OBJ files for AK-47, M16, Kar98k, STG44, RPG7, pistols, shotgun, and sniper silhouettes. | **Technical reference only.** The source is explicitly low-poly and OBJ-only; useful for import/LOD pipeline tests, not for the requested high-detail first-person art gate. |
+| [Furniture Kit - Kenney](https://kenney.nl/assets/furniture-kit) | CC0 | 140 3D interior objects for offices, barracks, and support rooms. | **Staging candidate for room dressing.** It is explicitly optimized/low-poly, so it belongs in Low/medium structural dressing or a blocked-out room pass, not as close-up hero decor until visual review. |
+| [Factory Kit - Kenney](https://opengameart.org/content/factory-kit) | CC0 | 140+ industrial objects for a power plant, workshop, or maintenance room. | **Staging candidate for room dressing.** Use only for modular background dressing after draw-call batching and a realistic material pass; do not present the source pack as AAA geometry. |
+| [ambientCG PBR library](https://ambientcg.com/) | CC0 | Broad CC0 library of PBR surfaces, HDRIs, and models; the source page states that all assets are CC0. | **Texture research source.** Select individual concrete, painted metal, rubber, asphalt, wall, and floor IDs only after recording exact asset pages, hashes, and 512/1K/2K derivatives. No bulk scrape or blind runtime fetch. |
+
+These findings reinforce the current art direction: the strongest immediate
+improvement is better provenance-screened room dressing and one independently
+authored modern weapon, not filling every slot with low-poly silhouettes. A
+future accepted model must still meet the weapon anchors, 2K/512px texture
+derivative, and LOD requirements below.
+
 ## Reload and weapon-animation sources
 
 SPECTER needs separate first-person hand/viewmodel choreography and third-person
@@ -90,11 +114,13 @@ catalog and must not be staged as a substitute.
 
 ## Screened weapon-audio candidates
 
-All candidates below are **not bundled**. Their URLs and source-page terms must
-be saved with the original download before any edit, transcoding, normalization,
-or runtime inclusion. Use a dry, close source only as one layer; game reports
-need authored close, mechanical, reflection, and occlusion layers rather than
-one copied sound stretched across every weapon.
+All entries below are research-only **except the explicitly marked zer0_sol
+row**, which has completed its provenance and runtime gate. For every remaining
+candidate, save the URL and source-page terms with the original download before
+any edit, transcoding, normalization, or runtime inclusion. Use a dry, close
+source only as one layer; game reports need authored close, mechanical,
+reflection, and occlusion layers rather than one copied sound stretched across
+every weapon.
 
 | Candidate and source | License shown by source | Reported source format / size / content | SPECTER use and status | Audio-specific gate |
 | --- | --- | --- | --- | --- |
@@ -102,7 +128,7 @@ one copied sound stretched across every weapon.
 | [Assault Rifle Reload — qubodup](https://freesound.org/people/qubodup/sounds/815879/) | CC0 | WAV; 1.869 s; 44.1 kHz, 16-bit mono; 161.3 KB; full assault-rifle reload sequence. | **Screened research candidate** for a one-shot full-sequence comparison and timing reference. | Split only if the license and source waveform allow a useful, natural result; otherwise retain as one sequence. Check audible airsoft/source identity, clipping, and loop seams. |
 | [Gun Reload Sound Effects — BMacZero](https://opengameart.org/content/gun-reload-sound-effects) | CC0 | WAV: `clipload1.wav` 22.6 KB, `clipload2.wav` 18.5 KB, `singlebullet1.wav` 26.7 KB. | **Screened research candidate** for isolated magazine and single-round sweeteners. | Audition at game distance and blend with authored cloth/weapon handling; do not make a tiny transient the whole reload. |
 | [Gun reload sounds — SpringySpringo](https://opengameart.org/content/gun-reload-sounds) | CC0 | WAV: `gunreload1.wav` 278.6 KB, `assaultriflereload1.wav` 274.5 KB, `shotguncock.wav` 83.6 KB. | **Screened research candidate** for pistol/rifle/shotgun reload timing. | Treat as recorded Foley, not proof of a particular make/model. Check content suitability and synchronize only to verified animation markers. |
-| [Handgun Reload Sound Effect — zer0_sol](https://opengameart.org/content/handgun-reload-sound-effect) | CC0 | `reload.wav`, 280.6 KB; source describes magazine drop, insertion, and slide rack. | **Screened research candidate** for M9-style empty-reload timing study. | Split into action layers only after a waveform review. Ensure the slide-rack marker follows the actual rendered slide/bolt action. |
+| [Handgun Reload Sound Effect — zer0_sol](https://opengameart.org/content/handgun-reload-sound-effect) | CC0 | Unmodified `reload.wav`, 280.6 KB; 44.1 kHz stereo PCM, 1.5906 s, SHA-256 preserved locally. | **Bundled** as a low-gain full-sequence layer for the M9-style empty reload only. | It remains intact rather than being split into speculative action layers. Existing marker-timed magazine and visible-slide foley stays active and is the decode/fetch fallback. |
 | [equipment clicks III — LFA](https://opengameart.org/content/equipment-clicks-iii) | CC0 | `equipment_clicks3.wav`, 2 MB; source describes bolt-action, stapler, and tape-measure captures suitable for cocking/click layers. | **Screened research candidate** for subtle selector, latch, and mechanical foley—not weapon reports. | Very short click layers require level matching, randomization, and rate limiting to prevent repetition. Keep the real-source description in the local record. |
 | [Shotgun Reload Sound effects — zer0_sol](https://opengameart.org/content/shotgun-reload-sound-effects) | CC0 | `shotgunsounds.zip`, 324.2 KB; shells loaded and pump-action operation. | **Screened research candidate** for a future grounded shotgun only. | Must remain unused until a modern, scoped weapon and animation are approved. Never make it a generic rifle reload fallback. |
 
