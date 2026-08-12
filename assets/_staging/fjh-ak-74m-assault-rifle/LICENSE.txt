@@ -1,0 +1,18 @@
+AK-74M ASSAULT RIFLE — METADATA-ONLY LICENSE RECORD
+
+Status: NO ORIGINAL BINARY, TEXTURE, MESH, OR DERIVATIVE IS STORED HERE.
+
+Source page:
+https://sketchfab.com/3d-models/ak-74m-assault-rifle-9084c3bae8224d338103997bc3101480
+
+Creator shown on the source page: FJH
+Observed source-page license label: Creative Commons Attribution / CC BY.
+
+The downloadable archive and its own included license notice have not been
+acquired or inspected. This record therefore does not claim an exact CC BY
+version, an archive hash, or a complete texture/dependency chain. It only
+preserves the eligible source-page licensing signal required for further review.
+
+Promotion requires the exact archive license/credit material, a preserved
+source hash, and a recorded attribution string. Reject the candidate if the
+archive or any dependency conflicts with the source-page CC BY record.
