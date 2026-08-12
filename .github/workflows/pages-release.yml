@@ -56,10 +56,11 @@ jobs:
         run: npm run qa:runtime
 
       - name: Run Chromium mission acceptance
-        # Four cold-cache scenarios can legitimately take several minutes. A
-        # hard cap prevents a browser/server deadlock from holding the protected
-        # release lane indefinitely while still leaving room for the real suite.
-        timeout-minutes: 20
+        # Five cold-cache scenarios include a full graphics-setting persistence
+        # pass. AUTO deliberately samples gameplay even on a software/mobile-
+        # like renderer, so preserve its conservative completion window while a
+        # hard cap still protects the release lane from a browser/server deadlock.
+        timeout-minutes: 40
         run: npm run qa:browser
 
       - name: Preserve browser evidence on failure

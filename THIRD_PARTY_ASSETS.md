@@ -1,6 +1,6 @@
 # SPECTER: Blacksite - Asset Provenance and License Manifest
 
-This manifest distinguishes assets that ship with build `5.16.0-MOBILE-SCOPE-DESK` from links retained
+This manifest distinguishes assets that ship with build `5.17.0-MOBILE-AUTO-QA` from links retained
 only for research. A source appearing in a research table does not mean its
 files were downloaded, integrated, or redistributed.
 
@@ -160,7 +160,7 @@ every enemy weapon clone.
 
 `src/modern-arsenal.js` is preserved as an optional project-authored prototype
 module. It contains compact-carbine, marksman-rifle, and procedural T12 tactical
-autoloader factories plus metadata and animation anchors. Build 5.16.0-MOBILE-SCOPE-DESK does not
+autoloader factories plus metadata and animation anchors. Build 5.17.0-MOBILE-AUTO-QA does not
 import, execute, or precache this module, and no runtime weapon slot selects it.
 In particular, the procedural T12 failed the final close-up art-quality gate and
 has no selectable slot; slot 5 is the full-source MCR-300 suppressed rifle
@@ -217,7 +217,7 @@ folders; `manifest.json` records the source and derivative hashes.
 The original `concrete-wall.webp`, `metal-floor.webp`, `utility-panels.webp`, and
 `grass-field-v1.webp` files were generated specifically for this project with
 OpenAI image generation on 2026-08-08. They are preserved with their records in
-`assets/environment/README.txt`, but build 5.16.0-MOBILE-SCOPE-DESK uses the PBR v2 set for its main
+`assets/environment/README.txt`, but build 5.17.0-MOBILE-AUTO-QA uses the PBR v2 set for its main
 runtime materials.
 
 ## Bundled recorded weapon reports
@@ -248,7 +248,7 @@ and browser-budget acceptance gates, see [`ASSET_CATALOG.md`](ASSET_CATALOG.md).
 It does not alter the attributions or local license records in this manifest.
 
 The following links are retained for future evaluation. None of these candidate
-archives or models should be described as included in build 5.16.0-MOBILE-SCOPE-DESK unless a future
+archives or models should be described as included in build 5.17.0-MOBILE-AUTO-QA unless a future
 commit adds the source files, local license receipt, author, conversion notes,
 optimization record, and runtime integration.
 
@@ -305,7 +305,7 @@ links only and are not bundled:
 
 The [Ural 4320](https://sketchfab.com/3d-models/ural-4320-f953c51a5dbc4a15949f4dcc0905c4e8)
 by Brout was identified as a CC BY 4.0 present-day military truck candidate. It
-is not bundled; build 5.16.0-MOBILE-SCOPE-DESK uses project-authored procedural vehicle geometry.
+is not bundled; build 5.17.0-MOBILE-AUTO-QA uses project-authored procedural vehicle geometry.
 
 ## Bundled tactical voice callouts
 
@@ -336,7 +336,7 @@ procedural fallback remains available if a clip cannot download or decode.
 
 ## Research-only audio candidates - not bundled
 
-Build 5.16.0-MOBILE-SCOPE-DESK uses project-authored procedural Web Audio,
+Build 5.17.0-MOBILE-AUTO-QA uses project-authored procedural Web Audio,
 the separately documented CC BY 3.0 recorded report derivatives, zer0_sol CC0
 M9 empty-reload layer, and Kenney CC0 tactical callouts and player footsteps.
 The following pages remain research links only;
@@ -360,7 +360,7 @@ author, exact license receipt, source URL, editing notes, and runtime derivative
 
 ## Explicitly rejected and excluded content
 
-Build 5.16.0-MOBILE-SCOPE-DESK does not integrate sci-fi, futuristic, fantasy, anachronistic,
+Build 5.17.0-MOBILE-AUTO-QA does not integrate sci-fi, futuristic, fantasy, anachronistic,
 cartoon, stylized, or visibly low-detail research assets. Small or stylized
 soldier and vehicle downloads used during research were rejected as final art
 and are not part of the runtime repository. Earlier rejected experimental

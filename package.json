@@ -1,7 +1,7 @@
 {
   "name": "specter-blacksite",
   "private": true,
-  "version": "5.16.0",
+  "version": "5.17.0",
   "packageManager": "pnpm@11.16.0",
   "type": "module",
   "description": "Static SPECTER: Blacksite release verification and GitHub Pages packaging.",

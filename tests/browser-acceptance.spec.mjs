@@ -20,8 +20,8 @@ async function enterMission(page) {
   await expect(page.locator('#startPanel')).toBeHidden({ timeout: 10_000 });
 }
 
-async function localRuntimeDiagnostics(page) {
-  return page.evaluate(() => globalThis.__specterLocalRuntimeDiagnostics?.() || null);
+async function localRuntimeDiagnostics(page, options = {}) {
+  return page.evaluate(options => globalThis.__specterLocalRuntimeDiagnostics?.(options) || null, options);
 }
 
 // The shipped game intentionally imports Three.js from a pinned CDN URL.
@@ -102,6 +102,74 @@ test('high vegetation streams and presents the real CC0 fir LOD chain', async ({
   expect(diagnostics.forest.trees.detail).toBe(6);
   expect(diagnostics.perimeterFence.highTierPanels).toBe(8);
   expect(diagnostics.officeDesks.highTierDesks).toBe(3);
+  expect(errors).toEqual([]);
+});
+
+test('AUTO resolves a renderer-starved mobile session to a safe profile', async ({ browser }) => {
+  test.setTimeout(180_000);
+  const context = await browser.newContext(mobileDevice);
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await mirrorPinnedThree(page);
+  await page.goto('/?quality=auto&qa=exterior', { waitUntil: 'domcontentloaded' });
+  await waitForMission(page);
+  await enterMission(page);
+  await expect.poll(async () => {
+    const diagnostics = await localRuntimeDiagnostics(page);
+    return { preference: diagnostics?.graphics?.preference, ...diagnostics?.graphics?.auto };
+  }, { timeout: 75_000 }).toMatchObject({ preference: 'auto', active: false, pending: false });
+  const diagnostics = await localRuntimeDiagnostics(page);
+  expect(diagnostics.graphics.auto.samples).toBeGreaterThanOrEqual(diagnostics.graphics.auto.hitches >= 4 ? 4 : 120);
+  expect(['mobile', 'intel']).toContain(diagnostics.quality);
+  expect(errors).toEqual([]);
+  await context.close();
+});
+
+test('graphics controls apply a fixed internal output and persist in-browser', async ({ page }) => {
+  test.setTimeout(360_000);
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await mirrorPinnedThree(page);
+  // Start from the true mobile payload, then change the exact same live menu
+  // controls a player uses. This keeps the test operable on software Chromium
+  // while proving a high-detail custom draft requests a clean reload.
+  await page.goto('/?quality=mobile&qa=exterior', { waitUntil: 'domcontentloaded' });
+  await waitForMission(page);
+  await enterMission(page);
+  await page.locator('#graphicsQuickButton').click();
+  await expect(page.locator('#graphicsPanel')).toHaveClass(/active/);
+  const scopeBudgets = { mobile: { size: 256, frameRate: 15 }, extreme: { size: 1024, frameRate: 45 } };
+  await expect(page.locator('[data-quality]')).toHaveCount(8);
+  // Build the complete player-facing draft before sending one real change
+  // event. Applying a partial draft after each dropdown would repeatedly
+  // rebuild post-processing on software/mobile browsers, which is not how a
+  // player uses the settings panel and makes acceptance needlessly fragile.
+  await page.evaluate(() => {
+    const value = (id, next) => { document.getElementById(id).value = next; };
+    value('graphicsRenderScale', '1');
+    value('graphicsResolution', '720');
+    value('graphicsTextureTier', 'high');
+    value('graphicsShadowQuality', '2048');
+    value('graphicsVegetationDensity', 'high');
+    for (const id of ['graphicsSSAO', 'graphicsSSR', 'graphicsRTR', 'graphicsRTShadows', 'graphicsRTGI', 'graphicsFSR2', 'graphicsBloom', 'graphicsAntialias', 'graphicsGrass', 'graphicsFog']) document.getElementById(id).checked = true;
+    document.getElementById('graphicsFog').dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  const measured = await localRuntimeDiagnostics(page, { includeMemory: true });
+  expect(measured).toMatchObject({
+    quality: 'mobile', textureTier: 'high', textureStatus: 'HIGH TEXTURES ON RELOAD', scope: scopeBudgets.mobile,
+    graphics: {
+      preference: 'mobile', output: { mode: 'fixed-height', requestedHeight: 720, height: 720 },
+      ray: { native: false, reflections: true, shadows: true, indirect: true },
+      upscaler: { native: false, requested: true, bypassed: true },
+      custom: { pixelRatioCap: 1, outputResolution: 720, textureTier: 'high', shadowMapSize: 2048, forestDensity: 'high', ambientOcclusion: true, screenSpaceReflections: true, bloom: true, rayTracedReflections: true, rayTracedShadows: true, rayTracedGlobalIllumination: true, fsr2: true }
+    }
+  });
+  expect(measured.graphics.memory.outputHeight).toBe(720);
+  expect(measured.graphics.memory.totalMB).toBeGreaterThan(0);
+  await expect(page.locator('#graphicsRayStatus')).toContainText('NATIVE RT: UNAVAILABLE IN WEBGL');
+  const persisted = await page.evaluate(() => JSON.parse(localStorage.getItem('specter-custom-graphics') || '{}'));
+  expect(persisted).toMatchObject({ outputResolution: 720, textureTier: 'high', fsr2: true, rayTracedReflections: true });
   expect(errors).toEqual([]);
 });
 

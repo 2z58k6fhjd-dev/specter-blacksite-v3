@@ -217,7 +217,7 @@ await test('fixed internal resolution preserves player intent within browser lim
 });
 
 await test('AUTO benchmark samples raw gameplay timing only', () => {
-  check(/const autoBenchmark=\{active:false,pending:false,samples:\[\],warmupFrames:(\d+),warmup:0,minimumFrames:(\d+),hitches:0\}/.test(main), 'AUTO benchmark must define a pending gameplay benchmark state.');
+  check(/const autoBenchmark=\{active:false,pending:false,samples:\[\],warmupFrames:(\d+),warmup:0,minimumFrames:(\d+),hitches:0,timeoutId:0\}/.test(main), 'AUTO benchmark must define a pending gameplay benchmark state.');
   const benchmark = main.slice(main.indexOf('const autoBenchmark='), main.indexOf('function setGraphicsQuality', main.indexOf('const autoBenchmark=')));
   const minimumFrames = Number(benchmark.match(/minimumFrames:(\d+)/)?.[1] || 0);
   const warmupFrames = Number(benchmark.match(/warmupFrames:(\d+)/)?.[1] || 0);
@@ -225,8 +225,12 @@ await test('AUTO benchmark samples raw gameplay timing only', () => {
   check(warmupFrames >= 30, 'AUTO benchmark must include a gameplay warm-up period.');
   check(/if\(!missionHasStarted\)\{\s*autoBenchmark\.pending=true/.test(benchmark), 'AUTO benchmark must wait for mission start.');
   check(/autoBenchmark\.pending=false;autoBenchmark\.active=true/.test(benchmark), 'AUTO benchmark must activate only after the mission is active.');
-  check(/deltaSeconds<=0\)return/.test(benchmark) && /if\(deltaSeconds>\.35\)\{autoBenchmark\.hitches\+\+;return\}/.test(benchmark), 'AUTO benchmark must retain tab-resume hitches as a conservative penalty.');
+  check(/deltaSeconds<=0\)return/.test(benchmark) && /if\(deltaSeconds>\.35\)\{[\s\S]*?autoBenchmark\.hitches\+\+;autoBenchmark\.samples\.push\(Math\.min\(deltaSeconds\*1000,1000\)\);finishAutoGraphicsBenchmark\(\);return;/.test(benchmark), 'AUTO benchmark must retain tab-resume hitches as conservative, bounded timing evidence.');
   check(/autoBenchmark\.samples\.push\(deltaSeconds\*1000\)/.test(benchmark), 'AUTO benchmark must retain raw delta samples in milliseconds.');
+  check(/const enoughSlowFrames=autoBenchmark\.hitches>=4&&autoBenchmark\.samples\.length>=4/.test(benchmark), 'AUTO must resolve a severely slow device instead of measuring indefinitely.');
+  check(/if\(autoBenchmark\.warmup>0\)\{[\s\S]*?if\(deltaSeconds>\.35\)\{autoBenchmark\.hitches\+\+;autoBenchmark\.warmup--;/ .test(benchmark), 'AUTO warm-up must advance even when a device only produces long frames.');
+  check(/autoBenchmark\.timeoutId=setTimeout\(\(\)=>\{[\s\S]*?autoBenchmark\.hitches=Math\.max\(autoBenchmark\.hitches,4\);[\s\S]*?while\(autoBenchmark\.samples\.length<4\)autoBenchmark\.samples\.push\(50\);[\s\S]*?\},15000\)/.test(benchmark), 'AUTO must resolve a renderer-starved device through a bounded conservative fallback.');
+  check(/function clearAutoGraphicsBenchmarkTimeout\(\)/.test(benchmark) && /clearAutoGraphicsBenchmarkTimeout\(\);const sorted/.test(benchmark), 'AUTO timeout cleanup must prevent stale fallbacks after a normal completion.');
   check(/const scoredP90=autoBenchmark\.hitches>=2\?Math\.max\(p90,24\):p90/.test(benchmark), 'AUTO benchmark must use repeated hitches to reduce unsafe headroom.');
   check(/benchmarkMs<9\)rank=Math\.min\(4,rank\+1\)/.test(main), 'AUTO benchmark must cap fast-sample promotion to one tier.');
 
@@ -348,6 +352,7 @@ await test('touch controls preserve desktop input while providing a mobile actio
   check(/startButton\.onclick=.*setTouchControlsActive\(true\)/.test(main) && /startExtractionSequence\(\)[\s\S]*setTouchControlsActive\(false\)/.test(main), 'Touch controls must activate for missions and lock out during extraction.');
   check(/e\.target\.closest\?\.\('#graphicsPanel,#graphicsQuickButton,#touchControls'\)/.test(main), 'Desktop mouse fire must ignore touch-control UI interactions.');
   check(/function scopeBudgetForGraphics\(quality,preset=\{\}\)/.test(main) && /return \{size:256,frameRate:15,label:'Mobile'\}/.test(main), 'Mobile Ultra Low must cap the live scope target at 256px and 15 Hz.');
+  check(/if\(quality==='intel'\)return \{size:320,frameRate:18,label:'Competitive Low'\}/.test(main), 'Competitive Low must retain its own readable 320px, 18 Hz live-scope budget.');
   check(/if\(quality==='extreme'\)return \{size:1024,frameRate:45,label:'Extreme'\}/.test(main), 'Extreme must retain a separate 1024px, 45 Hz live-optic budget.');
   check(/scopeRenderElapsed\+=dt;if\(scopeRenderElapsed<scopeRenderInterval\)return/.test(main), 'The scope renderer must use the active quality budget rather than a fixed 30 Hz interval.');
 });

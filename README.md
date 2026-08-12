@@ -1,13 +1,20 @@
 # SPECTER: Blacksite
 
-Build: `5.16.0-MOBILE-SCOPE-DESK`
+Build: `5.17.0-MOBILE-AUTO-QA`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build
-5.16.0 continues the controller, viewmodel, combat presentation, enemy behavior,
+5.17.0 continues the controller, viewmodel, combat presentation, enemy behavior,
 facility, exterior-compound, rendering, materials, audio, and mission-flow work
 while keeping the project suitable for static hosting on GitHub Pages.
 
-## Build 5.16.0 highlights
+## Build 5.17.0 highlights
+
+- AUTO graphics now has a bounded, conservative completion path for extremely
+  slow or background-throttled devices: it resolves to the mobile/Intel-safe
+  profile instead of remaining in a benchmark state indefinitely.
+- Browser release acceptance now separately proves the Galaxy A16-style AUTO
+  path and a real saved custom graphics draft with fixed internal output,
+  measured memory estimate, and truthful WebGL RT/upscaling status.
 
 - Damped first-person movement, sprint transitions, camera motion, weapon bob,
   and mouse-driven sway.
@@ -191,8 +198,10 @@ while keeping the project suitable for static hosting on GitHub Pages.
 - Chromium browser acceptance is now a required release gate before Pages
   deployment. It mirrors the pinned Three.js runtime locally, loads the real
   static game shell, checks a Galaxy A16-style touch/breaker flow, verifies a
-  rendered weapon/radio call, waits for the real CC0 Fir Sapling LOD chain in
-  the High forest inspection route, and runs the normal grounded-death/extraction
+  rendered weapon/radio call, cycles AUTO and every named graphics preset,
+  applies and restores a full custom fixed-output settings draft, verifies the
+  native-4K fallback, waits for the real CC0 Fir Sapling LOD chain in the High
+  forest inspection route, and runs the normal grounded-death/extraction
   handoff to `BLACKSITE SECURED`. Failure traces, screenshots, and video are
   retained from CI for 14 days.
 - Complete mission loop and victory state: restore power, clear all twelve
@@ -431,4 +440,4 @@ prompts, and build records.
 Research links in `THIRD_PARTY_ASSETS.md` are evaluation notes only. Their models,
 textures, and audio are not bundled merely because a source URL is listed. No
 sci-fi, futuristic, fantasy, cartoon, stylized, or visibly low-detail research
-asset was accepted into the build 5.16.0-MOBILE-SCOPE-DESK runtime.
+asset was accepted into the build 5.17.0-MOBILE-AUTO-QA runtime.

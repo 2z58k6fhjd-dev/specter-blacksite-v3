@@ -159,9 +159,14 @@ await test('Chromium acceptance is a required Pages pre-deploy gate', () => {
   check(/perimeterFence: \{ highTierPanels: 8, enabled: true \}/.test(browserTest) && /perimeterFence:\{highTierPanels:perimeterFenceRoot\?\.children\.length\|\|0,enabled:Boolean\(perimeterFenceRoot\?\.visible\)\}/.test(main), 'Browser tests must observe the actual high-tier CC0 chain-link panels, not only the procedural fence fallback.');
   check(/officeDesks: \{ highTierDesks: 3, enabled: true \}/.test(browserTest) && /officeDesks:\{highTierDesks:officeDeskRoot\?\.children\.length\|\|0,enabled:Boolean\(officeDeskRoot\?\.visible\)\}/.test(main), 'Browser tests must observe the actual high-tier CC0 metal office desks, not only the procedural desk fallback.');
   check(/scope: \{ size: 768, frameRate: 30 \}/.test(browserTest) && /scope:\{size:scopeRenderBudget\.size,frameRate:scopeRenderBudget\.frameRate\}/.test(main), 'Browser diagnostics must expose the active live-scope budget without hard-coding it.');
+  check(/AUTO resolves a renderer-starved mobile session to a safe profile/.test(browserTest) && /graphics controls apply a fixed internal output and persist in-browser/.test(browserTest), 'Browser acceptance must exercise AUTO and the live player-facing graphics controls.');
+  check(/await expect\(page\.locator\('\[data-quality\]'\)\)\.toHaveCount\(8\)/.test(browserTest), 'Browser acceptance must enumerate every named preset control against the live graphics panel.');
+  check(/output: \{ mode: 'fixed-height', requestedHeight: 720, height: 720 \}/.test(browserTest) && /localRuntimeDiagnostics\(page, \{ includeMemory: true \}\)/.test(browserTest), 'Browser acceptance must verify a real fixed internal output and measured graphics-memory estimate.');
+  check(/specter-custom-graphics/.test(browserTest) && /localStorage\.getItem\('specter-custom-graphics'/.test(browserTest), 'Browser acceptance must verify the complete persisted custom graphics draft.');
   check(/qa=victory/.test(browserTest) && /victoryPanel/.test(browserTest), 'Browser tests must observe the grounded-death extraction path reaching victory.');
   check(/matching GitHub Pages path behavior/.test(browserServer) && /cache-control/.test(browserServer), 'Browser acceptance must serve the same static-root shape as Pages.');
   check(/timeout: 240_000/.test(browserConfig) && /workers: 1/.test(browserConfig), 'Browser acceptance must retain a stable bounded CI timing budget.');
+  check(/timeout-minutes: 40/.test(workflow), 'The Pages browser gate must allow the complete cold-cache acceptance suite to finish safely.');
 });
 
 await test('AUTO evaluates real capability inputs and keeps a conservative fallback', () => {
@@ -177,7 +182,8 @@ await test('AUTO evaluates real capability inputs and keeps a conservative fallb
   check(recommend({ ...capable, deviceMemoryGB: 2 }) === 'intel', 'A 2 GB device-memory report must use Competitive Low.');
   check(recommend(capable, 40) === 'intel', 'A sustained 40 ms P90 must use Competitive Low.');
   check(recommend(capable, 16) !== 'intel', 'A capable device with a healthy sample must not be forced to Intel.');
-  check(/const autoBenchmark=\{active:false,pending:false,samples:\[\],warmupFrames:45,warmup:0,minimumFrames:120,hitches:0\}/.test(main), 'AUTO must retain a bounded warm-up and sample window.');
+  check(/const autoBenchmark=\{active:false,pending:false,samples:\[\],warmupFrames:45,warmup:0,minimumFrames:120,hitches:0,timeoutId:0\}/.test(main), 'AUTO must retain a bounded warm-up and sample window.');
+  check(/autoBenchmark\.timeoutId=setTimeout\([\s\S]*?\},15000\)/.test(main), 'AUTO must resolve an extremely renderer-starved mobile session through a conservative time bound.');
   check(/if\(!extractionSequence\)sampleAutoGraphicsBenchmark\(rawDt\)/.test(main), 'AUTO must sample gameplay time only outside the extraction cinematic.');
   check(/toast\(`AUTO GRAPHICS/.test(main), 'AUTO must disclose the measured selection to the player.');
 });

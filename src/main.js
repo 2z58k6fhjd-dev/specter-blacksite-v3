@@ -2,12 +2,12 @@ import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.16.0-mobile-scope-desk';
-import { buildWorldOverhaul } from './world-overhaul.js?v=5.16.0-mobile-scope-desk';
-import { EnemyAISystem } from './enemy-ai.js?v=5.16.0-mobile-scope-desk';
-import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS,SPATIAL_UPSCALE_FALLBACK_SCALE } from './graphics-pipeline.js?v=5.16.0-mobile-scope-desk';
-import { createAudioDirector } from './audio-overhaul.js?v=5.16.0-mobile-scope-desk';
-import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.16.0-mobile-scope-desk';
+import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.17.0-mobile-auto-qa';
+import { buildWorldOverhaul } from './world-overhaul.js?v=5.17.0-mobile-auto-qa';
+import { EnemyAISystem } from './enemy-ai.js?v=5.17.0-mobile-auto-qa';
+import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS,SPATIAL_UPSCALE_FALLBACK_SCALE } from './graphics-pipeline.js?v=5.17.0-mobile-auto-qa';
+import { createAudioDirector } from './audio-overhaul.js?v=5.17.0-mobile-auto-qa';
+import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.17.0-mobile-auto-qa';
 
 const graphicsCustomStorageKey='specter-custom-graphics';
 const voiceSettingsStorageKey='specter-voice-settings';
@@ -698,8 +698,9 @@ function refreshGraphicsDiagnostics(){
   const current=graphicsDiagnostics;
   if(!current||latest.mode!==current.mode||latest.ambientOcclusionEnabled!==current.ambientOcclusionEnabled||latest.screenSpaceReflectionsEnabled!==current.screenSpaceReflectionsEnabled||latest.bloomEnabled!==current.bloomEnabled||latest.fallback!==current.fallback)renderGraphicsControls(latest);
 }
-const autoBenchmark={active:false,pending:false,samples:[],warmupFrames:45,warmup:0,minimumFrames:120,hitches:0};
-function cancelAutoGraphicsBenchmark(){autoBenchmark.active=false;autoBenchmark.pending=false;autoBenchmark.samples.length=0;autoBenchmark.warmup=0;autoBenchmark.hitches=0}
+const autoBenchmark={active:false,pending:false,samples:[],warmupFrames:45,warmup:0,minimumFrames:120,hitches:0,timeoutId:0};
+function clearAutoGraphicsBenchmarkTimeout(){if(autoBenchmark.timeoutId){clearTimeout(autoBenchmark.timeoutId);autoBenchmark.timeoutId=0}}
+function cancelAutoGraphicsBenchmark(){clearAutoGraphicsBenchmarkTimeout();autoBenchmark.active=false;autoBenchmark.pending=false;autoBenchmark.samples.length=0;autoBenchmark.warmup=0;autoBenchmark.hitches=0}
 function beginAutoGraphicsBenchmark(){
   autoBenchmark.active=false;autoBenchmark.samples.length=0;autoBenchmark.warmup=autoBenchmark.warmupFrames;autoBenchmark.hitches=0;
   if(!missionHasStarted){
@@ -708,10 +709,25 @@ function beginAutoGraphicsBenchmark(){
   }
   autoBenchmark.pending=false;autoBenchmark.active=true;
   graphicsHint.textContent='AUTO BENCHMARK — measuring active gameplay…';
+  // A backgrounded or severely overloaded mobile browser may produce only a
+  // handful of animation frames. Resolve conservatively after a bounded real
+  // time instead of allowing AUTO to remain indefinitely on the loading label.
+  clearAutoGraphicsBenchmarkTimeout();
+  autoBenchmark.timeoutId=setTimeout(()=>{
+    if(!autoBenchmark.active||activeGraphicsPreference!==AUTO_GRAPHICS_QUALITY)return;
+    autoBenchmark.hitches=Math.max(autoBenchmark.hitches,4);
+    while(autoBenchmark.samples.length<4)autoBenchmark.samples.push(50);
+    finishAutoGraphicsBenchmark();
+  },15000);
 }
 function finishAutoGraphicsBenchmark(){
-  if(!autoBenchmark.active||activeGraphicsPreference!==AUTO_GRAPHICS_QUALITY||autoBenchmark.samples.length<autoBenchmark.minimumFrames)return;
-  autoBenchmark.active=false;const sorted=[...autoBenchmark.samples].sort((a,b)=>a-b),p90=sorted[Math.floor(sorted.length*.9)];
+  // A severely constrained device can produce only long frames.  Never leave
+  // AUTO measuring forever in that case: a short run of recorded hitches is
+  // already enough evidence to choose the safe Mobile/Intel payload.
+  const enoughNormalFrames=autoBenchmark.samples.length>=autoBenchmark.minimumFrames;
+  const enoughSlowFrames=autoBenchmark.hitches>=4&&autoBenchmark.samples.length>=4;
+  if(!autoBenchmark.active||activeGraphicsPreference!==AUTO_GRAPHICS_QUALITY||(!enoughNormalFrames&&!enoughSlowFrames))return;
+  autoBenchmark.active=false;clearAutoGraphicsBenchmarkTimeout();const sorted=[...autoBenchmark.samples].sort((a,b)=>a-b),p90=sorted[Math.floor(sorted.length*.9)];
   // Retain long-frame stalls as a conservative score penalty instead of
   // silently excluding them from the AUTO recommendation.
   const scoredP90=autoBenchmark.hitches>=2?Math.max(p90,24):p90;
@@ -721,8 +737,20 @@ function finishAutoGraphicsBenchmark(){
 }
 function sampleAutoGraphicsBenchmark(deltaSeconds){
   if(!autoBenchmark.active||!Number.isFinite(deltaSeconds)||deltaSeconds<=0)return;
-  if(deltaSeconds>.35){autoBenchmark.hitches++;return}
-  if(autoBenchmark.warmup>0){autoBenchmark.warmup--;return}
+  if(autoBenchmark.warmup>0){
+    // A slow software/mobile renderer can spend the entire warm-up in long
+    // frames. Count those as warm-up evidence so AUTO still reaches a safe
+    // conclusion rather than waiting forever for a sub-350 ms frame.
+    if(deltaSeconds>.35){autoBenchmark.hitches++;autoBenchmark.warmup--;}
+    else autoBenchmark.warmup--;
+    return;
+  }
+  if(deltaSeconds>.35){
+    // Keep a bounded slow sample instead of discarding it.  Discarding every
+    // long frame made AUTO remain active indefinitely on the very devices it
+    // is intended to protect.
+    autoBenchmark.hitches++;autoBenchmark.samples.push(Math.min(deltaSeconds*1000,1000));finishAutoGraphicsBenchmark();return;
+  }
   autoBenchmark.samples.push(deltaSeconds*1000);finishAutoGraphicsBenchmark();
 }
 function setGraphicsQuality(quality,{persist=true}={}){
@@ -1171,8 +1199,9 @@ const scopeSurface=new THREE.Mesh(new THREE.CircleGeometry(1,64),new THREE.MeshB
 function scopeBudgetForGraphics(quality,preset={}){
   // A custom low texture tier should receive the conservative mobile budget
   // even when it was selected from another base preset.
-  if(quality==='mobile'||preset.textureTier==='low')return {size:256,frameRate:15,label:'Mobile'};
+  if(quality==='mobile')return {size:256,frameRate:15,label:'Mobile'};
   if(quality==='intel')return {size:320,frameRate:18,label:'Competitive Low'};
+  if(preset.textureTier==='low')return {size:256,frameRate:15,label:'Mobile'};
   if(quality==='performance')return {size:384,frameRate:20,label:'Performance'};
   if(quality==='balanced'||preset.textureTier==='medium')return {size:512,frameRate:24,label:'Balanced'};
   if(quality==='extreme')return {size:1024,frameRate:45,label:'Extreme'};
@@ -2504,11 +2533,26 @@ const localQAMode=(location.hostname==='127.0.0.1'||location.hostname==='localho
 // Kept off the public build: the browser acceptance suite can inspect real
 // runtime state after it starts one of the local QA routes. This is stronger
 // than a source-pattern assertion while avoiding an in-game debug surface.
-function readLocalRuntimeDiagnostics(){
+function readLocalRuntimeDiagnostics({includeMemory=false}={}){
   const diagnostics=graphics?.getDiagnostics?.()||{},forest=worldOverhaul?.forest;
+  // This diagnostics surface exists only on localhost QA routes. Keep the
+  // normal lightweight polling path free of a scene-wide memory traversal;
+  // browser acceptance can explicitly ask for a measured graphics estimate.
+  const memory=includeMemory?graphicsMemoryEstimate(diagnostics.preset,diagnostics):null;
   return {
     quality:diagnostics.quality||null,textureTier:diagnostics.preset?.textureTier||null,
     textureStatus:graphicsTextureStatus,missionAssetsReady,
+    graphics:{
+      preference:activeGraphicsPreference,
+      auto:{active:autoBenchmark.active,pending:autoBenchmark.pending,warmup:autoBenchmark.warmup,samples:autoBenchmark.samples.length,hitches:autoBenchmark.hitches},
+      mode:diagnostics.mode||null,postProcessing:Boolean(diagnostics.postProcessingEnabled),
+      custom:diagnostics.customSettings||null,
+      output:{mode:diagnostics.outputResolutionMode||null,requestedHeight:diagnostics.requestedOutputHeight||0,width:diagnostics.effectiveOutputWidth||0,height:diagnostics.effectiveOutputHeight||0,limited:Boolean(diagnostics.outputResolutionLimited)},
+      effects:{ambientOcclusion:Boolean(diagnostics.ambientOcclusionEnabled),reflections:Boolean(diagnostics.screenSpaceReflectionsEnabled),bloom:Boolean(diagnostics.bloomEnabled)},
+      ray:diagnostics.rayTracing?{native:Boolean(diagnostics.rayTracing.nativeRayTracing),reflections:Boolean(diagnostics.rayTracing.requestedReflections),shadows:Boolean(diagnostics.rayTracing.requestedShadows),indirect:Boolean(diagnostics.rayTracing.requestedGlobalIllumination)}:null,
+      upscaler:diagnostics.upscaler?{native:Boolean(diagnostics.upscaler.nativeAvailable),requested:Boolean(diagnostics.upscaler.requestedFSR2),active:Boolean(diagnostics.upscaler.spatialFallbackActive),bypassed:Boolean(diagnostics.upscaler.spatialFallbackBypassed)}:null,
+      memory
+    },
     camera:{x:camera.position.x,y:camera.position.y,z:camera.position.z},
     forest:{trees:forest?.activeTreeCounts||{},fir:forest?.highTierFirStats||{}},
     perimeterFence:{highTierPanels:perimeterFenceRoot?.children.length||0,enabled:Boolean(perimeterFenceRoot?.visible)},
