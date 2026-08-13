@@ -359,6 +359,7 @@ export async function createGraphicsPipeline({
   let runtimeFallback = false;
   let disposed = false;
   let fallbackReason = null;
+  let settingsRevision = 0;
   const rayTracingCapabilities = Object.freeze({
     backend: 'webgl',
     webgpuDetected: Boolean(globalThis.navigator?.gpu),
@@ -565,7 +566,8 @@ export async function createGraphicsPipeline({
     return getDiagnostics();
   }
 
-  function applyQuality(nextQuality = currentQuality, { preserveCustom = false } = {}) {
+  function applyQuality(nextQuality = currentQuality, { preserveCustom = false, initializePasses = true } = {}) {
+    const revision = ++settingsRevision;
     currentQuality = qualityName(nextQuality);
     if (!preserveCustom) customSettings = null;
     const preset = activePreset();
@@ -574,9 +576,9 @@ export async function createGraphicsPipeline({
     // Add expensive passes only when a user elects a tier that needs them.
     // This keeps an Intel-HD boot free of SSAO, bloom, and SSR allocations.
     if (preset.postProcessing !== false && ensureComposer()) {
-      if (ambientOcclusion && (preset.ambientOcclusion || preset.rayTracedGlobalIllumination) && !ssaoPass && !ssaoUnavailable) Promise.resolve(ensureSSAOPass()).then(() => applyQuality(currentQuality, { preserveCustom: true }));
-      if (bloom && preset.bloom && !bloomPass && !bloomUnavailable) Promise.resolve(ensureBloomPass()).then(() => applyQuality(currentQuality, { preserveCustom: true }));
-      if (reflectionSettings.enabled && !ssrPass && !ssrUnavailable) Promise.resolve(ensureSSRPass()).then(() => applyQuality(currentQuality, { preserveCustom: true }));
+      if (initializePasses && ambientOcclusion && (preset.ambientOcclusion || preset.rayTracedGlobalIllumination) && !ssaoPass && !ssaoUnavailable) ensureSSAOPass();
+      if (initializePasses && bloom && preset.bloom && !bloomPass && !bloomUnavailable) ensureBloomPass();
+      if (initializePasses && reflectionSettings.enabled && !ssrPass && !ssrUnavailable) ensureSSRPass();
     } else if (preset.postProcessing === false && composer) {
       // Competitive Low must really relinquish composer/pass render targets on
       // a live down-switch, rather than merely disable their visual output.
@@ -602,6 +604,20 @@ export async function createGraphicsPipeline({
       ssrPass.opacity = reflectionSettings.opacity;
     }
     resize(currentWidth, currentHeight, requestedPixelRatio);
+    // One settings change can request several dynamically imported passes.
+    // Reconcile them together so their individual completions cannot trigger
+    // overlapping apply/resize cascades. A newer settings change invalidates
+    // this continuation and owns the next reconciliation instead.
+    // Include already-running imports even if this revision turned their
+    // effect off. The latest revision must disable a pass that finishes after
+    // its control changed, rather than leaving the pass at its default state.
+    const passInitializations = [ssaoInitialization, bloomInitialization, ssrInitialization].filter(Boolean);
+    if (passInitializations.length) {
+      Promise.allSettled(passInitializations).then(() => {
+        if (disposed || revision !== settingsRevision) return;
+        applyQuality(currentQuality, { preserveCustom: true, initializePasses: false });
+      });
+    }
     return getDiagnostics();
   }
 

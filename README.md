@@ -1,13 +1,13 @@
 # SPECTER: Blacksite
 
-Build: `5.17.0-MOBILE-AUTO-QA`
+Build: `5.17.1-RELEASE-GATE`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build
-5.17.0 continues the controller, viewmodel, combat presentation, enemy behavior,
+5.17.1 continues the controller, viewmodel, combat presentation, enemy behavior,
 facility, exterior-compound, rendering, materials, audio, and mission-flow work
 while keeping the project suitable for static hosting on GitHub Pages.
 
-## Build 5.17.0 highlights
+## Build 5.17.1 highlights
 
 - AUTO graphics now has a bounded, conservative completion path for extremely
   slow or background-throttled devices: it resolves to the mobile/Intel-safe
@@ -440,4 +440,4 @@ prompts, and build records.
 Research links in `THIRD_PARTY_ASSETS.md` are evaluation notes only. Their models,
 textures, and audio are not bundled merely because a source URL is listed. No
 sci-fi, futuristic, fantasy, cartoon, stylized, or visibly low-detail research
-asset was accepted into the build 5.17.0-MOBILE-AUTO-QA runtime.
+asset was accepted into the build 5.17.1-RELEASE-GATE runtime.

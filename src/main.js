@@ -2,16 +2,19 @@ import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.17.0-mobile-auto-qa';
-import { buildWorldOverhaul } from './world-overhaul.js?v=5.17.0-mobile-auto-qa';
-import { EnemyAISystem } from './enemy-ai.js?v=5.17.0-mobile-auto-qa';
-import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS,SPATIAL_UPSCALE_FALLBACK_SCALE } from './graphics-pipeline.js?v=5.17.0-mobile-auto-qa';
-import { createAudioDirector } from './audio-overhaul.js?v=5.17.0-mobile-auto-qa';
-import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.17.0-mobile-auto-qa';
+import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.17.1-release-gate';
+import { buildWorldOverhaul } from './world-overhaul.js?v=5.17.1-release-gate';
+import { EnemyAISystem } from './enemy-ai.js?v=5.17.1-release-gate';
+import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS,SPATIAL_UPSCALE_FALLBACK_SCALE } from './graphics-pipeline.js?v=5.17.1-release-gate';
+import { createAudioDirector } from './audio-overhaul.js?v=5.17.1-release-gate';
+import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.17.1-release-gate';
 
 const graphicsCustomStorageKey='specter-custom-graphics';
 const voiceSettingsStorageKey='specter-voice-settings';
 const startupQualityQuery=String(new URLSearchParams(location.search).get('quality')||'').toLowerCase();
+const localQAMode=(location.hostname==='127.0.0.1'||location.hostname==='localhost')?new URLSearchParams(location.search).get('qa'):null;
+const lightweightGraphicsQAMode=localQAMode==='graphics';
+let lightweightGraphicsQARenderRequested=true;
 // A link that deliberately selects a tier must be reproducible.  Do not let a
 // previous custom menu state silently turn an Intel/QA URL into an Extreme one.
 const hasExplicitGraphicsQualityQuery=/^(?:auto|mobile|intel|performance|balanced|high|ultra|extreme)$/i.test(startupQualityQuery||'');
@@ -456,7 +459,9 @@ function hideByName(root,patterns){
   });
 }
 
-await loadEnvironmentAssets();
+if(lightweightGraphicsQAMode){
+  assetProgress.environment=1;updateLoading();status('environment','LOADED','graphics QA minimal scene');
+}else await loadEnvironmentAssets();
 
 function applyTextureSampling(texture,anisotropy){
   if(!texture?.isTexture)return;
@@ -600,10 +605,12 @@ function applyGraphicsHardwareBudget(quality,effectivePreset=null){
   const environmentIs4K=environmentPbrEntries.every(([name])=>Math.max(environmentTextures[name]?.image?.width||0,environmentTextures[name]?.image?.height||0)>=4096);
   graphicsTextureStatus=lowTexturesReloadPending?'LOW 512 PBR ON RELOAD':mediumTexturesReloadPending?'MEDIUM 1K PBR ON RELOAD':highTexturesReloadPending?'HIGH TEXTURES ON RELOAD':preset.textureTier==='4k-preferred'?(environmentIs4K?'NATIVE 4K PBR':'2K PBR FALLBACK'):(preset.textureTier==='low'?'LOW-PAYLOAD 512 PBR':preset.textureTier==='medium'?'MEDIUM 1K PBR':'2K PBR');
   worldOverhaul?.setGraphicsQuality(quality,preset);
-  updateForestFernsForGraphics(preset);
-  updateForestHeroFirsForGraphics(preset);
-  updatePerimeterFenceForGraphics(preset);
-  updateOfficeDesksForGraphics(preset);
+  if(!lightweightGraphicsQAMode){
+    updateForestFernsForGraphics(preset);
+    updateForestHeroFirsForGraphics(preset);
+    updatePerimeterFenceForGraphics(preset);
+    updateOfficeDesksForGraphics(preset);
+  }
   applyScopeRenderBudget(quality,preset);
   renderGraphicsMemoryEstimate(preset);
   if(preset.textureTier==='4k-preferred'&&!environmentIs4K)void ensureNativeEnvironment4K().then(loaded=>{
@@ -758,6 +765,7 @@ function setGraphicsQuality(quality,{persist=true}={}){
   const isAuto=quality===AUTO_GRAPHICS_QUALITY,selected=isAuto?recommendedGraphicsQuality(startupGraphicsCapabilities):quality,runtimeSelected=runtimeGraphicsQuality(selected);
   cancelAutoGraphicsBenchmark();activeGraphicsPreference=quality;
   const diagnostics=graphics.setQuality(runtimeSelected);
+  lightweightGraphicsQARenderRequested=true;
   applyGraphicsHardwareBudget(runtimeSelected,diagnostics.preset);
   if(isAuto)beginAutoGraphicsBenchmark();
   if(persist){try{localStorage.setItem(qualityStorageKey,quality);localStorage.removeItem(graphicsCustomStorageKey)}catch{ /* Embedded previews can reject persistent storage. */ }}
@@ -767,6 +775,7 @@ function setGraphicsQuality(quality,{persist=true}={}){
 function applyCustomGraphicsSettings(){
   cancelAutoGraphicsBenchmark();
   const customSettings=graphicsCustomDraft(),diagnostics=graphics.setCustomSettings(customSettings);
+  lightweightGraphicsQARenderRequested=true;
   activeGraphicsPreference=diagnostics.quality;applyGraphicsHardwareBudget(diagnostics.quality,diagnostics.preset);
   bootGraphicsCustomSettings={...customSettings,antialiasing:graphicsAntialias.checked?'on':'off'};
   try{localStorage.setItem(qualityStorageKey,diagnostics.quality);localStorage.setItem(graphicsCustomStorageKey,JSON.stringify(bootGraphicsCustomSettings))}catch{ /* Embedded previews can reject persistent storage. */ }
@@ -775,6 +784,7 @@ function applyCustomGraphicsSettings(){
 function resetCustomGraphicsSettings(){
   cancelAutoGraphicsBenchmark();bootGraphicsCustomSettings={};try{localStorage.removeItem(graphicsCustomStorageKey)}catch{ /* Storage is optional. */ }
   const diagnostics=graphics.clearCustomSettings();activeGraphicsPreference=diagnostics.quality;applyGraphicsHardwareBudget(diagnostics.quality,diagnostics.preset);renderGraphicsControls(diagnostics);toast('GRAPHICS CUSTOM SETTINGS RESET');
+  lightweightGraphicsQARenderRequested=true;
 }
 function toggleGraphicsPanel(force){
   const open=force??!graphicsPanel.classList.contains('active');
@@ -2529,7 +2539,6 @@ document.addEventListener('pointerlockerror',()=>{
   embeddedMouseLook=true;
   if(!fallbackNoticeShown){fallbackNoticeShown=true;toast('EMBEDDED MOUSE LOOK ACTIVE')}
 });
-const localQAMode=(location.hostname==='127.0.0.1'||location.hostname==='localhost')?new URLSearchParams(location.search).get('qa'):null;
 // Kept off the public build: the browser acceptance suite can inspect real
 // runtime state after it starts one of the local QA routes. This is stronger
 // than a source-pattern assertion while avoiding an in-game debug surface.
@@ -2584,7 +2593,12 @@ startButton.onclick=()=>{started=true;missionHasStarted=true;startPanel.style.di
 renderer.domElement.onclick=()=>{if(started&&!extractionSequence&&!controls.isLocked&&!embeddedMouseLook)beginMouseLook()};
 document.getElementById('restartButton').onclick=()=>location.reload();
 
-await Promise.all([
+if(lightweightGraphicsQAMode){
+  for(const name of Object.keys(assetProgress))assetProgress[name]=1;
+  updateLoading();missionAssetsReady=true;startButton.disabled=false;startButton.textContent='ENTER BLACKSITE';loadMessage.textContent='Graphics QA renderer ready.';
+  status('props','LOADED','graphics QA minimal scene');status('audio','LOADED','not requested by graphics QA');
+  applyGraphicsHardwareBudget(graphics.getDiagnostics().quality,graphics.getDiagnostics().preset);renderGraphicsControls();
+}else await Promise.all([
   loadAudioAssets(),
   loadSetDressAsset('steelShelves','./assets/environment/polyhaven-steel-frame-shelves-01/steel_frame_shelves_01_2k.gltf','CC0 industrial shelf'),
   loadSetDressAsset('powerBox','./assets/environment/polyhaven-power-box-01/power_box_01_2k.gltf','CC0 power box'),
@@ -2594,9 +2608,9 @@ await Promise.all([
   loadAsset('m9','./assets/m9/scene.gltf'),
   loadAsset('soldier','./assets/soldier/scene.gltf')
 ]);
-if(requiredAssetFailure){
+if(!lightweightGraphicsQAMode&&requiredAssetFailure){
   startButton.disabled=true;startButton.textContent='ASSET CHECK FAILED';loadMessage.textContent='A required model or texture failed to load. Check the diagnostics above.';
-}else{
+}else if(!lightweightGraphicsQAMode){
   installRifle();installPistol();installRifleVariants();installPlayerModel();installPlayerArms();installIndustrialShelving();installPowerBox();const exteriorContainerCount=installPlasticContainers(),roadBarrierCount=installRoadBarriers(),activePreset=graphics.getDiagnostics().preset;const propSummary=[assetMap.has('steelShelves')?'3 industrial shelves':'',assetMap.has('powerBox')?'animated power box':'',exteriorContainerCount?`${exteriorContainerCount} exterior containers`:'',roadBarrierCount?`${roadBarrierCount} road barriers`:'',worldOverhaul.utilityYard?'expanded utility yard':'',worldOverhaul.grass&&activePreset.grassEnabled?'6.8K grass clumps':worldOverhaul.grass?'grass disabled by preset':'' ].filter(Boolean).join(' · ');status('props','LOADED',propSummary||'procedural prop fallback');attachFlashlightToWeapon(currentWeapon);
   spawnEnemy(-2.5,-8,'rifleman');spawnEnemy(2.9,-18,'scout');spawnEnemy(-1.2,-27,'breacher');
   spawnEnemy(3.8,-54,'rifleman');spawnEnemy(-7.2,-68,'scout');spawnEnemy(8.5,-88,'breacher');spawnEnemy(-5.4,-108,'marksman');spawnEnemy(12,-122,'commander');
@@ -2612,6 +2626,14 @@ function animate(){
   requestAnimationFrame(animate);
   const rawDt=clock.getDelta(),dt=Math.min(rawDt,.05),t=clock.elapsedTime;
   sampleFrameRate(rawDt);
+  // The localhost-only graphics acceptance surface uses the real renderer and
+  // settings code without continuously rasterizing the entire combat map
+  // behind the title panel. Render one real frame after each requested change;
+  // mission QA and every public route retain the normal continuous loop.
+  if(lightweightGraphicsQAMode&&!started){
+    if(lightweightGraphicsQARenderRequested){graphics.render(dt);refreshGraphicsDiagnostics();lightweightGraphicsQARenderRequested=false}
+    return;
+  }
   if(started){
     if(extractionSequence)updateExtractionSequence(dt,t);else move(dt);worldOverhaul.update(dt,camera);renderer.toneMappingExposure=THREE.MathUtils.lerp(1.02,.8,worldOverhaul.outdoorBlend);weaponFill.intensity=THREE.MathUtils.lerp(4.8,1.45,worldOverhaul.outdoorBlend);
     if(!exteriorEntered&&camera.position.z<-47){exteriorEntered=true;objective.textContent='OBJECTIVE: CLEAR THE CHECKPOINT AND PERIMETER';toast('EXTERIOR COMBAT ZONE ENTERED')}

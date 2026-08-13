@@ -48,4 +48,17 @@ const server = createServer(async (request, response) => {
 });
 
 server.listen(port, '127.0.0.1', () => console.log(`SPECTER acceptance server listening at http://127.0.0.1:${port}/`));
-for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => server.close(() => process.exit(0)));
+let shuttingDown = false;
+function shutdown() {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  const deadline = setTimeout(() => process.exit(0), 1500);
+  deadline.unref();
+  server.close(() => process.exit(0));
+  // Playwright may terminate the server while Chromium still owns a keepalive
+  // socket. Close those acceptance-only connections so a passed run cannot
+  // sit in teardown until the workflow timeout.
+  server.closeIdleConnections?.();
+  server.closeAllConnections?.();
+}
+for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, shutdown);

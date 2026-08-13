@@ -388,6 +388,13 @@ await test('embedded preview protects itself from unsupported Extreme SSR', () =
   check(/function consumeComposerGlError\(\)/.test(pipeline) && /WebGL post-processing validation failed/.test(pipeline), 'Composer rendering must fall back after a WebGL validation failure.');
 });
 
+await test('post-processing imports reconcile once per settings revision', () => {
+  check(/let settingsRevision = 0;/.test(pipeline), 'Dynamic post-processing reconciliation must track the active settings revision.');
+  check(/Promise\.allSettled\(passInitializations\)/.test(pipeline), 'Dynamic post-processing imports must be reconciled as one settled batch.');
+  check(/revision !== settingsRevision/.test(pipeline), 'A stale post-processing import batch must not reapply superseded settings.');
+  check(!/ensure(?:SSAO|SSR|Bloom)Pass\(\)\)\.then\(/.test(pipeline), 'Individual post-processing imports must not start independent apply/resize cascades.');
+});
+
 await test('GPU-memory estimate refreshes after resize', () => {
   check(/function graphicsMemoryEstimate\(preset,diagnostics=graphics\?\.getDiagnostics\?\.\(\)\)/.test(main), 'Graphics memory estimator is missing.');
   check(/diagnostics\?\.effectiveOutputWidth/.test(main) && /pixels=outputWidth\*outputHeight/.test(main), 'Graphics memory estimate must use the live renderer drawing-buffer dimensions.');
