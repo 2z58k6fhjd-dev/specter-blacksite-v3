@@ -76,6 +76,11 @@ test('a weapon action and an actual enemy radio call reach the rendered HUD', as
 });
 
 test('high vegetation streams and presents the real CC0 fir LOD chain', async ({ page }) => {
+  // GitHub's cold software-rendered run loads the full high-detail model and
+  // foliage payload before this assertion. Local evidence completes near the
+  // default four-minute ceiling, so reserve explicit headroom without
+  // weakening any geometry, LOD, memory, or error assertion below.
+  test.setTimeout(360_000);
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await mirrorPinnedThree(page);
@@ -84,7 +89,7 @@ test('high vegetation streams and presents the real CC0 fir LOD chain', async ({
   await enterMission(page);
   // The optional close/mid forest asset is intentionally post-readiness. Wait
   // for the actual glTF-derived LODs, not merely the procedural cone fallback.
-  await expect.poll(() => localRuntimeDiagnostics(page), { timeout: 180_000 }).toMatchObject({
+  await expect.poll(() => localRuntimeDiagnostics(page), { timeout: 300_000 }).toMatchObject({
     quality: 'high', textureTier: 'high', missionAssetsReady: true,
     forest: {
       fir: {
