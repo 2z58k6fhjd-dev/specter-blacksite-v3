@@ -55,6 +55,12 @@ jobs:
       - name: Check runtime acceptance contracts
         run: npm run qa:runtime
 
+      - name: Check isolated WebGPU renderer contracts and release closure
+        run: npm run qa:webgpu
+
+      - name: Run isolated WebGPU lab Chromium acceptance
+        run: npm run qa:webgpu-lab-browser
+
       - name: Run Chromium mission acceptance
         # Five cold-cache scenarios include a full graphics-setting persistence
         # pass. AUTO deliberately samples gameplay even on a software/mobile-

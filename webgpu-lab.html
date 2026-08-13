@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>SPECTER WebGPU Renderer Lab</title>
+  <link rel="stylesheet" href="./src/webgpu-lab/webgpu-lab.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "@specter-lab/three-webgpu": "./vendor/webgpu-lab/three-0.185.1/build/three.webgpu.js",
+      "@specter-lab/three-mesh-bvh": "./vendor/webgpu-lab/three-mesh-bvh-0.9.13/src/webgpu/index.js",
+      "three": "./vendor/webgpu-lab/three-0.185.1/build/three.webgpu.js",
+      "three/webgpu": "./vendor/webgpu-lab/three-0.185.1/build/three.webgpu.js",
+      "three/tsl": "./vendor/webgpu-lab/three-0.185.1/build/three.tsl.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">SPECTER // ISOLATED ENGINE WORKBENCH</p>
+    <h1>WebGPU renderer lab</h1>
+    <p class="lede">A fail-closed readiness probe for the future renderer. This page does not load the game, does not use CDN modules, and does not advertise a feature until direct evidence satisfies its gate.</p>
+    <button id="retryProbe" type="button">RUN PROBE AGAIN</button>
+    <p class="notice"><strong>Claims boundary:</strong> standardized WebGPU has no hardware-ray-tracing API. The lab's triangle path uses compute-shader BVH traversal. The current game scaler is not AMD FSR 2, and the staged AMD 2.2.1 reference covers only one first-mip luminance operation.</p>
+    <div id="labOutput" aria-live="polite" aria-busy="true"></div>
+  </main>
+  <script type="module" src="./src/webgpu-lab/main.js"></script>
+</body>
+</html>

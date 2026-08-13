@@ -1,0 +1,317 @@
+{
+  "schema": "specter-vendored-npm-closure/v1",
+  "package": {
+    "name": "three-mesh-bvh",
+    "version": "0.9.13",
+    "license": "MIT",
+    "registry": "https://registry.npmjs.org/three-mesh-bvh",
+    "tarball": "https://registry.npmjs.org/three-mesh-bvh/-/three-mesh-bvh-0.9.13.tgz",
+    "tarballSha256": "e626379202bfa250ce75800c07f5b9083510eb85b1bb4e7c865c647e88c1c8ad",
+    "npmIntegrity": "sha512-2zRh4iTFDmiTISanSVFofIw6J92DxFSqWn2qsQTtKp2ko5Ebk/JaI/wpMqNaBJ3F0qx7/NuP9GPK4jGDX99J2Q=="
+  },
+  "entrypoints": [
+    "src/webgpu/index.js"
+  ],
+  "files": [
+    {
+      "path": "LICENSE",
+      "sha256": "b106ef6198a9862ed2b5b873e944ecf3583c631a84a7462d400ecc1910ce7fee",
+      "bytes": 1072
+    },
+    {
+      "path": "package.json",
+      "sha256": "d0a86cf2c18ddc293b44bd1801b1c6071e1fb48c6ff955219429bee78114b51b",
+      "bytes": 2646
+    },
+    {
+      "path": "src/core/build/buildTree.js",
+      "sha256": "14793377d68353617a7e76b560223b173a768846719cbb3a3b4aaf038fe7ef80",
+      "bytes": 4919
+    },
+    {
+      "path": "src/core/build/buildUtils.js",
+      "sha256": "a8b849fbfa2f4ae3808bd111ecf20f79213cc18c13ea4043d2d7fa8e81b3ea44",
+      "bytes": 2312
+    },
+    {
+      "path": "src/core/build/computeBoundsUtils.js",
+      "sha256": "b0596bd329f99f9dcc5f33c3af909ca853726c07d7d7ced42ca974319a46b3e4",
+      "bytes": 1882
+    },
+    {
+      "path": "src/core/build/geometryUtils.js",
+      "sha256": "ae71dfbadf9e6a3a8963b0784aaf4d3f1b12a7ee8a8f3bccc9b251c838360e3e",
+      "bytes": 4126
+    },
+    {
+      "path": "src/core/build/sortUtils.js",
+      "sha256": "54923f99e4d5e779943b0c211b12a2c65b3a9f5579da6e1d589b1088128a3add",
+      "bytes": 1761
+    },
+    {
+      "path": "src/core/build/splitUtils.js",
+      "sha256": "611c1b9f9fcf7e3f55997def32f0c47476269b8a1cc8b38d38ea8aff02baa4e0",
+      "bytes": 7338
+    },
+    {
+      "path": "src/core/BVH.js",
+      "sha256": "2a0813bf437c245e14937bb929776b7106f48d94bc98cf96cc106f54356b8a34",
+      "bytes": 11621
+    },
+    {
+      "path": "src/core/BVHNode.js",
+      "sha256": "7cf8d828145b54d4ee2feec166c575b099cea71da07f807a8d5ef0f90b1fc7bc",
+      "bytes": 246
+    },
+    {
+      "path": "src/core/BVHTraversalHelper.js",
+      "sha256": "68959d21d75001e2fdb345b4890821991c2044c9d9fd938132fc926b3035f2db",
+      "bytes": 2890
+    },
+    {
+      "path": "src/core/cast/bvhcast.js",
+      "sha256": "be889ce017e3fb0d2758a40082969fbbc3db6d0a1bdb098a88e4f404e5e20ddd",
+      "bytes": 9365
+    },
+    {
+      "path": "src/core/cast/closestPointToGeometry.generated.js",
+      "sha256": "0f981858f3971a6e1a86f4597fe02c0028e9c826ec213cc3b0cb0ffe2c040913",
+      "bytes": 6051
+    },
+    {
+      "path": "src/core/cast/closestPointToGeometry_indirect.generated.js",
+      "sha256": "b233234d031601808be957a1f2eb37a8d4d7389f3522861b904d35ccfaa6d9d7",
+      "bytes": 6226
+    },
+    {
+      "path": "src/core/cast/closestPointToPoint.js",
+      "sha256": "296711939d33aab99c7b887fedd97dae5a53a35ff6bb2ad9f9ecb181a5badcd4",
+      "bytes": 1603
+    },
+    {
+      "path": "src/core/cast/intersectsGeometry.generated.js",
+      "sha256": "c618a6af5c7e0649240b54bae66f57de0c33cda9f5eef9b35d775fc5891ba2ad",
+      "bytes": 4797
+    },
+    {
+      "path": "src/core/cast/intersectsGeometry_indirect.generated.js",
+      "sha256": "cba4c920f9cadb170de37db74655a980c9e34b90ec14e0656969adfbfb79929e",
+      "bytes": 4867
+    },
+    {
+      "path": "src/core/cast/raycast.generated.js",
+      "sha256": "8185e10aa2f8c3c0249f2e0c770b66c4dcb7dd58ed8bfaf3efbc5838e0384f3d",
+      "bytes": 1645
+    },
+    {
+      "path": "src/core/cast/raycast_indirect.generated.js",
+      "sha256": "e579930a4012c6aa26ecf156268f7e155250f47dc6b73e250335d2469d2cb296",
+      "bytes": 1680
+    },
+    {
+      "path": "src/core/cast/raycastFirst.generated.js",
+      "sha256": "4e89cfc9695bcff713d3457229fda35f8ec3eb8d16c43ffeb34a7c1ae79551a0",
+      "bytes": 3291
+    },
+    {
+      "path": "src/core/cast/raycastFirst_indirect.generated.js",
+      "sha256": "294b7c7f89c1c985a0df7a3c4a2b55a2d8a6df8c452c5c22717c80c3ca030783",
+      "bytes": 3281
+    },
+    {
+      "path": "src/core/cast/refit.generated.js",
+      "sha256": "7dfe122498f14ac79cd4e74bd77872a4401ee6b6bf4a93ad97f80790f189af35",
+      "bytes": 4463
+    },
+    {
+      "path": "src/core/cast/refit_indirect.generated.js",
+      "sha256": "97fa130b81de7f568abfba9eb0e2186512f9b3d027fa88c6521aca909e981c5f",
+      "bytes": 4617
+    },
+    {
+      "path": "src/core/cast/shapecast.js",
+      "sha256": "9fa4aed17f4e2895c2b1a34cb0f072c37acc8ded99868066d4f07fa0e2f570a2",
+      "bytes": 5344
+    },
+    {
+      "path": "src/core/Constants.js",
+      "sha256": "2844d2bd13dab0fcc219229eceebd5a592f411e93fb2dd8efe02663589a69e09",
+      "bytes": 2394
+    },
+    {
+      "path": "src/core/GeometryBVH.js",
+      "sha256": "1ce7464e1f77be01e69029ffbb3d76b182b38f6a10947763e46891696888bf7f",
+      "bytes": 5413
+    },
+    {
+      "path": "src/core/MeshBVH.js",
+      "sha256": "1f917667d86e7d8e04060104bf760b7021432311ce691645f232beff2ebefff2",
+      "bytes": 27986
+    },
+    {
+      "path": "src/core/SkinnedMeshBVH.js",
+      "sha256": "8305377bc8fb72d597418b0e708754a2e452f00ddeec405356f0926542c837d0",
+      "bytes": 9744
+    },
+    {
+      "path": "src/core/utils/BufferStack.js",
+      "sha256": "c94b20fde61b58d10596ff4c969667eb19ac19f09c7397f3f4fc06449abc0375",
+      "bytes": 729
+    },
+    {
+      "path": "src/core/utils/intersectUtils.js",
+      "sha256": "b98f82110a9c6c45a3b29a9e79583a4f35f0f1f4bd7d126c8fc072112546540c",
+      "bytes": 1686
+    },
+    {
+      "path": "src/core/utils/iterationUtils.generated.js",
+      "sha256": "900ed65be866c9f5e39adc523f68c0ecb1c7235d03cff965b7b72378bfd4f58e",
+      "bytes": 1664
+    },
+    {
+      "path": "src/core/utils/iterationUtils_indirect.generated.js",
+      "sha256": "36ca2be43e2776b3de3d32f45a47f53ac7b1aa241396e8199556cdb64b5ade5c",
+      "bytes": 1840
+    },
+    {
+      "path": "src/core/utils/nodeBufferUtils.js",
+      "sha256": "8632a4444c086c1984a471bc75f0902964cbcd52013aba06c73df4403401b0b2",
+      "bytes": 943
+    },
+    {
+      "path": "src/math/ExtendedTriangle.js",
+      "sha256": "85435041c00fbb0e2e69caecf1289339deef791cd2a8badc08bdca004700436f",
+      "bytes": 20399
+    },
+    {
+      "path": "src/math/MathUtilities.js",
+      "sha256": "9b1f8facd181b29506c32dda303097c3c2515b95c19ac1f5121e8d8a9946154b",
+      "bytes": 4308
+    },
+    {
+      "path": "src/math/OrientedBox.js",
+      "sha256": "5f24dec94ea76ee1c78da7b6593703b4d4c06eccc1e92cafca853477856dc89c",
+      "bytes": 11304
+    },
+    {
+      "path": "src/math/SeparatingAxisBounds.js",
+      "sha256": "3e608a7bb5acc71d1f09af9a3b169518ea4de7cc436f11f7d868f5823ac09434",
+      "bytes": 2391
+    },
+    {
+      "path": "src/utils/ArrayBoxUtilities.js",
+      "sha256": "583898689314c583d53d1eeb627890a3559d879e922ada706424f585a6bff763",
+      "bytes": 2015
+    },
+    {
+      "path": "src/utils/BufferUtils.js",
+      "sha256": "b83540dd60363892ce18082c5910a8e2cc87f37d6e811768830a0f34863b5658",
+      "bytes": 753
+    },
+    {
+      "path": "src/utils/ExtendedTrianglePool.js",
+      "sha256": "b6bf7e421537d4cb7be66f6d7a60a87eb8a96b45b41e51e89e344f81f4295a37",
+      "bytes": 324
+    },
+    {
+      "path": "src/utils/GeometryRayIntersectUtilities.js",
+      "sha256": "cbb52046616cc9e0c9c5d20e309b8ce5d0b1c7695937a5cf1db8baebdc5b5a34",
+      "bytes": 406
+    },
+    {
+      "path": "src/utils/PrimitivePool.js",
+      "sha256": "91c2510b6414084634479cacb9af1dee2f56114025108d68ab0ae01814ba329a",
+      "bytes": 397
+    },
+    {
+      "path": "src/utils/ThreeRayIntersectUtilities.js",
+      "sha256": "157bed8831521365f325ed5c4c1827f6d7b7afa0a6cf2b0cbc2ec34df0043240",
+      "bytes": 5329
+    },
+    {
+      "path": "src/utils/TriangleUtilities.js",
+      "sha256": "1b6118e427f613160570f22da94b1016420d1b692610aaade00d74a83736b8ce",
+      "bytes": 4189
+    },
+    {
+      "path": "src/webgpu/bvh_ray_functions.wgsl.js",
+      "sha256": "501634c1847499e8b14f89546f4afe653e6b640624969d627a4c62d198b17966",
+      "bytes": 4157
+    },
+    {
+      "path": "src/webgpu/BVHComputeData.js",
+      "sha256": "625235c55decd71e4b2e4aacca6214801a5a7b4c079b7ce1b21e5570e07b3e3a",
+      "bytes": 23666
+    },
+    {
+      "path": "src/webgpu/ClusteredBVH.js",
+      "sha256": "a9295bdee87d335eb1d708a7bec8090726f424c095492e2b69beb56ce2dd7b26",
+      "bytes": 8583
+    },
+    {
+      "path": "src/webgpu/common_functions.wgsl.js",
+      "sha256": "2fdb79f67a5cadbc588026a4945f385b79d36e9382fc7286a5bd4d6564834ad3",
+      "bytes": 2046
+    },
+    {
+      "path": "src/webgpu/distance_functions.wgsl.js",
+      "sha256": "fea57e5e40cba5e552c54b33e305fe0e280497e053e6007a37e78f60a0339524",
+      "bytes": 6113
+    },
+    {
+      "path": "src/webgpu/index.js",
+      "sha256": "ff6ec281736189ed06b6a87303b4a8077e762fc2d6a08617724294f4716c03de",
+      "bytes": 374
+    },
+    {
+      "path": "src/webgpu/nodes/NodeProxy.js",
+      "sha256": "e968309da42cc23716d1c886ebb70a082b9ca9cee571e7baa541a57ce6b7692a",
+      "bytes": 2801
+    },
+    {
+      "path": "src/webgpu/nodes/WGSLTagFnNode.js",
+      "sha256": "da4cb3966a617f3428d88cf957d4565c01ef6d28622d6832945446da5acb2bec",
+      "bytes": 6505
+    },
+    {
+      "path": "src/webgpu/shapecastFns/getClosestPointToPointFn.js",
+      "sha256": "11380b8849b526e3e2b950ed5c6f7299c2dc0d8992778b2f1cfdfff4d1730b75",
+      "bytes": 5146
+    },
+    {
+      "path": "src/webgpu/shapecastFns/getRaycastFirstHitFn.js",
+      "sha256": "28b5ad475ba58cb0bb27e111209629377410f25dc25bf3071e92fc1969af8f8c",
+      "bytes": 4328
+    },
+    {
+      "path": "src/webgpu/shapecastFns/getSampleTrianglePointFn.js",
+      "sha256": "e046a48f93416e176b841348b709f5a1bcdc2fc541902fe20137ca861b470043",
+      "bytes": 1173
+    },
+    {
+      "path": "src/webgpu/shapecastFns/getShapecastFn.js",
+      "sha256": "42d31ef3c8741cd1f73e701a9174f4df46ee2794ca78ef78b6578f5f94a20741",
+      "bytes": 6923
+    },
+    {
+      "path": "src/webgpu/tsl/constants.js",
+      "sha256": "b2acd9dca84c121ea97c0841fef13ed5a0644081846071970bac8ac4d4927a71",
+      "bytes": 78
+    },
+    {
+      "path": "src/webgpu/tsl/fns.js",
+      "sha256": "e62628840bb738dbee16d2c9d9b77d6b61ef909c65897110f4374f7f811d977e",
+      "bytes": 3335
+    },
+    {
+      "path": "src/webgpu/tsl/structs.js",
+      "sha256": "174830daee7875185294852257f119bb335241072c61bdffb4c34f9322b42ad9",
+      "bytes": 2178
+    },
+    {
+      "path": "src/webgpu/utils/packBVHBufferUtils.js",
+      "sha256": "81b6ae6f3d26c61af79535c9022f212b15f9aa781cdcdef8763d11aa7f33f2d8",
+      "bytes": 10972
+    }
+  ]
+}

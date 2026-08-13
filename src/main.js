@@ -2,12 +2,12 @@ import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.17.1-release-gate';
-import { buildWorldOverhaul } from './world-overhaul.js?v=5.17.1-release-gate';
-import { EnemyAISystem } from './enemy-ai.js?v=5.17.1-release-gate';
-import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS,SPATIAL_UPSCALE_FALLBACK_SCALE } from './graphics-pipeline.js?v=5.17.1-release-gate';
-import { createAudioDirector } from './audio-overhaul.js?v=5.17.1-release-gate';
-import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.17.1-release-gate';
+import { buildSpecterOperator,createSpecterViewMaterials,poseSpecterOperator } from './specter-operator.js?v=5.18.0-webgpu-foundation';
+import { buildWorldOverhaul } from './world-overhaul.js?v=5.18.0-webgpu-foundation';
+import { EnemyAISystem } from './enemy-ai.js?v=5.18.0-webgpu-foundation';
+import { createGraphicsPipeline,GRAPHICS_QUALITY_PRESETS,SPATIAL_UPSCALE_FALLBACK_SCALE } from './graphics-pipeline.js?v=5.18.0-webgpu-foundation';
+import { createAudioDirector } from './audio-overhaul.js?v=5.18.0-webgpu-foundation';
+import { createTacticalAnimator,WeaponActionTimeline,TacticalWeaponAction } from './tactical-animation.js?v=5.18.0-webgpu-foundation';
 
 const graphicsCustomStorageKey='specter-custom-graphics';
 const voiceSettingsStorageKey='specter-voice-settings';

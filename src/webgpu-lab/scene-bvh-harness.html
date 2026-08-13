@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex, nofollow">
+  <title>SPECTER deterministic BVH harness</title>
+  <script type="importmap">
+  {
+    "imports": {
+      "@specter-lab/three-webgpu": "../../vendor/webgpu-lab/three-0.185.1/build/three.webgpu.js",
+      "@specter-lab/three-mesh-bvh": "../../vendor/webgpu-lab/three-mesh-bvh-0.9.13/src/webgpu/index.js",
+      "three": "../../vendor/webgpu-lab/three-0.185.1/build/three.webgpu.js",
+      "three/webgpu": "../../vendor/webgpu-lab/three-0.185.1/build/three.webgpu.js",
+      "three/tsl": "../../vendor/webgpu-lab/three-0.185.1/build/three.tsl.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <pre id="result">packing</pre>
+  <script type="module" src="./scene-bvh-harness.js"></script>
+</body>
+</html>

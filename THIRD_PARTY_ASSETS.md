@@ -1,8 +1,42 @@
 # SPECTER: Blacksite - Asset Provenance and License Manifest
 
-This manifest distinguishes assets that ship with build `5.17.1-RELEASE-GATE` from links retained
+This manifest distinguishes assets that ship with build `5.18.0-WEBGPU-FOUNDATION` from links retained
 only for research. A source appearing in a research table does not mean its
 files were downloaded, integrated, or redistributed.
+
+## Isolated WebGPU lab software (not gameplay or art assets)
+
+Build 5.18.0 includes a separate, demand-loaded `webgpu-lab.html` research page.
+It is not imported by the game, does not import the game, and its dependency
+tree is not service-worker precached. The lab vendors exact official npm
+tarball closures for Three.js 0.185.1 and three-mesh-bvh 0.9.13. Both packages
+are MIT-licensed; their original `LICENSE`, `package.json`, tarball integrity,
+and per-file SHA-256/byte-count receipts are preserved under
+`vendor/webgpu-lab/`. Complete software notices are recorded in
+`THIRD_PARTY_SOFTWARE.md`; these packages do not change any asset attribution
+or license below.
+
+The isolated lab contains a capability-gated temporal MRT foundation and a
+deterministic three-object, 12-triangle TLAS/BLAS pack produced through the
+pinned `BVHComputeData` path. An independent CPU oracle validates the packed
+scene, but it is explicitly marked as non-GPU evidence. A bounded WGSL traversal
+and strict receipt validator are prepared to accept GPU evidence only after
+exact `GPUBuffer.mapAsync` readback, pinned pack and kernel hashes, and clean
+WebGPU error scopes on a real adapter. No adapter or receipt is assumed from
+source presence or CPU validation.
+
+None of this migrates the SPECTER gameplay renderer, traces production game
+lighting, exposes standardized hardware ray tracing, or implements the AMD
+FSR 2 algorithm. Geometry ray tracing, hardware ray tracing, and AMD FSR 2
+remain inactive in the game; the existing WebGL SSR, SSAO/ambient-light, PCF
+shadow, and 77% spatial-scaling paths remain explicitly labeled fallbacks.
+
+The repository also retains an isolated, project-authored WGSL/CPU translation
+of only AMD FSR 2.2.1's first 2x2 log-luminance reduction, pinned to upstream
+commit `1680d1edd5c034f88ebbbb793d8b88f8842cf804`. AMD's original MIT notice and
+source-object hashes are in `src/experimental/fsr2-2.2.1/`; full SPD mip
+generation, exposure, temporal reconstruction, and RCAS remain absent. Software
+provenance belongs in `THIRD_PARTY_SOFTWARE.md`, not the art-asset tables below.
 
 ## Bundled third-party 3D assets
 
@@ -160,7 +194,7 @@ every enemy weapon clone.
 
 `src/modern-arsenal.js` is preserved as an optional project-authored prototype
 module. It contains compact-carbine, marksman-rifle, and procedural T12 tactical
-autoloader factories plus metadata and animation anchors. Build 5.17.1-RELEASE-GATE does not
+autoloader factories plus metadata and animation anchors. Build 5.18.0-WEBGPU-FOUNDATION does not
 import, execute, or precache this module, and no runtime weapon slot selects it.
 In particular, the procedural T12 failed the final close-up art-quality gate and
 has no selectable slot; slot 5 is the full-source MCR-300 suppressed rifle
@@ -217,7 +251,7 @@ folders; `manifest.json` records the source and derivative hashes.
 The original `concrete-wall.webp`, `metal-floor.webp`, `utility-panels.webp`, and
 `grass-field-v1.webp` files were generated specifically for this project with
 OpenAI image generation on 2026-08-08. They are preserved with their records in
-`assets/environment/README.txt`, but build 5.17.1-RELEASE-GATE uses the PBR v2 set for its main
+`assets/environment/README.txt`, but build 5.18.0-WEBGPU-FOUNDATION uses the PBR v2 set for its main
 runtime materials.
 
 ## Bundled recorded weapon reports
@@ -248,7 +282,7 @@ and browser-budget acceptance gates, see [`ASSET_CATALOG.md`](ASSET_CATALOG.md).
 It does not alter the attributions or local license records in this manifest.
 
 The following links are retained for future evaluation. None of these candidate
-archives or models should be described as included in build 5.17.1-RELEASE-GATE unless a future
+archives or models should be described as included in build 5.18.0-WEBGPU-FOUNDATION unless a future
 commit adds the source files, local license receipt, author, conversion notes,
 optimization record, and runtime integration.
 
@@ -305,7 +339,7 @@ links only and are not bundled:
 
 The [Ural 4320](https://sketchfab.com/3d-models/ural-4320-f953c51a5dbc4a15949f4dcc0905c4e8)
 by Brout was identified as a CC BY 4.0 present-day military truck candidate. It
-is not bundled; build 5.17.1-RELEASE-GATE uses project-authored procedural vehicle geometry.
+is not bundled; build 5.18.0-WEBGPU-FOUNDATION uses project-authored procedural vehicle geometry.
 
 ## Bundled tactical voice callouts
 
@@ -336,7 +370,7 @@ procedural fallback remains available if a clip cannot download or decode.
 
 ## Research-only audio candidates - not bundled
 
-Build 5.17.1-RELEASE-GATE uses project-authored procedural Web Audio,
+Build 5.18.0-WEBGPU-FOUNDATION uses project-authored procedural Web Audio,
 the separately documented CC BY 3.0 recorded report derivatives, zer0_sol CC0
 M9 empty-reload layer, and Kenney CC0 tactical callouts and player footsteps.
 The following pages remain research links only;
@@ -360,7 +394,7 @@ author, exact license receipt, source URL, editing notes, and runtime derivative
 
 ## Explicitly rejected and excluded content
 
-Build 5.17.1-RELEASE-GATE does not integrate sci-fi, futuristic, fantasy, anachronistic,
+Build 5.18.0-WEBGPU-FOUNDATION does not integrate sci-fi, futuristic, fantasy, anachronistic,
 cartoon, stylized, or visibly low-detail research assets. Small or stylized
 soldier and vehicle downloads used during research were rejected as final art
 and are not part of the runtime repository. Earlier rejected experimental

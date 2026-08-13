@@ -1,13 +1,40 @@
 # SPECTER: Blacksite
 
-Build: `5.17.1-RELEASE-GATE`
+Build: `5.18.0-WEBGPU-FOUNDATION`
 
 SPECTER: Blacksite is a desktop-first browser FPS built with Three.js. Build
-5.17.1 continues the controller, viewmodel, combat presentation, enemy behavior,
+5.18.0 continues the controller, viewmodel, combat presentation, enemy behavior,
 facility, exterior-compound, rendering, materials, audio, and mission-flow work
-while keeping the project suitable for static hosting on GitHub Pages.
+while adding an isolated WebGPU research foundation and keeping the project
+suitable for static hosting on GitHub Pages.
 
-## Build 5.17.1 highlights
+## Build 5.18.0 highlights
+
+- A deliberately isolated `webgpu-lab.html` is available as a demand-loaded
+  research page. The game does not import the lab, the lab does not import the
+  game, and the service worker does not precache the lab's dependency tree.
+  Its exact local dependencies are Three.js 0.185.1 and three-mesh-bvh 0.9.13,
+  both MIT-licensed and retained from official npm tarballs with per-file
+  SHA-256 and byte-count receipts.
+- The capability-gated lab defines a temporal MRT foundation for linear HDR
+  color, float depth, velocity, reactive and transparency/composition masks,
+  exposure, and double-buffered history. It also builds a deterministic
+  three-object, 12-triangle TLAS/BLAS through the pinned `BVHComputeData` path
+  and validates the packed buffers with an independent CPU oracle. That CPU
+  result proves deterministic packing and traversal only; it is not GPU proof.
+- A bounded WGSL TLAS/BLAS traversal and strict GPU receipt validator are
+  prepared. The lab accepts that stage only after exact `GPUBuffer.mapAsync`
+  readback bytes, the pinned pack and kernel hashes, and clean WebGPU error
+  scopes on an available adapter. No such receipt is inferred when a browser
+  exposes no adapter.
+- The first bounded AMD FSR 2.2.1 reference operation is now staged separately:
+  an 8x8 WGSL/CPU implementation of the initial 2x2 log-luminance reduction,
+  pinned to AMD commit `1680d1edd5c034f88ebbbb793d8b88f8842cf804` with the
+  original MIT notice and exact upstream blob receipts. It is one arithmetic
+  step only, not the complete SPD luminance pyramid or an FSR 2 upscaler.
+- This foundation does not migrate the SPECTER gameplay renderer, trace game
+  lighting, provide standardized hardware ray tracing, or implement AMD FSR 2.
+  Geometry ray tracing and AMD FSR 2 remain inactive in the game.
 
 - AUTO graphics now has a bounded, conservative completion path for extremely
   slow or background-throttled devices: it resolves to the mobile/Intel-safe
@@ -391,6 +418,26 @@ fallback before browser presentation. It is not temporal FSR2; a native
 implementation requires a separate WebGPU/native-upscaler renderer path and is
 not silently represented by these fallbacks.
 
+### Isolated WebGPU foundation
+
+`webgpu-lab.html` keeps the experimental Three.js r185 WebGPU module graph
+separate from the gameplay renderer and fetches it only after a direct lab
+visit. Its raster probe owns the temporal MRT resources described above and
+must produce a strict WebGPU frame receipt before the lab can describe that
+small raster proof as active. Its deterministic TLAS/BLAS case is packed on the
+CPU through three-mesh-bvh 0.9.13 and checked by an independent CPU traversal.
+The prepared WGSL traversal may count as GPU evidence only when its mapped
+readback receipt validates exactly; source presence, CPU results, or a generic
+success value do not qualify.
+
+The isolated page does not render the SPECTER combat scene and does not change
+the shipped WebGL settings above. Standardized WebGPU exposes no hardware ray
+query or acceleration-structure feature. The staged FSR 2.2.1 reference covers
+only the first half-resolution log-luminance mip; it does not implement the SPD
+mip chain/exposure result, reconstruct/dilate, depth clip, locks, temporal
+reprojection/accumulation, or RCAS. Accordingly, the game makes no claim of
+active geometry ray tracing, hardware ray tracing, or AMD FSR 2.
+
 The HUD also includes a live FPS and frame-time readout. It uses real render-loop
 timing, updates four times per second, and resets after tab-resume stalls so it
 can be used alongside the memory estimate while tuning settings.
@@ -440,4 +487,4 @@ prompts, and build records.
 Research links in `THIRD_PARTY_ASSETS.md` are evaluation notes only. Their models,
 textures, and audio are not bundled merely because a source URL is listed. No
 sci-fi, futuristic, fantasy, cartoon, stylized, or visibly low-detail research
-asset was accepted into the build 5.17.1-RELEASE-GATE runtime.
+asset was accepted into the build 5.18.0-WEBGPU-FOUNDATION runtime.

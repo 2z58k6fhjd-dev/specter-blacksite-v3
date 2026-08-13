@@ -1,0 +1,43 @@
+{
+  "schema": "specter-vendored-npm-closure/v1",
+  "package": {
+    "name": "three",
+    "version": "0.185.1",
+    "license": "MIT",
+    "registry": "https://registry.npmjs.org/three",
+    "tarball": "https://registry.npmjs.org/three/-/three-0.185.1.tgz",
+    "tarballSha256": "a2143f5bf978bd3470a51024b2b6bdd581913ba8f36ff1538d433f3a95adf2df",
+    "npmIntegrity": "sha512-5aojFCXKwnjBRZvUnt3WFfEcvUJgkN5LlijRFN95hMy8WVkG4I0QNcJE+OuWvuJ0bOdStrbfXn0pkd6/QyiAlg=="
+  },
+  "entrypoints": [
+    "build/three.webgpu.js",
+    "build/three.tsl.js"
+  ],
+  "files": [
+    {
+      "path": "build/three.core.js",
+      "sha256": "3718df126d69c125362a03340913204470d8c50238605150e57f808840fb7759",
+      "bytes": 1443056
+    },
+    {
+      "path": "build/three.tsl.js",
+      "sha256": "c3844718a7becd4d2d10fef29a503e6a8789bd1636e2e62767f2cf00fa56f8c1",
+      "bytes": 34213
+    },
+    {
+      "path": "build/three.webgpu.js",
+      "sha256": "50e4013dd3903e8afb09a4829962dbf105488de7bd47f61308f44bd2e66b3340",
+      "bytes": 2172442
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc",
+      "bytes": 1081
+    },
+    {
+      "path": "package.json",
+      "sha256": "1d5c438acdc1fe5a52fb8ede2e417afd91fec91d22275c40f7b739591b24e4df",
+      "bytes": 3826
+    }
+  ]
+}

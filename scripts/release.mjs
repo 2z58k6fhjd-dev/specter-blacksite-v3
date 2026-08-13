@@ -33,6 +33,7 @@ const DOWNLOAD_ROOT = resolve(PAGES_ROOT, 'download');
 const DEPLOYABLE_PATHS = [
   'assets',
   'src',
+  'vendor/webgpu-lab',
   'index.html',
   'manifest.webmanifest',
   'player-model.html',
@@ -40,7 +41,9 @@ const DEPLOYABLE_PATHS = [
   'ASSET_CATALOG.md',
   'service-worker.js',
   'styles.css',
-  'THIRD_PARTY_ASSETS.md'
+  'THIRD_PARTY_ASSETS.md',
+  'THIRD_PARTY_SOFTWARE.md',
+  'webgpu-lab.html'
 ];
 const MEDIA_EXTENSIONS = new Set([
   '.bin', '.glb', '.gltf', '.jpeg', '.jpg', '.ktx2', '.mp3', '.ogg', '.png', '.wav', '.webp'
@@ -86,6 +89,82 @@ const CC0_PISTOL_RELOAD = Object.freeze({
   receipt: 'assets/audio/cc0-zer0-sol-handgun-reload/ORIGINAL.sha256',
   sha256: '091399145b174ac3b2e0df245b4712a13ce85df072e37256b0fc32658718be53',
   runtimeUrl: './assets/audio/cc0-zer0-sol-handgun-reload/reload.wav'
+});
+const WEBGPU_LAB_PACKAGES = Object.freeze([
+  Object.freeze({
+    root: 'vendor/webgpu-lab/three-0.185.1',
+    name: 'three',
+    version: '0.185.1',
+    license: 'MIT',
+    registry: 'https://registry.npmjs.org/three',
+    tarball: 'https://registry.npmjs.org/three/-/three-0.185.1.tgz',
+    tarballSha256: 'a2143f5bf978bd3470a51024b2b6bdd581913ba8f36ff1538d433f3a95adf2df',
+    npmIntegrity: 'sha512-5aojFCXKwnjBRZvUnt3WFfEcvUJgkN5LlijRFN95hMy8WVkG4I0QNcJE+OuWvuJ0bOdStrbfXn0pkd6/QyiAlg==',
+    entrypoints: Object.freeze(['build/three.webgpu.js', 'build/three.tsl.js'])
+  }),
+  Object.freeze({
+    root: 'vendor/webgpu-lab/three-mesh-bvh-0.9.13',
+    name: 'three-mesh-bvh',
+    version: '0.9.13',
+    license: 'MIT',
+    registry: 'https://registry.npmjs.org/three-mesh-bvh',
+    tarball: 'https://registry.npmjs.org/three-mesh-bvh/-/three-mesh-bvh-0.9.13.tgz',
+    tarballSha256: 'e626379202bfa250ce75800c07f5b9083510eb85b1bb4e7c865c647e88c1c8ad',
+    npmIntegrity: 'sha512-2zRh4iTFDmiTISanSVFofIw6J92DxFSqWn2qsQTtKp2ko5Ebk/JaI/wpMqNaBJ3F0qx7/NuP9GPK4jGDX99J2Q==',
+    entrypoints: Object.freeze(['src/webgpu/index.js'])
+  })
+]);
+const WEBGPU_LAB_IMPORT_MAP = Object.freeze({
+  '@specter-lab/three-webgpu': './vendor/webgpu-lab/three-0.185.1/build/three.webgpu.js',
+  '@specter-lab/three-mesh-bvh': './vendor/webgpu-lab/three-mesh-bvh-0.9.13/src/webgpu/index.js',
+  three: './vendor/webgpu-lab/three-0.185.1/build/three.webgpu.js',
+  'three/webgpu': './vendor/webgpu-lab/three-0.185.1/build/three.webgpu.js',
+  'three/tsl': './vendor/webgpu-lab/three-0.185.1/build/three.tsl.js'
+});
+const WEBGPU_LAB_REQUIRED_FILES = Object.freeze([
+  'THIRD_PARTY_SOFTWARE.md',
+  'webgpu-lab.html',
+  'src/experimental/webgpu-advanced-contract.js',
+  'src/experimental/fsr2-2.2.1/ffx-fsr2-luminance-first-mip.wgsl',
+  'src/experimental/fsr2-2.2.1/LICENSE-AMD-FSR2.txt',
+  'src/experimental/fsr2-2.2.1/luminance-first-mip-reference.js',
+  'src/experimental/fsr2-2.2.1/PROVENANCE.json',
+  'src/webgpu-lab/browser-probe.js',
+  'src/webgpu-lab/dependency-loader.js',
+  'src/webgpu-lab/dependency-manifest.js',
+  'src/webgpu-lab/diagnostics.js',
+  'src/webgpu-lab/dispatch-receipt.js',
+  'src/webgpu-lab/known-triangle-dispatch.js',
+  'src/webgpu-lab/main.js',
+  'src/webgpu-lab/raster-foundation-probe.js',
+  'src/webgpu-lab/raster-foundation-receipt.js',
+  'src/webgpu-lab/scene-bvh-cpu-oracle.js',
+  'src/webgpu-lab/scene-bvh-dispatch.js',
+  'src/webgpu-lab/scene-bvh-harness.html',
+  'src/webgpu-lab/scene-bvh-harness.js',
+  'src/webgpu-lab/scene-bvh-pack.js',
+  'src/webgpu-lab/scene-bvh-probe.js',
+  'src/webgpu-lab/scene-bvh-receipt.js',
+  'src/webgpu-lab/temporal-input-foundation.js',
+  'src/webgpu-lab/webgpu-lab.css'
+]);
+const FSR2_LUMINANCE_REFERENCE = Object.freeze({
+  root: 'src/experimental/fsr2-2.2.1',
+  version: '2.2.1',
+  commit: '1680d1edd5c034f88ebbbb793d8b88f8842cf804',
+  licenseSha256: '6a12d0fdb5410839473f80b5395cf9493e8c007f76faed9f3fa41ab2f273803e',
+  localFiles: Object.freeze({
+    'ffx-fsr2-luminance-first-mip.wgsl': Object.freeze({ bytes: 3476, sha256: '70ef24d53478da983e99f55c2ef7464ef7514ce20f40c2f977e93a70b671c9be' }),
+    'LICENSE-AMD-FSR2.txt': Object.freeze({ bytes: 1165, sha256: '6a12d0fdb5410839473f80b5395cf9493e8c007f76faed9f3fa41ab2f273803e' }),
+    'luminance-first-mip-reference.js': Object.freeze({ bytes: 6903, sha256: 'a9048136ef9b468342265d4d4fbe7a3a75704678a21fc10722b1adf9aa05e615' }),
+    'PROVENANCE.json': Object.freeze({ bytes: 3712, sha256: '1ebbb890d1fe76dffdc46a33f82636236ee576e4ce52de0f797d67380a905b98' })
+  }),
+  sources: Object.freeze({
+    'src/ffx-fsr2-api/shaders/ffx_fsr2_compute_luminance_pyramid.h': 'c63f1820e08dce54f9da230e46538bd39c6560a8',
+    'src/ffx-fsr2-api/shaders/ffx_fsr2_common.h': '0c72aa84943e50b6806cddd6bf5c56c7d4922fe0',
+    'src/ffx-fsr2-api/shaders/ffx_spd.h': '5ce24ec87cc3204b7d5e315774a892ba6fdd13b9',
+    'src/ffx-fsr2-api/shaders/ffx_fsr2_compute_luminance_pyramid_pass.hlsl': '2b96636c26bb19e379fd8d6a296e6360d41b99d0'
+  })
 });
 
 function fail(message) {
@@ -799,6 +878,250 @@ async function validateForestFoliagePolicy(errors) {
   }
 }
 
+function sameSortedStrings(actual, expected) {
+  if (!Array.isArray(actual) || actual.length !== expected.length) return false;
+  const sortedActual = [...actual].sort();
+  const sortedExpected = [...expected].sort();
+  return sortedActual.every((value, index) => value === sortedExpected[index]);
+}
+
+async function validateVendoredWebgpuPackage(expected, errors) {
+  const packageRoot = resolve(ROOT, expected.root);
+  const receiptPath = resolve(packageRoot, 'SHA256_MANIFEST.json');
+  if (!(await pathExists(receiptPath))) {
+    errors.push(`WebGPU lab dependency receipt is missing: ${expected.root}/SHA256_MANIFEST.json`);
+    return;
+  }
+
+  let receipt;
+  try {
+    receipt = JSON.parse(await readFile(receiptPath, 'utf8'));
+  } catch (error) {
+    errors.push(`WebGPU lab dependency receipt is invalid JSON (${expected.name}): ${error.message}`);
+    return;
+  }
+
+  if (receipt.schema !== 'specter-vendored-npm-closure/v1') {
+    errors.push(`WebGPU lab ${expected.name} receipt has an unsupported schema`);
+  }
+  for (const field of ['name', 'version', 'license', 'registry', 'tarball', 'tarballSha256', 'npmIntegrity']) {
+    if (receipt.package?.[field] !== expected[field]) {
+      errors.push(`WebGPU lab ${expected.name} receipt ${field} does not match the pinned release contract`);
+    }
+  }
+  if (!sameSortedStrings(receipt.entrypoints, expected.entrypoints)) {
+    errors.push(`WebGPU lab ${expected.name} receipt entrypoints do not match the pinned module closure`);
+  }
+  if (!Array.isArray(receipt.files) || receipt.files.length === 0) {
+    errors.push(`WebGPU lab ${expected.name} receipt has no file records`);
+    return;
+  }
+
+  const recordedPaths = new Set();
+  for (const record of receipt.files) {
+    const relativePath = record?.path;
+    if (typeof relativePath !== 'string' || !relativePath || relativePath.includes('\\')) {
+      errors.push(`WebGPU lab ${expected.name} receipt contains an unsafe or invalid file path`);
+      continue;
+    }
+    const file = resolve(packageRoot, relativePath);
+    if (!isInside(packageRoot, file) || file === packageRoot || toPosix(relative(packageRoot, file)) !== relativePath) {
+      errors.push(`WebGPU lab ${expected.name} receipt path escapes or aliases its package root: ${relativePath}`);
+      continue;
+    }
+    if (recordedPaths.has(relativePath)) {
+      errors.push(`WebGPU lab ${expected.name} receipt repeats ${relativePath}`);
+      continue;
+    }
+    recordedPaths.add(relativePath);
+    if (!Number.isSafeInteger(record.bytes) || record.bytes < 0 || !/^[a-f0-9]{64}$/.test(record.sha256 ?? '')) {
+      errors.push(`WebGPU lab ${expected.name} receipt metadata is invalid for ${relativePath}`);
+      continue;
+    }
+    if (!(await pathExists(file)) || !(await stat(file)).isFile()) {
+      errors.push(`WebGPU lab ${expected.name} closure is missing ${relativePath}`);
+      continue;
+    }
+    const metadata = await stat(file);
+    if (metadata.size !== record.bytes) {
+      errors.push(`WebGPU lab ${expected.name} byte count mismatch for ${relativePath}`);
+    }
+    if ((await hashFile(file)) !== record.sha256) {
+      errors.push(`WebGPU lab ${expected.name} SHA-256 mismatch for ${relativePath}`);
+    }
+  }
+
+  const actualPaths = (await listFiles(packageRoot))
+    .map(file => toPosix(relative(packageRoot, file)))
+    .filter(path => path !== 'SHA256_MANIFEST.json');
+  if (!sameSortedStrings(actualPaths, [...recordedPaths])) {
+    const unrecorded = actualPaths.filter(path => !recordedPaths.has(path));
+    const missing = [...recordedPaths].filter(path => !actualPaths.includes(path));
+    if (unrecorded.length) errors.push(`WebGPU lab ${expected.name} contains unrecorded file(s): ${unrecorded.join(', ')}`);
+    if (missing.length) errors.push(`WebGPU lab ${expected.name} receipt names missing file(s): ${missing.join(', ')}`);
+  }
+  for (const entrypoint of expected.entrypoints) {
+    if (!recordedPaths.has(entrypoint)) errors.push(`WebGPU lab ${expected.name} entrypoint is absent from its receipt: ${entrypoint}`);
+  }
+
+  try {
+    const packageDocument = JSON.parse(await readFile(resolve(packageRoot, 'package.json'), 'utf8'));
+    if (packageDocument.name !== expected.name || packageDocument.version !== expected.version || packageDocument.license !== expected.license) {
+      errors.push(`WebGPU lab ${expected.name} package metadata does not match its exact version and MIT license`);
+    }
+  } catch (error) {
+    errors.push(`WebGPU lab ${expected.name} package metadata is unreadable: ${error.message}`);
+  }
+  try {
+    const license = await readFile(resolve(packageRoot, 'LICENSE'), 'utf8');
+    if (!/MIT License/i.test(license) || !/Permission is hereby granted/i.test(license)) {
+      errors.push(`WebGPU lab ${expected.name} does not retain its MIT license text`);
+    }
+  } catch (error) {
+    errors.push(`WebGPU lab ${expected.name} license is unreadable: ${error.message}`);
+  }
+}
+
+async function validateWebgpuLabReleaseClosure(errors) {
+  for (const required of WEBGPU_LAB_REQUIRED_FILES) {
+    const file = resolve(ROOT, required);
+    if (!(await pathExists(file)) || !(await stat(file)).isFile()) {
+      errors.push(`WebGPU lab release file is missing: ${required}`);
+    }
+  }
+  for (const dependency of WEBGPU_LAB_PACKAGES) {
+    await validateVendoredWebgpuPackage(dependency, errors);
+  }
+
+  const softwareNoticePath = resolve(ROOT, 'THIRD_PARTY_SOFTWARE.md');
+  if (await pathExists(softwareNoticePath)) {
+    const softwareNotice = await readFile(softwareNoticePath, 'utf8');
+    for (const dependency of WEBGPU_LAB_PACKAGES) {
+      if (!softwareNotice.includes(dependency.version) || !softwareNotice.includes(`${dependency.root}/package.json`)) {
+        errors.push(`THIRD_PARTY_SOFTWARE.md must retain the exact ${dependency.name} version and local evidence path`);
+      }
+    }
+    if (!softwareNotice.includes('MIT') || !softwareNotice.includes('service worker does not install-time')) {
+      errors.push('THIRD_PARTY_SOFTWARE.md must retain the MIT notice and demand-loaded service-worker boundary');
+    }
+  }
+
+  const htmlPath = resolve(ROOT, 'webgpu-lab.html');
+  if (!(await pathExists(htmlPath))) return;
+  const html = await readFile(htmlPath, 'utf8');
+  const importMaps = [...html.matchAll(/<script\b[^>]*\btype\s*=\s*(["'])importmap\1[^>]*>([\s\S]*?)<\/script>/gi)];
+  if (importMaps.length !== 1) {
+    errors.push('WebGPU lab HTML must contain exactly one inline import map');
+  } else {
+    try {
+      const imports = JSON.parse(importMaps[0][2]).imports;
+      if (!imports || !sameSortedStrings(Object.keys(imports), Object.keys(WEBGPU_LAB_IMPORT_MAP))) {
+        errors.push('WebGPU lab import map specifiers do not match the pinned local dependency graph');
+      } else {
+        for (const [specifier, expectedPath] of Object.entries(WEBGPU_LAB_IMPORT_MAP)) {
+          if (imports[specifier] !== expectedPath || looksExternal(imports[specifier])) {
+            errors.push(`WebGPU lab import ${specifier} must resolve to its pinned same-origin module`);
+          }
+        }
+      }
+    } catch (error) {
+      errors.push(`WebGPU lab import map is invalid JSON: ${error.message}`);
+    }
+  }
+  if (/https?:\/\/|(?:src|href)\s*=\s*(["'])\/\//i.test(html)) {
+    errors.push('WebGPU lab HTML contains an external network dependency');
+  }
+  if (!/<meta\b[^>]*name\s*=\s*(["'])robots\1[^>]*content\s*=\s*(["'])noindex,\s*nofollow\2/i.test(html)) {
+    errors.push('WebGPU lab HTML must remain noindex and nofollow while experimental');
+  }
+  if (html.includes('src/main.js')) {
+    errors.push('WebGPU lab HTML must not load the shipped game entry point');
+  }
+
+  const labSourceRoot = resolve(ROOT, 'src/webgpu-lab');
+  if (await pathExists(labSourceRoot)) {
+    for (const file of (await listFiles(labSourceRoot)).filter(path => extname(path) === '.js')) {
+      const source = await readFile(file, 'utf8');
+      if (/https?:\/\/|\/\/(?:cdn|unpkg|jsdelivr|esm\.sh|skypack|cdnjs)/i.test(source)) {
+        errors.push(`WebGPU lab runtime contains an external dependency URL: ${relativeToRoot(file)}`);
+      }
+      const imports = [
+        ...source.matchAll(/\bfrom\s*(["'])(.*?)\1/g),
+        ...source.matchAll(/\bimport\s*(["'])(.*?)\1/g)
+      ].map(match => match[2]);
+      for (const reference of imports) {
+        if (!reference.startsWith('.') && !(reference in WEBGPU_LAB_IMPORT_MAP)) {
+          errors.push(`${relativeToRoot(file)} imports unpinned WebGPU lab dependency ${reference}`);
+        }
+      }
+    }
+  }
+
+  const gameMain = await readFile(resolve(ROOT, 'src/main.js'), 'utf8');
+  if (gameMain.includes('webgpu-lab/') || gameMain.includes('experimental/webgpu-advanced-contract')) {
+    errors.push('The shipped game must not import the isolated WebGPU lab or its staged renderer contract');
+  }
+  const worker = await readFile(resolve(ROOT, 'service-worker.js'), 'utf8');
+  for (const arrayName of ['REQUIRED_SHELL_URLS', 'OPTIONAL_PRECACHE_URLS']) {
+    const list = worker.match(new RegExp(`const ${arrayName} = \\[([\\s\\S]*?)\\n\\];`));
+    if (!list) {
+      errors.push(`Service worker ${arrayName} could not be audited for WebGPU lab precaching`);
+      continue;
+    }
+    if (/webgpu-lab|vendor\/webgpu-lab|src\/experimental\//i.test(list[1])) {
+      errors.push(`Service worker ${arrayName} must not precache the experimental WebGPU lab or its vendored modules`);
+    }
+  }
+
+  const fsrRoot = resolve(ROOT, FSR2_LUMINANCE_REFERENCE.root);
+  for (const [relativePath, expected] of Object.entries(FSR2_LUMINANCE_REFERENCE.localFiles)) {
+    const file = resolve(fsrRoot, relativePath);
+    try {
+      const metadata = await stat(file);
+      if (metadata.size !== expected.bytes || (await hashFile(file)) !== expected.sha256) {
+        errors.push(`The staged FSR 2 local receipt drifted: ${relativePath}`);
+      }
+    } catch (error) {
+      errors.push(`The staged FSR 2 local file is unreadable (${relativePath}): ${error.message}`);
+    }
+  }
+  try {
+    const provenance = JSON.parse(await readFile(resolve(fsrRoot, 'PROVENANCE.json'), 'utf8'));
+    if (provenance.upstream?.version !== FSR2_LUMINANCE_REFERENCE.version
+      || provenance.upstream?.commit !== FSR2_LUMINANCE_REFERENCE.commit
+      || provenance.upstream?.license !== 'MIT'
+      || provenance.runtimeIntegrated !== false
+      || provenance.representsCompleteLuminancePyramid !== false
+      || provenance.representsCompleteFsr2 !== false) {
+      errors.push('The staged FSR 2 luminance provenance must stay pinned, MIT, isolated, and explicitly incomplete');
+    }
+    const foundSources = new Map((provenance.upstream?.sources || []).map(source => [source.path, source.gitBlobSha1]));
+    for (const [path, gitBlobSha1] of Object.entries(FSR2_LUMINANCE_REFERENCE.sources)) {
+      if (foundSources.get(path) !== gitBlobSha1) errors.push(`The staged FSR 2 source receipt drifted: ${path}`);
+    }
+  } catch (error) {
+    errors.push(`The staged FSR 2 provenance is unreadable: ${error.message}`);
+  }
+  try {
+    const license = resolve(fsrRoot, 'LICENSE-AMD-FSR2.txt');
+    if ((await hashFile(license)) !== FSR2_LUMINANCE_REFERENCE.licenseSha256) {
+      errors.push('The staged AMD FSR 2 MIT notice does not match the pinned upstream license');
+    }
+  } catch (error) {
+    errors.push(`The staged AMD FSR 2 MIT notice is unreadable: ${error.message}`);
+  }
+  try {
+    const shader = await readFile(resolve(fsrRoot, 'ffx-fsr2-luminance-first-mip.wgsl'), 'utf8');
+    if ((shader.match(/@compute\b/g) || []).length !== 1
+      || !shader.includes('FSR2_EPSILON: f32 = 1.0e-3')
+      || !shader.includes('vec3<f32>(0.2126, 0.7152, 0.0722)')) {
+      errors.push('The staged FSR 2 first-mip WGSL arithmetic or bounded entry point drifted');
+    }
+  } catch (error) {
+    errors.push(`The staged FSR 2 first-mip WGSL is unreadable: ${error.message}`);
+  }
+}
+
 async function validateRelease() {
   const errors = [];
   const javascriptCount = await validateJavaScriptSyntax(errors);
@@ -814,11 +1137,12 @@ async function validateRelease() {
   await validateLowPayloadManifest(errors);
   await validateMediumTextureManifest(errors);
   await validateOptionalNativePbrManifest(errors);
+  await validateWebgpuLabReleaseClosure(errors);
   if (errors.length) {
     for (const error of errors) console.error(`ERROR: ${error}`);
     fail(`Release validation failed with ${errors.length} issue(s).`);
   }
-  console.log(`Release validation passed: ${javascriptCount} JavaScript file(s), local references, glTF closure, licenses, non-runtime staging policy, forest foliage policy, and PBR manifest verified.`);
+  console.log(`Release validation passed: ${javascriptCount} JavaScript file(s), local references, glTF closure, licenses, non-runtime staging policy, forest foliage policy, PBR manifests, and the isolated WebGPU lab dependency closure verified.`);
 }
 
 function valueForArgument(name) {
@@ -916,7 +1240,7 @@ async function packageRelease() {
     `- Archive: ${archiveName}`,
     `- SHA-256: \`${archiveSha256}\``,
     '',
-    'This release passed JavaScript syntax, local asset-reference, glTF dependency, local license/provenance, and PBR manifest integrity checks before packaging.'
+    'This release passed JavaScript syntax, local asset-reference, glTF dependency, local license/provenance, PBR manifest integrity, and isolated WebGPU lab dependency-closure checks before packaging.'
   ].join('\n');
   await writeFile(notesPath, `${notes}\n`);
   const index = `<!doctype html>
@@ -1037,7 +1361,33 @@ async function verifyRelease() {
     if ((await hashFile(archive)) !== manifest.archiveSha256) errors.push('Release ZIP SHA-256 does not match its manifest');
     try {
       const entries = await readZipEntries(archive);
-      for (const expected of ['index.html', 'src/main.js', 'service-worker.js', 'THIRD_PARTY_ASSETS.md']) {
+      for (const expected of [
+        'index.html',
+        'src/main.js',
+        'service-worker.js',
+        'THIRD_PARTY_ASSETS.md',
+        'THIRD_PARTY_SOFTWARE.md',
+        'webgpu-lab.html',
+        'src/experimental/webgpu-advanced-contract.js',
+        'src/experimental/fsr2-2.2.1/ffx-fsr2-luminance-first-mip.wgsl',
+        'src/experimental/fsr2-2.2.1/LICENSE-AMD-FSR2.txt',
+        'src/experimental/fsr2-2.2.1/PROVENANCE.json',
+        'src/webgpu-lab/main.js',
+        'src/webgpu-lab/known-triangle-dispatch.js',
+        'src/webgpu-lab/raster-foundation-probe.js',
+        'src/webgpu-lab/raster-foundation-receipt.js',
+        'src/webgpu-lab/scene-bvh-dispatch.js',
+        'src/webgpu-lab/scene-bvh-pack.js',
+        'src/webgpu-lab/scene-bvh-probe.js',
+        'src/webgpu-lab/scene-bvh-receipt.js',
+        'src/webgpu-lab/temporal-input-foundation.js',
+        'vendor/webgpu-lab/three-0.185.1/LICENSE',
+        'vendor/webgpu-lab/three-0.185.1/SHA256_MANIFEST.json',
+        'vendor/webgpu-lab/three-0.185.1/build/three.webgpu.js',
+        'vendor/webgpu-lab/three-mesh-bvh-0.9.13/LICENSE',
+        'vendor/webgpu-lab/three-mesh-bvh-0.9.13/SHA256_MANIFEST.json',
+        'vendor/webgpu-lab/three-mesh-bvh-0.9.13/src/webgpu/index.js'
+      ]) {
         if (!entries.includes(expected)) errors.push(`Release ZIP does not contain root-level ${expected}`);
       }
       if (!entries.includes('index.html')) errors.push('Release ZIP has an enclosing top-level directory instead of repository-root contents');

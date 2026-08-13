@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
-import { buildSpecterOperator,poseSpecterOperator } from './specter-operator.js?v=5.17.1-release-gate';
+import { buildSpecterOperator,poseSpecterOperator } from './specter-operator.js?v=5.18.0-webgpu-foundation';
 
 const viewport=document.getElementById('viewport'),status=document.getElementById('status');
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
