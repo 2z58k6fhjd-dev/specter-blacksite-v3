@@ -6,6 +6,7 @@ import { dirname, extname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
 import { validateKnownTriangleDispatchReceipt } from '../src/webgpu-lab/dispatch-receipt.js';
+import { precompileRasterFoundationPipelines } from '../src/webgpu-lab/raster-foundation-probe.js';
 import { validateRasterFoundationReceipt } from '../src/webgpu-lab/raster-foundation-receipt.js';
 import { validateSceneBvhDispatchReceipt } from '../src/webgpu-lab/scene-bvh-receipt.js';
 import { validateSceneBvhPackEvidence } from '../src/webgpu-lab/scene-bvh-probe.js';
@@ -17,6 +18,60 @@ const MIME = Object.freeze({
   '.json': 'application/json; charset=utf-8',
   '.css': 'text/css; charset=utf-8'
 });
+
+async function verifyDeterministicRasterPrecompile() {
+  const calls = [];
+  const renderer = {
+    toneMapping: 'production-tone-map',
+    outputColorSpace: 'production-color-space',
+    async compileAsync(object, camera) {
+      calls.push(['presentation-compile-start', object, camera, this.toneMapping, this.outputColorSpace]);
+      await Promise.resolve();
+      calls.push(['presentation-compile-settled']);
+    }
+  };
+  const quad = { camera: { id: 'quad-camera' } };
+  const pipeline = {
+    _quadMesh: quad,
+    _update() { calls.push(['pipeline-update']); }
+  };
+  const foundation = {
+    scenePass: {
+      async compileAsync(receivedRenderer) {
+        assert.equal(receivedRenderer, renderer);
+        calls.push(['scene-compile-start']);
+        await Promise.resolve();
+        calls.push(['scene-compile-settled']);
+      }
+    }
+  };
+  const THREE = {
+    NoToneMapping: 'no-tone-map',
+    ColorManagement: { workingColorSpace: 'working-color-space' }
+  };
+
+  await precompileRasterFoundationPipelines({ THREE, renderer, pipeline, foundation });
+  assert.deepEqual(calls.map(entry => entry[0]), [
+    'scene-compile-start',
+    'scene-compile-settled',
+    'pipeline-update',
+    'presentation-compile-start',
+    'presentation-compile-settled'
+  ], 'Both Three WebGPU pipeline error-scope promises must settle in order before rendering or cleanup.');
+  assert.deepEqual(calls[3].slice(1), [quad, quad.camera, 'no-tone-map', 'working-color-space']);
+  assert.equal(renderer.toneMapping, 'production-tone-map', 'Precompile must restore tone mapping.');
+  assert.equal(renderer.outputColorSpace, 'production-color-space', 'Precompile must restore output color space.');
+
+  renderer.compileAsync = async () => { throw new Error('deterministic compile failure'); };
+  await assert.rejects(
+    precompileRasterFoundationPipelines({ THREE, renderer, pipeline, foundation }),
+    /deterministic compile failure/
+  );
+  assert.equal(renderer.toneMapping, 'production-tone-map', 'Failed precompile must restore tone mapping.');
+  assert.equal(renderer.outputColorSpace, 'production-color-space', 'Failed precompile must restore output color space.');
+}
+
+await verifyDeterministicRasterPrecompile();
 
 function resolveRequestPath(pathname) {
   const target = resolve(ROOT, `.${decodeURIComponent(pathname)}`);
@@ -69,6 +124,10 @@ try {
   page.on('pageerror', error => pageErrors.push(error.message));
   await page.goto(`http://127.0.0.1:${address.port}/webgpu-lab.html`, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => Boolean(globalThis.__SPECTER_WEBGPU_LAB__), null, { timeout: 30_000 });
+  // The report is published only after probe cleanup. Give any late browser
+  // promise rejection two event-loop turns to surface before asserting that
+  // the adapter-capable path is clean.
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0))));
   const report = await page.evaluate(() => globalThis.__SPECTER_WEBGPU_LAB__);
   const gateById = new Map(report.gates.map(item => [item.id, item]));
   const strictEvidence = Object.freeze({

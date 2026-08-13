@@ -12,6 +12,45 @@ function attachmentNames(resources) {
 }
 
 /**
+ * Precompile both pipelines used by the proof frame. Three's synchronous
+ * WebGPU pipeline path starts internal popErrorScope() promises without
+ * exposing them to callers. Destroying the renderer before those promises
+ * settle produces unhandled "Instance dropped in popErrorScope" rejections
+ * in Dawn. compileAsync() owns and awaits those scope promises, so cleanup is
+ * deterministic after this function resolves.
+ */
+export async function precompileRasterFoundationPipelines({
+  THREE,
+  renderer,
+  pipeline,
+  foundation
+} = {}) {
+  if (typeof foundation?.scenePass?.compileAsync !== 'function') {
+    throw new TypeError('The temporal scene pass must support compileAsync().');
+  }
+  if (typeof renderer?.compileAsync !== 'function') {
+    throw new TypeError('The WebGPU renderer must support compileAsync().');
+  }
+  if (typeof pipeline?._update !== 'function' || !pipeline?._quadMesh?.camera) {
+    throw new TypeError('The Three r185 RenderPipeline precompile surface is unavailable.');
+  }
+
+  await foundation.scenePass.compileAsync(renderer);
+  pipeline._update();
+
+  const toneMapping = renderer.toneMapping;
+  const outputColorSpace = renderer.outputColorSpace;
+  try {
+    renderer.toneMapping = THREE.NoToneMapping;
+    renderer.outputColorSpace = THREE.ColorManagement.workingColorSpace;
+    await renderer.compileAsync(pipeline._quadMesh, pipeline._quadMesh.camera);
+  } finally {
+    renderer.toneMapping = toneMapping;
+    renderer.outputColorSpace = outputColorSpace;
+  }
+}
+
+/**
  * Initializes an actual Three r185 WebGPU renderer and submits one small MRT
  * frame. WebGL fallback is explicitly rejected. This remains an isolated lab
  * proof and does not render SPECTER's game scene.
@@ -78,6 +117,7 @@ export async function probeWebgpuRasterFoundation({
       device.pushErrorScope(kind);
       pushedScopes++;
     }
+    await precompileRasterFoundationPipelines({ THREE, renderer, pipeline, foundation });
     const frame = foundation.beginFrame({
       frameIndex: 0,
       jitterPhaseCount: 8,
